@@ -1,0 +1,228 @@
+"""Tests for the extraction-readiness helper (pure-Python static checks).
+
+These tests exercise the cheap static checks only — file existence and
+the host-app-reference grep. They do **not** invoke the dynamic mode
+(`--include-dynamic`), because that would recursively run every other
+test module via subprocess; the CI already runs those suites directly,
+so doing it again here would be wasteful and circular.
+"""
+
+from __future__ import annotations
+
+import io
+import shutil
+import sys
+import tempfile
+from contextlib import redirect_stdout
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO_ROOT / "tools" / "handoff"))
+
+import check_handoff_ready as h  # noqa: E402
+
+
+# ---------------------------------------------------------------------------
+# Required-file checker — happy path and negative
+# ---------------------------------------------------------------------------
+
+def test_required_files_pass_on_current_repo() -> None:
+    ok, lines = h.check_required_files(REPO_ROOT)
+    assert ok, "\n".join(lines)
+    # Spot-check a few representative paths.
+    joined = "\n".join(lines)
+    for rel in (
+        "manifest.schema.json",
+        "examples/galley_1000.json",
+        "examples/assets/galley_1000.glb",
+        "runtime/load_module.py",
+        "runtime/package_report.py",
+        "tools/blender/_anchor_contract.py",
+        "HANDOFF.md",
+        "EXTRACT_TO_REAL_REPO.md",
+        "COMMANDS.md",
+    ):
+        assert f"[OK]   {rel}" in joined, f"missing required-file check for {rel}"
+
+
+def test_required_files_fail_when_one_is_missing() -> None:
+    # Build a temp draftmyvan/ that has *everything except* manifest.schema.json,
+    # then point the checker at it.
+    tmp = Path(tempfile.mkdtemp(prefix="dmv_handoff_"))
+    try:
+        for rel in h.REQUIRED_FILES:
+            if rel == "manifest.schema.json":
+                continue
+            dest = tmp / rel
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_text("placeholder", encoding="utf-8")
+        ok, lines = h.check_required_files(tmp)
+        assert ok is False
+        joined = "\n".join(lines)
+        assert "[FAIL] missing file: manifest.schema.json" in joined
+    finally:
+        shutil.rmtree(tmp)
+
+
+def test_required_file_fails_when_path_is_a_directory() -> None:
+    # The Codex review caught this: path.exists() is too weak — a required
+    # file path that has been replaced by a directory of the same name
+    # would silently pass the old check. Build a tree where every required
+    # path is satisfied except manifest.schema.json, which is a directory
+    # instead of a file.
+    tmp = Path(tempfile.mkdtemp(prefix="dmv_handoff_dir_"))
+    try:
+        for rel in h.REQUIRED_FILES:
+            if rel == "manifest.schema.json":
+                # Create it as a directory, not a file.
+                (tmp / rel).mkdir(parents=True, exist_ok=True)
+                continue
+            dest = tmp / rel
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_text("placeholder", encoding="utf-8")
+        ok, lines = h.check_required_files(tmp)
+        assert ok is False, (
+            "a directory at a required-file path must fail the check; "
+            "path.exists() would have accepted it"
+        )
+        joined = "\n".join(lines)
+        assert (
+            "[FAIL] expected file but found directory/non-file: manifest.schema.json"
+            in joined
+        ), joined
+    finally:
+        shutil.rmtree(tmp)
+
+
+# ---------------------------------------------------------------------------
+# Host-app reference grep — happy path and negative
+# ---------------------------------------------------------------------------
+
+def test_no_host_app_references_in_current_draftmyvan() -> None:
+    ok, lines = h.check_no_host_app_references(REPO_ROOT)
+    assert ok, "\n".join(lines)
+
+
+def test_host_app_reference_grep_flags_temp_offender() -> None:
+    # Build the offending substring at runtime by concatenation so the
+    # literal does not appear anywhere in this test file's own source.
+    # The forbidden substrings are listed in
+    # check_handoff_ready.FORBIDDEN_PY_SUBSTRINGS; we look up the first
+    # one rather than spell it inline.
+    forbidden_pattern = h.FORBIDDEN_PY_SUBSTRINGS[0]
+    forbidden_full = forbidden_pattern + "something"
+    offender = REPO_ROOT / "tests" / "_handoff_offender_TMP.py"
+    offender.write_text(
+        f'"""Temp offender for test_handoff_ready."""\nBAD = "{forbidden_full}"\n',
+        encoding="utf-8",
+    )
+    try:
+        ok, lines = h.check_no_host_app_references(REPO_ROOT)
+        assert ok is False
+        joined = "\n".join(lines)
+        assert "_handoff_offender_TMP.py" in joined
+        assert repr(forbidden_pattern) in joined
+    finally:
+        offender.unlink(missing_ok=True)
+
+
+def test_host_app_reference_grep_does_not_flag_itself() -> None:
+    # check_handoff_ready.py literally contains the forbidden substrings
+    # (it has to, in order to grep for them). The checker must ignore itself.
+    ok, _ = h.check_no_host_app_references(REPO_ROOT)
+    assert ok is True, (
+        "the checker should ignore its own source — otherwise it would "
+        "always fail because it lists the forbidden substrings"
+    )
+
+
+# ---------------------------------------------------------------------------
+# CLI (default / static-only mode)
+# ---------------------------------------------------------------------------
+
+def test_cli_default_mode_returns_0_for_current_repo() -> None:
+    buf = io.StringIO()
+    with redirect_stdout(buf):
+        code = h.main([])
+    assert code == 0
+    out = buf.getvalue()
+    assert "RESULT: HANDOFF READY" in out
+    assert "=== required files ===" in out
+    assert "=== no host-app references ===" in out
+    # Default mode must NOT run dynamic checks.
+    assert "=== package report ===" not in out
+    assert "=== test modules ===" not in out
+    assert "skipping dynamic checks" in out
+
+
+def test_cli_explicit_root_argument_works() -> None:
+    buf = io.StringIO()
+    with redirect_stdout(buf):
+        code = h.main(["--root", str(REPO_ROOT)])
+    assert code == 0
+    assert "RESULT: HANDOFF READY" in buf.getvalue()
+
+
+def test_cli_fails_when_pointed_at_an_empty_directory() -> None:
+    tmp = Path(tempfile.mkdtemp(prefix="dmv_empty_"))
+    try:
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            code = h.main(["--root", str(tmp)])
+        assert code == 1
+        out = buf.getvalue()
+        assert "RESULT: HANDOFF NOT READY" in out
+        assert "[FAIL] missing file:" in out
+    finally:
+        shutil.rmtree(tmp)
+
+
+# ---------------------------------------------------------------------------
+# Required-file list — guard against accidental shrinkage
+# ---------------------------------------------------------------------------
+
+def test_required_files_list_includes_all_critical_categories() -> None:
+    rels = set(h.REQUIRED_FILES)
+    assert "manifest.schema.json" in rels
+    assert "examples/galley_1000.json" in rels
+    assert "examples/assets/galley_1000.glb" in rels
+    assert any(r.startswith("runtime/") for r in rels)
+    assert any(r.startswith("tools/blender/") for r in rels)
+    assert any(r.startswith("tools/assets/") for r in rels)
+    assert any(r.startswith("tests/") for r in rels)
+    # Handoff docs must be listed as required (this PR's whole point).
+    for doc in ("HANDOFF.md", "EXTRACT_TO_REAL_REPO.md", "COMMANDS.md"):
+        assert doc in rels, f"required-files list dropped {doc}"
+
+
+def main() -> int:
+    tests = [
+        test_required_files_pass_on_current_repo,
+        test_required_files_fail_when_one_is_missing,
+        test_required_file_fails_when_path_is_a_directory,
+        test_no_host_app_references_in_current_draftmyvan,
+        test_host_app_reference_grep_flags_temp_offender,
+        test_host_app_reference_grep_does_not_flag_itself,
+        test_cli_default_mode_returns_0_for_current_repo,
+        test_cli_explicit_root_argument_works,
+        test_cli_fails_when_pointed_at_an_empty_directory,
+        test_required_files_list_includes_all_critical_categories,
+    ]
+    failed = 0
+    for t in tests:
+        try:
+            t()
+            print(f"PASS  {t.__name__}")
+        except AssertionError as e:
+            failed += 1
+            print(f"FAIL  {t.__name__}: {e}")
+        except Exception as e:
+            failed += 1
+            print(f"ERROR {t.__name__}: {e}")
+    print()
+    print(f"{len(tests) - failed}/{len(tests)} passed")
+    return 0 if failed == 0 else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
