@@ -1,0 +1,33 @@
+{
+  "version": "0.1.0",
+  "id": "galley_1000_sink_left_oak",
+  "type": "cabinet",
+  "dimensions_mm": {
+    "width": 1000,
+    "depth": 520,
+    "height": 900
+  },
+  "anchor": "floor_back_left",
+  "placement": "floor",
+  "clearances": {
+    "front_mm": 450,
+    "sides_mm": 20,
+    "above_mm": 50
+  },
+  "visual": {
+    "glb_path": "assets/galley_1000.glb",
+    "collision_proxy": "UCX_galley_1000",
+    "material_slots": ["oak_body", "sink_metal"]
+  },
+  "manufacturing": {
+    "fusion_template": "galley_v1",
+    "plywood_thickness_mm": 18,
+    "weight_kg": 45,
+    "hardware": ["hinges_4x", "runners_2x"]
+  },
+  "rules": {
+    "cnc_eligible": true,
+    "build_difficulty": "medium",
+    "service_access": ["back_panel"]
+  }
+}
