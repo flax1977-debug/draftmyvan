@@ -69,3 +69,32 @@ remain inside guarded Fusion-only functions. The skeleton currently:
 It does not create geometry, drawings, cut lists, DXF, CNC, or
 manufacturing-ready output. The next future step is a simple parametric
 box/carcass proof inside Fusion from the validated payload.
+
+## Panel Math
+
+`compute_galley_panels.py` adds the first deterministic panel explanation for
+`galley_v1`. It computes a simple carcass only:
+
+- `left_side`
+- `right_side`
+- `bottom_panel`
+- `top_panel`
+- `back_panel`
+
+The assumptions are intentionally minimal:
+
+- Side panels use `Height x Depth x PlyThickness`.
+- Top and bottom panels fit between sides:
+  `(Width - 2 * PlyThickness) x Depth`.
+- Back panel fits between side panels and between top/bottom panels:
+  `(Width - 2 * PlyThickness) x (Height - 2 * PlyThickness)`.
+- No kerf.
+- No rabbets or dados.
+- No edging.
+- No door or drawer fronts.
+- No sink cut-out.
+- No hardware drilling.
+
+This is not a real cut list, not a drawing, not DXF/CNC, and not
+manufacturing-ready output. The next future step is Fusion geometry creation
+from these validated panels.
