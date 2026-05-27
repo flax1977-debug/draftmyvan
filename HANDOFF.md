@@ -1,14 +1,15 @@
 # DraftMyVan — Handoff
 
 > **Status:** the DraftMyVan foundation now lives in its own repository.
-> It has nineteen CI-gated pure-Python suites, a permanent generated GLB
+> It has twenty-one CI-gated pure-Python suites, a permanent generated GLB
 > contract fixture, current-asset acceptance metadata, candidate acceptance,
 > review, visual-audit, render-evidence, and human-visual-review metadata, two
 > GLB validators (one for CI, one for human use in Blender), material-slot and
 > collision-proxy enforcement, a runtime reference consumer + package report,
 > a pure-Python Fusion parameter-map dry-run, script skeleton, panel math,
-> geometry plan, guarded manual body-creation path, and documented Blender
-> export plus local visual-audit/render procedures.
+> geometry plan, guarded manual body-creation path, a repo-owned allowlisted
+> Fusion MCP bridge skeleton that is not globally enabled, and documented
+> Blender export plus local visual-audit/render procedures.
 
 This document is the briefing for whoever picks the project up next —
 whether that's the same author moving the code to a new repository,
@@ -87,6 +88,9 @@ tools/
     check_fusion_geometry_plan.py     # CI-safe geometry-plan checker
     RUN_FUSION_GEOMETRY_MANUAL.md     # Manual Fusion run procedure
     MANUAL_FUSION_GEOMETRY_CHECKLIST.md # Manual verification template
+    fusion_command_bridge.py          # Narrow Fusion-side status-file bridge
+  mcp/
+    fusion_bridge_server.py           # Local stdio MCP bridge, not globally enabled
   handoff/
     check_handoff_ready.py       # Extraction-readiness gate
 tests/                           # Pure-Python; no Blender required
@@ -112,6 +116,8 @@ tests/                           # Pure-Python; no Blender required
   test_fusion_panel_math.py       # 11 tests
   test_fusion_geometry_plan.py    # 17 tests
   test_fusion_geometry_execution_skeleton.py # 11 tests
+  test_fusion_local_availability.py # 4 tests
+  test_fusion_mcp_bridge.py       # 12 tests
   test_runtime_consumer.py       # 18 tests
   test_package_report.py         # 16 tests
   test_handoff_ready.py          # 10 tests
@@ -164,7 +170,8 @@ Left behind during PaperAI incubation, then redone in this repository:
 | Fusion script skeleton PR | merged | Adds a Fusion 360 Python script/add-in skeleton that consumes the dry-run payload through pure-Python helpers, keeps `adsk` imports guarded, and only logs/summarizes parameters. It creates no geometry, drawings, cut lists, DXF/CNC, or manufacturing-ready output. |
 | Fusion panel math PR | merged | Adds pure-Python `galley_v1` carcass panel math from the validated Fusion parameter payload, a deterministic expected fixture, CLI exporter, and tests. It is not a real cut list, drawing, DXF/CNC output, or manufacturing-ready claim. |
 | Fusion geometry plan PR | merged | Adds a pure-Python planned-not-executed Fusion geometry plan from the deterministic panel payload. It names future components/bodies, sketch planes, extrude axes, provisional placement origins, and precise Fusion API TODOs without executing Fusion or claiming manufacturing readiness. |
-| Fusion manual body path PR | this slice | Adds the guarded manual Fusion path for creating the five rectangular panel bodies when run inside Fusion with a valid panel payload, plus a pure-Python `--dry-run`, manual run docs, and a verification checklist. CI still imports no Autodesk modules and creates no geometry. |
+| Fusion manual body path PR | merged | Adds the guarded manual Fusion path for creating the five rectangular panel bodies when run inside Fusion with a valid panel payload, plus a pure-Python `--dry-run`, manual run docs, and a verification checklist. CI still imports no Autodesk modules and creates no geometry. |
+| Fusion MCP bridge skeleton PR | this slice | Adds a repo-owned stdio MCP bridge skeleton with only `check_fusion_payload`, `check_geometry_plan`, `dry_run_geometry`, and `report_manual_verification_status`, plus a narrow Fusion command/status-file helper. It is not globally enabled, does not add a localhost server, does not execute arbitrary shell or Fusion Python, and creates no CNC/DXF/drawings/manufacturing-ready output. |
 
 ## Current command suite
 
@@ -238,6 +245,10 @@ python tools/fusion/check_fusion_geometry_plan.py --verbose \
 python tools/fusion/fusion_create_galley_v1.py --dry-run \
     tests/fixtures/galley_1000_panels.expected.json
 
+# Start the local stdio Fusion MCP bridge skeleton when explicitly configured
+# by a user later. This repository does not wire it into global MCP config.
+python tools/mcp/fusion_bridge_server.py
+
 # Generate local render evidence when Blender is available
 blender --background --python tools/blender/render_candidate_views.py -- \
     --candidate examples/assets/candidates/galley_1000_candidate.glb \
@@ -277,6 +288,8 @@ python -m tests.test_fusion_skeleton              # 10 tests
 python -m tests.test_fusion_panel_math            # 11 tests
 python -m tests.test_fusion_geometry_plan         # 17 tests
 python -m tests.test_fusion_geometry_execution_skeleton # 11 tests
+python -m tests.test_fusion_local_availability    # 4 tests
+python -m tests.test_fusion_mcp_bridge            # 12 tests
 python -m tests.test_runtime_consumer             # 18 tests
 python -m tests.test_package_report               # 16 tests
 python -m tests.test_handoff_ready                # 10 tests
@@ -293,10 +306,10 @@ python -m tests.test_handoff_ready                # 10 tests
   local-only authoritative gate.
 - Fusion 360 is **not** installed. The Fusion proof is pure Python in CI and
   validates only the manifest-to-parameter mapping, deterministic dry-run JSON
-  export, script-skeleton payload consumption, simple carcass panel math, and a
-  deterministic geometry plan and body-creation dry-run. Autodesk `adsk`
-  imports are guarded inside Fusion-only functions and are not imported by
-  normal tests.
+  export, script-skeleton payload consumption, simple carcass panel math,
+  deterministic geometry plan, body-creation dry-run, local availability
+  boundary, and allowlisted MCP bridge skeleton. Autodesk `adsk` imports are
+  guarded inside Fusion-only functions and are not imported by normal tests.
 - Trigger scope: `workflow_dispatch`, `push`, and `pull_request`.
   No path filters are needed because the whole repository is DraftMyVan.
 - Permissions: `contents: read`. Nothing more.
@@ -329,17 +342,25 @@ python -m tests.test_handoff_ready                # 10 tests
   non-production and do-not-promote. Future candidate changes must regenerate
   those images and re-sign render-evidence metadata and review records.
 - **Catalog of one.** `examples/galley_1000.json` is the only module.
-- **No UE5, Fusion 360 automation, or CNC integration.** The Fusion-side work
-  is currently a pure-Python `galley_v1` parameter-map dry-run, script skeleton,
-  simple carcass panel math, geometry plan, and guarded manual body-creation
-  path from the same manifest truth. The panel math documents five basic
-  carcass panels and intentionally assumes no kerf, rabbets, dados, edging,
-  doors/drawers, sink cut-out, or hardware drilling. The geometry plan maps
-  those panels to component/body names, sketch planes, extrude axes, extrusion
-  distances, and deterministic but provisional placement origins. CI exercises
-  only pure-Python validation and `--dry-run`; it does not create geometry, call
-  Fusion APIs, create drawings, emit DXF/CNC, create real cut lists, or claim
-  manufacturing-ready output. Manual Fusion output must be verified with
+- **No UE5, globally enabled Fusion automation, or CNC integration.** The
+  Fusion-side work is currently a pure-Python `galley_v1` parameter-map
+  dry-run, script skeleton, simple carcass panel math, geometry plan, guarded
+  manual body-creation path, and allowlisted/report-only MCP bridge skeleton
+  from the same manifest truth. The bridge is Option A plus a narrow Option B:
+  stdio validation outside Fusion, plus optional fixed command/status JSON for
+  manual status reporting. It exposes only `check_fusion_payload`,
+  `check_geometry_plan`, `dry_run_geometry`, and
+  `report_manual_verification_status`; it is not globally enabled, does not
+  add a localhost server, and requires explicit user approval before any MCP
+  config wiring. The panel math documents five basic carcass panels and
+  intentionally assumes no kerf, rabbets, dados, edging, doors/drawers, sink
+  cut-out, or hardware drilling. The geometry plan maps those panels to
+  component/body names, sketch planes, extrude axes, extrusion distances, and
+  deterministic but provisional placement origins. CI exercises only
+  pure-Python validation and `--dry-run`; it does not create geometry, call
+  Fusion APIs, create drawings, emit DXF/CNC, create real cut lists, execute
+  arbitrary shell or Fusion Python, or claim manufacturing-ready output. Manual
+  Fusion output must be verified with
   `tools/fusion/MANUAL_FUSION_GEOMETRY_CHECKLIST.md`.
 
 Current Fusion sequence:

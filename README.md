@@ -4,10 +4,11 @@ DraftMyVan is a manufacturing-oriented 3D campervan configurator. This repositor
 holds the **data contract** — the single source of truth that future visualization,
 asset-factory, and manufacturing tooling will read from.
 
-Nothing else. No UE5, no Fusion 360 automation, no UI, no CNC post processors
-yet. Blender appears only as optional/local asset-export tooling and candidate
-GLB authoring. Fusion work is currently pure-Python mapping, payload checking,
-panel math, and script-skeleton dry-run only.
+Nothing else. No UE5, no globally enabled Fusion 360 automation, no UI, no CNC
+post processors yet. Blender appears only as optional/local asset-export
+tooling and candidate GLB authoring. Fusion work is currently pure-Python
+mapping, payload checking, panel math, script-skeleton dry-run, guarded manual
+body creation, and a repo-owned MCP bridge skeleton that is not globally wired.
 
 ## Layout
 
@@ -22,6 +23,7 @@ tools/
   assets/                  # Fixture generator + asset/candidate acceptance validators
   blender/                 # GLB validators and export procedure
   fusion/                  # Pure-Python Fusion parameter mapping, panels, geometry plan
+  mcp/                     # Local allowlisted MCP bridge skeleton, not globally enabled
   handoff/                 # Extraction-readiness helper
 tests/                     # Pure-Python suites; no Blender required
   fixtures/                # Permanent golden contract fixtures
@@ -77,6 +79,9 @@ python -m tests.test_fusion_parameter_map         # Fusion parameter map dry-run
 python -m tests.test_fusion_skeleton              # Fusion skeleton payload guard
 python -m tests.test_fusion_panel_math            # Fusion panel math guard
 python -m tests.test_fusion_geometry_plan         # Fusion geometry plan guard
+python -m tests.test_fusion_geometry_execution_skeleton # guarded manual body path
+python -m tests.test_fusion_local_availability    # local Fusion availability boundary
+python -m tests.test_fusion_mcp_bridge            # allowlisted MCP bridge guard
 python -m tests.test_runtime_consumer             # manifest read as typed runtime data
 python -m tests.test_package_report               # catalog/package readiness
 python -m tests.test_handoff_ready                # extraction-readiness helper
@@ -418,6 +423,25 @@ not claim manufacturing readiness. `build/` output is ignored by Git.
 Manual Fusion execution is documented in
 `tools/fusion/RUN_FUSION_GEOMETRY_MANUAL.md`, with a verification template at
 `tools/fusion/MANUAL_FUSION_GEOMETRY_CHECKLIST.md`.
+
+## Fusion MCP bridge skeleton
+
+`tools/mcp/fusion_bridge_server.py` is a repo-owned stdio MCP bridge skeleton.
+It is not wired into global Codex, Claude, or other MCP config by this
+repository. It exposes only four allowlisted tools:
+
+- `check_fusion_payload`
+- `check_geometry_plan`
+- `dry_run_geometry`
+- `report_manual_verification_status`
+
+The design is Option A plus a narrow Option B: pure-Python validation outside
+Fusion, plus an optional fixed command/status JSON file that
+`tools/fusion/fusion_command_bridge.py` can read/write when manually run inside
+Fusion. Option C, a localhost Fusion server, is deferred. The bridge does not
+execute arbitrary shell commands or arbitrary Fusion Python, does not generate
+CNC/DXF/drawings/cut lists, and does not claim manufacturing-ready output.
+Manual MCP config wiring requires explicit user approval later.
 
 Current five-panel carcass diagram:
 
