@@ -164,6 +164,22 @@ Current intended placement:
 Those placements are deterministic but provisional. They require manual Fusion
 verification before the geometry can be trusted.
 
+## Current Manual Verification Status
+
+A manual run was attempted from main SHA
+`932dc9551126631ba6f36833df7c7ae1060d86f0`. Parameter and panel payloads were
+generated under `/tmp`, and the geometry dry-run returned:
+
+```text
+RESULT: FUSION GEOMETRY DRY RUN VALID
+```
+
+Fusion 360 could not be launched locally with `open -a "Autodesk Fusion"`,
+`open -a "Fusion 360"`, or `open -a "Autodesk Fusion 360"`, and no local app
+bundle was found in common app locations or Spotlight metadata. The blocker is
+local tool availability, not payload validation. No Fusion geometry was created
+or verified. See `MANUAL_FUSION_GEOMETRY_BLOCKER.md`.
+
 Joints, kerf, rabbets, dados, edging, door/drawer fronts, sink cut-out,
 hardware drilling, drawings, DXF/CNC, real cut lists, and manufacturing sign-off
 remain deferred.

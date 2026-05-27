@@ -391,6 +391,8 @@ python tools/fusion/check_fusion_geometry_plan.py \
 
 python tools/fusion/fusion_create_galley_v1.py \
     --dry-run tests/fixtures/galley_1000_panels.expected.json
+
+python tools/fusion/check_fusion_local_availability.py
 ```
 
 The dry-run output contains `galley_v1` parameters (`Width`, `Depth`,
@@ -417,7 +419,12 @@ not claim manufacturing readiness. `build/` output is ignored by Git.
 
 Manual Fusion execution is documented in
 `tools/fusion/RUN_FUSION_GEOMETRY_MANUAL.md`, with a verification template at
-`tools/fusion/MANUAL_FUSION_GEOMETRY_CHECKLIST.md`.
+`tools/fusion/MANUAL_FUSION_GEOMETRY_CHECKLIST.md`. The first local manual
+attempt from main SHA `932dc9551126631ba6f36833df7c7ae1060d86f0` generated
+valid `/tmp` payloads and returned `RESULT: FUSION GEOMETRY DRY RUN VALID`,
+but Fusion 360 was not installed or discoverable locally. That blocker is
+recorded in `tools/fusion/MANUAL_FUSION_GEOMETRY_BLOCKER.md`; no Fusion
+geometry was created or verified.
 
 Current five-panel carcass diagram:
 
@@ -457,9 +464,11 @@ candidate SHA.
    accepted through the metadata gate without deleting the golden contract
    fixture. This requires a future explicit promotion PR with human visual
    and manufacturability sign-off.
-2. Manually run and record the Fusion geometry checklist for the five-panel
-   carcass, still without CNC, drawings, real cut lists, or manufacturing-ready
-   claims.
+2. Install Fusion 360 or run on a machine where Fusion is available, then
+   manually run and record the Fusion geometry checklist for the five-panel
+   carcass. The current local attempt is blocked before script execution; it
+   did not verify geometry and still has no CNC, drawings, real cut lists, or
+   manufacturing-ready claims.
 3. UE5 Data Asset / importer that consumes the manifest at editor time.
 4. Fusion 360 add-in that regenerates a parametric template from the same entry.
 5. Anchor enforcement for the remaining schema-valid anchor values
