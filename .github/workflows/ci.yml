@@ -75,6 +75,12 @@ jobs:
       - name: Run Fusion geometry-execution skeleton suite (pure Python only)
         run: python -m tests.test_fusion_geometry_execution_skeleton
 
+      - name: Run Fusion local-availability suite (pure Python only)
+        run: python -m tests.test_fusion_local_availability
+
+      - name: Run Fusion MCP bridge suite (pure Python only)
+        run: python -m tests.test_fusion_mcp_bridge
+
       - name: Run runtime-consumer suite (manifest read as typed data)
         run: python -m tests.test_runtime_consumer
 

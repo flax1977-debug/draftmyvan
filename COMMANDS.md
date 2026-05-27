@@ -184,6 +184,29 @@ Manual run docs:
 - `tools/fusion/RUN_FUSION_GEOMETRY_MANUAL.md`
 - `tools/fusion/MANUAL_FUSION_GEOMETRY_CHECKLIST.md`
 
+## Fusion MCP bridge skeleton
+
+| Command | Purpose | Exit |
+|---|---|---|
+| `python tools/mcp/fusion_bridge_server.py` | Start the local stdio MCP bridge process. It is not globally enabled by repo code. | MCP stdio process |
+| `python tools/fusion/fusion_command_bridge.py --validate-command /tmp/draftmyvan_fusion_command.json` | Validate the narrow Fusion file-command bridge request shape outside Fusion. | 0 valid, 1 invalid |
+| `python -m tests.test_fusion_local_availability` | Verify Fusion absence is reported clearly and report-only status does not create output. | 0 pass, 1 fail |
+| `python -m tests.test_fusion_mcp_bridge` | Verify the MCP bridge allowlist and report-only command validation. | 0 pass, 1 fail |
+
+The bridge exposes only four allowlisted tools:
+
+- `check_fusion_payload`
+- `check_geometry_plan`
+- `dry_run_geometry`
+- `report_manual_verification_status`
+
+The design is Option A plus a narrow Option B: stdio validation outside Fusion,
+plus an optional fixed command/status JSON file for manual Fusion status
+reporting. It does not wire global Codex/Claude MCP config, does not start a
+localhost server, does not execute arbitrary shell or Fusion Python, and does
+not generate drawings, cut lists, DXF, CNC, or manufacturing-ready output.
+Manual config wiring requires explicit user approval later.
+
 ## Runtime consumer (PR #8)
 
 | Command | Purpose | Exit |
@@ -222,6 +245,8 @@ python -m tests.test_fusion_skeleton              # 10 tests — Fusion skeleton
 python -m tests.test_fusion_panel_math            # 11 tests — Fusion panel math guard
 python -m tests.test_fusion_geometry_plan         # 17 tests — Fusion geometry plan guard
 python -m tests.test_fusion_geometry_execution_skeleton # 11 tests — guarded Fusion execution skeleton
+python -m tests.test_fusion_local_availability    # 4 tests — local Fusion availability boundary
+python -m tests.test_fusion_mcp_bridge            # 12 tests — allowlisted Fusion MCP bridge
 python -m tests.test_runtime_consumer             # 18 tests — manifest read as typed runtime data
 python -m tests.test_package_report               # 16 tests — catalog/package readiness
 python -m tests.test_handoff_ready                # 10 tests — extraction readiness helper
@@ -241,6 +266,8 @@ for t in tests.test_validator tests.test_blender_manifest_contract \
          tests.test_fusion_panel_math \
          tests.test_fusion_geometry_plan \
          tests.test_fusion_geometry_execution_skeleton \
+         tests.test_fusion_local_availability \
+         tests.test_fusion_mcp_bridge \
          tests.test_runtime_consumer \
          tests.test_package_report \
          tests.test_handoff_ready ; do
@@ -250,6 +277,7 @@ done
 
 ## What is NOT here
 
-These commands are still deliberately absent: UE5 import, Fusion 360
-automation, CNC/post-processing, dashboard/UI, catalog expansion, and real
+These commands are still deliberately absent: UE5 import, globally enabled
+Fusion automation, localhost Fusion MCP server, arbitrary shell execution,
+CNC/post-processing, drawings, dashboard/UI, catalog expansion, and real
 cabinet art.
