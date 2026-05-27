@@ -4,7 +4,8 @@ DraftMyVan is a manufacturing-oriented 3D campervan configurator. This repositor
 holds the **data contract** — the single source of truth that future visualization,
 asset-factory, and manufacturing tooling will read from.
 
-Nothing else. No UE5, no Blender, no Fusion, no UI, no CNC post processors yet.
+Nothing else. No UE5, no Fusion, no UI, no CNC post processors yet. Blender
+appears only as optional/local asset-export tooling and candidate GLB authoring.
 
 ## Layout
 
@@ -12,11 +13,11 @@ Nothing else. No UE5, no Blender, no Fusion, no UI, no CNC post processors yet.
 manifest.schema.json       # JSON Schema (Draft 2020-12) for a module
 examples/
   galley_1000.json         # First module: 1000 mm galley cabinet
-  assets/                  # Current manifest asset + acceptance metadata
+  assets/                  # Current manifest asset, candidates, acceptance metadata
 runtime/                   # Reference manifest consumer + package report
 tools/
   validate_manifest.py     # CLI validator
-  assets/                  # Deterministic fixture generator
+  assets/                  # Fixture generator + asset/candidate acceptance validators
   blender/                 # GLB validators and export procedure
   handoff/                 # Extraction-readiness helper
 tests/                     # Pure-Python suites; no Blender required
@@ -61,8 +62,9 @@ OK    examples/galley_1000.json
 python -m tests.test_validator                    # schema + manifest
 python -m tests.test_blender_manifest_contract    # Blender gate, anchor enforcement
 python -m tests.test_check_asset_ready            # real-asset readiness wrapper
-python -m tests.test_galley_fixture               # committed fixture + generator determinism
+python -m tests.test_galley_fixture               # golden fixture + manifest asset
 python -m tests.test_asset_acceptance             # fixture-swap acceptance metadata
+python -m tests.test_candidate_asset              # candidate export workflow
 python -m tests.test_runtime_consumer             # manifest read as typed runtime data
 python -m tests.test_package_report               # catalog/package readiness
 python -m tests.test_handoff_ready                # extraction-readiness helper
@@ -248,18 +250,52 @@ Future real art must replace only `examples/assets/galley_1000.glb`,
 update the acceptance metadata to a real-art sign-off state, and still pass
 all existing validators before commit.
 
+## Candidate export workflow
+
+The first real-export candidate lives under:
+
+```text
+examples/assets/candidates/
+```
+
+`galley_1000_candidate.glb` is a simple Blender-authored process test, not
+polished cabinet art and not the manifest asset. It proves that a non-generator
+Blender export can pass the same schema, dimension, `floor_back_left` anchor,
+material-slot, and collision-proxy gates while leaving both
+`examples/assets/galley_1000.glb` and
+`tests/fixtures/galley_1000_contract_box.glb` untouched.
+
+Validate the candidate state with:
+
+```bash
+python tools/assets/validate_candidate_asset.py \
+    examples/assets/candidates/galley_1000_candidate.asset_acceptance.json
+```
+
+Lifecycle:
+
+1. **Golden fixture** — permanent byte-for-byte regression reference under
+   `tests/fixtures/`.
+2. **Candidate asset** — Blender-exported candidate under
+   `examples/assets/candidates/`, never referenced by the manifest.
+3. **Accepted manifest asset** — future PR copies an accepted candidate to
+   `examples/assets/galley_1000.glb` and updates acceptance metadata.
+4. **Future real art** — later quality work can improve the accepted asset,
+   still behind the same gates.
+
 ## CI
 
 `.github/workflows/ci.yml` runs the manifest validator, the pure-Python
-test suites, the static handoff check, the asset-readiness CLI, and the
-asset-acceptance metadata CLI on every push and pull request. Blender
-itself is intentionally not installed in CI; the Blender mode is a
-local-only authoritative gate.
+test suites, the static handoff check, the asset-readiness CLI, the
+asset-acceptance metadata CLI, and the candidate-asset metadata CLI on every
+push and pull request. Blender itself is intentionally not installed in CI;
+the Blender mode is a local-only authoritative gate.
 
 ## What's next (not in this slice)
 
-1. Real cabinet art for `examples/assets/galley_1000.glb`, accepted through
-   the metadata gate without deleting the golden contract fixture.
+1. Promotion of a reviewed candidate into `examples/assets/galley_1000.glb`,
+   accepted through the metadata gate without deleting the golden contract
+   fixture.
 2. UE5 Data Asset / importer that consumes the manifest at editor time.
 3. Fusion 360 add-in that regenerates a parametric template from the same entry.
 4. Anchor enforcement for the remaining schema-valid anchor values
