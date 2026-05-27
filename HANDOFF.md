@@ -1,12 +1,12 @@
 # DraftMyVan — Handoff
 
 > **Status:** the DraftMyVan foundation now lives in its own repository.
-> It has nine CI-gated pure-Python suites, a permanent generated GLB
-> contract fixture, current-asset and candidate acceptance metadata, two
-> GLB validators (one for CI, one for human use in Blender), material-slot
-> and collision-proxy enforcement, a runtime reference consumer + package
-> report, and the documented Blender export procedure that was left behind
-> in PaperAI PR #7.
+> It has ten CI-gated pure-Python suites, a permanent generated GLB
+> contract fixture, current-asset acceptance metadata, candidate acceptance
+> and review metadata, two GLB validators (one for CI, one for human use in
+> Blender), material-slot and collision-proxy enforcement, a runtime
+> reference consumer + package report, and the documented Blender export
+> procedure that was left behind in PaperAI PR #7.
 
 This document is the briefing for whoever picks the project up next —
 whether that's the same author moving the code to a new repository,
@@ -24,8 +24,12 @@ examples/
     galley_1000.glb.md           # Per-asset explainer
     candidates/
       README.md                  # Candidate directory rules
+      PROMOTION_CRITERIA.md      # Human promotion criteria
+      candidate_review_checklist.md
       galley_1000_candidate.glb  # Simple Blender-exported candidate, not manifest asset
       galley_1000_candidate.asset_acceptance.json
+      galley_1000_candidate_review.json
+      galley_1000_candidate_review.md
     README.md                    # Asset directory rules
 runtime/                         # Reference consumer (PR #8, #9)
   __init__.py                    # Package docstring, boundary doc, re-exports
@@ -38,6 +42,7 @@ tools/
     generate_galley_fixture_glb.py  # Deterministic GLB generator (PR #6)
     validate_asset_acceptance.py    # Fixture-swap metadata guard
     validate_candidate_asset.py     # Candidate workflow metadata + GLB gate
+    validate_candidate_review.py    # Candidate review metadata + SHA gate
   blender/
     validate_glb_against_manifest.py  # Pure-Python GLB-vs-manifest gate (PR #4)
     validate_in_blender.py            # Authoritative bpy variant (PR #4)
@@ -58,6 +63,7 @@ tests/                           # Pure-Python; no Blender required
   test_galley_fixture.py         # 15 tests
   test_asset_acceptance.py       # 12 tests
   test_candidate_asset.py        # 13 tests
+  test_candidate_review.py       # 13 tests
   test_runtime_consumer.py       # 18 tests
   test_package_report.py         # 16 tests
   test_handoff_ready.py          # 10 tests
@@ -99,7 +105,8 @@ Left behind during PaperAI incubation, then redone in this repository:
 | PaperAI **#7** | redone as draftmyvan PR #2 | Adds `tools/blender/EXPORT_REAL_ASSET.md` (the documented Blender export procedure for real cabinet art), `tools/blender/asset_export_checklist.md` (printable per-asset sign-off), `tools/blender/check_asset_ready.py` (one-command readiness wrapper), and `tests/test_check_asset_ready.py` (10 tests). It is the prerequisite for ever replacing the generated fixture with human-authored art. |
 | draftmyvan **#3** | merged | Extends the GLB validators and deterministic fixture so `visual.material_slots` and `visual.collision_proxy` are enforced before any real art can land. |
 | draftmyvan **#4** | merged | Separates the permanent generated contract fixture (`tests/fixtures/galley_1000_contract_box.glb`) from the current manifest asset (`examples/assets/galley_1000.glb`) and adds acceptance metadata/validation so a future real-art swap cannot weaken schema, dimension, anchor, material-slot, or collision-proxy gates. |
-| Candidate workflow PR | this slice | Adds the first candidate asset area and a simple Blender-exported `galley_1000_candidate.glb`, plus candidate-only metadata and validation. It does not replace the manifest asset or polished real art. |
+| Candidate workflow PR | merged | Adds the first candidate asset area and a simple Blender-exported `galley_1000_candidate.glb`, plus candidate-only metadata and validation. It does not replace the manifest asset or polished real art. |
+| Candidate review PR | this slice | Adds SHA-pinned review metadata, a review report, checklist, promotion criteria, and a validator that keeps the candidate non-production and non-promotable. |
 
 ## Current command suite
 
@@ -128,6 +135,10 @@ python tools/assets/validate_asset_acceptance.py
 python tools/assets/validate_candidate_asset.py \
     examples/assets/candidates/galley_1000_candidate.asset_acceptance.json
 
+# Validate candidate review metadata
+python tools/assets/validate_candidate_review.py \
+    examples/assets/candidates/galley_1000_candidate_review.json
+
 # Read one manifest as typed runtime data
 python -m runtime.load_module examples/galley_1000.json
 
@@ -147,6 +158,7 @@ python -m tests.test_check_asset_ready            # 12 tests
 python -m tests.test_galley_fixture               # 15 tests
 python -m tests.test_asset_acceptance             # 12 tests
 python -m tests.test_candidate_asset              # 13 tests
+python -m tests.test_candidate_review             # 13 tests
 python -m tests.test_runtime_consumer             # 18 tests
 python -m tests.test_package_report               # 16 tests
 python -m tests.test_handoff_ready                # 10 tests
@@ -180,7 +192,8 @@ python -m tests.test_handoff_ready                # 10 tests
   `examples/assets/galley_1000.asset_acceptance.json` records that no
   production art has been reviewed or accepted. The candidate GLB under
   `examples/assets/candidates/` is a process test only and is not referenced
-  by the manifest.
+  by the manifest. Candidate review metadata is SHA-pinned and explicitly
+  says the candidate is not production art and not promotion-ready.
 - **Catalog of one.** `examples/galley_1000.json` is the only module.
 - **No UE5, Fusion 360, or CNC integration.** Every PR deferred them
   deliberately.
@@ -192,9 +205,11 @@ manufacturing tool. Before that handoff, in priority order:
 
 1. **Promote a reviewed candidate through the acceptance metadata gate.**
    The candidate must pass schema, dimensions, `floor_back_left` anchor,
-   material-slot, and collision-proxy validation; promotion replaces only
-   `examples/assets/galley_1000.glb`, and the golden generated fixture under
-   `tests/fixtures/` stays as the byte-for-byte regression reference.
+   material-slot, and collision-proxy validation; its review metadata must
+   match the exact candidate SHA; human visual/manufacturing sign-off must
+   be recorded; promotion replaces only `examples/assets/galley_1000.glb`;
+   and the golden generated fixture under `tests/fixtures/` stays as the
+   byte-for-byte regression reference.
 2. **Add anchor support beyond `floor_back_left`** as the catalog
    grows. The enforcement table is in
    `tools/blender/_anchor_contract.py:expected_corners_mm`.

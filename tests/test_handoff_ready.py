@@ -37,13 +37,18 @@ def test_required_files_pass_on_current_repo() -> None:
         "examples/assets/galley_1000.glb",
         "examples/assets/galley_1000.asset_acceptance.json",
         "examples/assets/candidates/README.md",
+        "examples/assets/candidates/PROMOTION_CRITERIA.md",
+        "examples/assets/candidates/candidate_review_checklist.md",
         "examples/assets/candidates/galley_1000_candidate.glb",
         "examples/assets/candidates/galley_1000_candidate.asset_acceptance.json",
+        "examples/assets/candidates/galley_1000_candidate_review.json",
+        "examples/assets/candidates/galley_1000_candidate_review.md",
         "tests/fixtures/galley_1000_contract_box.glb",
         "runtime/load_module.py",
         "runtime/package_report.py",
         "tools/assets/validate_asset_acceptance.py",
         "tools/assets/validate_candidate_asset.py",
+        "tools/assets/validate_candidate_review.py",
         "tools/blender/_anchor_contract.py",
         "tools/blender/EXPORT_REAL_ASSET.md",
         "tools/blender/check_asset_ready.py",
@@ -198,8 +203,12 @@ def test_required_files_list_includes_all_critical_categories() -> None:
     assert "examples/assets/galley_1000.glb" in rels
     assert "examples/assets/galley_1000.asset_acceptance.json" in rels
     assert "examples/assets/candidates/README.md" in rels
+    assert "examples/assets/candidates/PROMOTION_CRITERIA.md" in rels
+    assert "examples/assets/candidates/candidate_review_checklist.md" in rels
     assert "examples/assets/candidates/galley_1000_candidate.glb" in rels
     assert "examples/assets/candidates/galley_1000_candidate.asset_acceptance.json" in rels
+    assert "examples/assets/candidates/galley_1000_candidate_review.json" in rels
+    assert "examples/assets/candidates/galley_1000_candidate_review.md" in rels
     assert "tests/fixtures/galley_1000_contract_box.glb" in rels
     assert any(r.startswith("runtime/") for r in rels)
     assert any(r.startswith("tools/blender/") for r in rels)
@@ -211,14 +220,17 @@ def test_required_files_list_includes_all_critical_categories() -> None:
         "tools/blender/check_asset_ready.py",
         "tools/assets/validate_asset_acceptance.py",
         "tools/assets/validate_candidate_asset.py",
+        "tools/assets/validate_candidate_review.py",
         "tests/test_check_asset_ready.py",
         "tests/test_asset_acceptance.py",
         "tests/test_candidate_asset.py",
+        "tests/test_candidate_review.py",
     ):
         assert rel in rels, f"required-files list dropped {rel}"
     assert "tests.test_check_asset_ready" in h.DYNAMIC_TEST_MODULES
     assert "tests.test_asset_acceptance" in h.DYNAMIC_TEST_MODULES
     assert "tests.test_candidate_asset" in h.DYNAMIC_TEST_MODULES
+    assert "tests.test_candidate_review" in h.DYNAMIC_TEST_MODULES
     # Handoff docs must be listed as required (this PR's whole point).
     for doc in ("HANDOFF.md", "EXTRACT_TO_REAL_REPO.md", "COMMANDS.md"):
         assert doc in rels, f"required-files list dropped {doc}"
