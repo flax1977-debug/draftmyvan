@@ -1,0 +1,72 @@
+{
+  "template": "galley_v1",
+  "manifest_id": "galley_1000_sink_left_oak",
+  "assumptions": [
+    "Simple galley_v1 carcass panels only.",
+    "No kerf allowance.",
+    "No rabbets or dados.",
+    "No edging.",
+    "No door or drawer fronts.",
+    "No sink cut-out.",
+    "No hardware drilling.",
+    "Top and bottom panels fit between side panels.",
+    "Back panel fits between side panels and between top/bottom panels."
+  ],
+  "panels": [
+    {
+      "name": "left_side",
+      "length_mm": 900,
+      "width_mm": 520,
+      "thickness_mm": 18,
+      "quantity": 1,
+      "material": "plywood",
+      "orientation": "vertical_side",
+      "notes": "Full-height left side; no kerf, rabbets, dados, or edging allowance."
+    },
+    {
+      "name": "right_side",
+      "length_mm": 900,
+      "width_mm": 520,
+      "thickness_mm": 18,
+      "quantity": 1,
+      "material": "plywood",
+      "orientation": "vertical_side",
+      "notes": "Full-height right side; no kerf, rabbets, dados, or edging allowance."
+    },
+    {
+      "name": "bottom_panel",
+      "length_mm": 964,
+      "width_mm": 520,
+      "thickness_mm": 18,
+      "quantity": 1,
+      "material": "plywood",
+      "orientation": "horizontal_base",
+      "notes": "Fits between side panels; no kerf, rabbets, dados, or edging allowance."
+    },
+    {
+      "name": "top_panel",
+      "length_mm": 964,
+      "width_mm": 520,
+      "thickness_mm": 18,
+      "quantity": 1,
+      "material": "plywood",
+      "orientation": "horizontal_top",
+      "notes": "Fits between side panels; no sink cut-out, kerf, rabbets, dados, or edging allowance."
+    },
+    {
+      "name": "back_panel",
+      "length_mm": 964,
+      "width_mm": 864,
+      "thickness_mm": 18,
+      "quantity": 1,
+      "material": "plywood",
+      "orientation": "vertical_back",
+      "notes": "Fits between side panels and between top/bottom panels; no kerf or joinery allowance."
+    }
+  ],
+  "totals": {
+    "panel_count": 5,
+    "unique_panel_types": 5,
+    "approximate_sheet_area_m2": 2.771456
+  }
+}

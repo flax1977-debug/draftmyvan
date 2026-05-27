@@ -40,14 +40,28 @@ future Fusion run. It does not create geometry yet.
 `check_fusion_payload.py` is the CI-safe wrapper for that skeleton. It validates
 payload JSON and prints the same summary without launching Fusion.
 
+`compute_galley_panels.py` turns a validated `galley_v1` payload into
+deterministic simple carcass panel math. The current panel assumptions are:
+
+- Side panels are `Height x Depth x PlyThickness`.
+- Top and bottom panels fit between the side panels:
+  `(Width - 2 * PlyThickness) x Depth`.
+- Back panel fits between side panels and between top/bottom panels:
+  `(Width - 2 * PlyThickness) x (Height - 2 * PlyThickness)`.
+- No kerf, rabbets, dados, edging, door/drawer fronts, sink cut-out, or
+  hardware drilling.
+
+`export_galley_v1_panels.py` writes that panel breakdown as JSON and prints a
+summary. This is not a real cut list yet.
+
 The generated dry-run output is for review only and lives under `build/` by
 default, which is ignored by Git.
 
 ## Still Deferred
 
 - Fusion geometry creation.
-- Drawings, cut lists, DXF, CNC, and post processors.
+- Real cut lists, drawings, DXF, CNC, and post processors.
 - Manufacturing-ready output or sign-off.
 
 The next Fusion proof should create a simple parametric box/carcass inside
-Fusion from the validated payload, still without CNC or production claims.
+Fusion from the validated panel math, still without CNC or production claims.

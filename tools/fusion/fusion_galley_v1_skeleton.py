@@ -21,9 +21,9 @@ Expected payload shape:
     }
 
 This skeleton enforces positive integer millimetre values for required
-parameters. Template-specific reasonable upper/lower cabinet bounds are deferred
-until the future Fusion geometry/carcass proof; they are not silently assumed
-here.
+parameters and may summarize pure-Python panel math. Template-specific
+reasonable upper/lower cabinet bounds are deferred until the future Fusion
+geometry/carcass proof; they are not silently assumed here.
 """
 
 from __future__ import annotations
@@ -136,8 +136,8 @@ def run(context: Any) -> None:
 
     This is a skeleton only. When run inside Fusion later, pass a JSON payload
     path as `context` or through the `DRAFTMYVAN_FUSION_PAYLOAD` environment
-    variable. The script validates and logs the summary; it does not create
-    geometry yet.
+    variable. The script validates and logs the payload summary and pure-Python
+    panel summary; it does not create geometry yet.
     """
     payload_path = str(context or os.environ.get("DRAFTMYVAN_FUSION_PAYLOAD", "")).strip()
     if not payload_path:
@@ -149,8 +149,14 @@ def run(context: Any) -> None:
 
     payload = load_parameter_payload(payload_path)
     summary = parameter_summary(payload)
+    import compute_galley_panels as panel_math
+
+    panels = panel_math.compute_galley_panels(payload)
+    panels_summary = panel_math.panel_summary(panels)
     _fusion_message_box(
         "DraftMyVan galley_v1 payload accepted.\n"
         f"{summary}\n"
-        "No geometry, drawings, cut lists, DXF, or CNC output were created."
+        f"{panels_summary}\n"
+        "Geometry creation deferred; no geometry, drawings, cut lists, DXF, "
+        "or CNC output were created."
     )
