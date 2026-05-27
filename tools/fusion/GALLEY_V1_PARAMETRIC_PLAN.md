@@ -98,3 +98,50 @@ The assumptions are intentionally minimal:
 This is not a real cut list, not a drawing, not DXF/CNC, and not
 manufacturing-ready output. The next future step is Fusion geometry creation
 from these validated panels.
+
+## Geometry Plan
+
+`fusion_create_galley_v1.py` adds the first deterministic bridge from panel
+payload to planned Fusion geometry. It does not call the Fusion API in CI and
+does not create bodies. Instead, it records how each panel would become a
+future Fusion component/body:
+
+- `component_name`
+- `body_name`
+- `sketch_plane`
+- `extrude_axis`
+- `extrude_distance_mm`
+- `placement_origin_mm`
+- `construction_method`
+- `status: planned_not_executed`
+
+Current five-panel carcass diagram:
+
+```text
++---------------- top_panel ----------------+
+| left_side      back_panel      right_side |
+|                                          |
++-------------- bottom_panel --------------+
+```
+
+Current sequence:
+
+```text
+manifest -> parameter payload -> panel math -> geometry plan -> future Fusion geometry
+```
+
+Placement origins are deterministic but provisional. They preserve the
+`floor_back_left` carcass convention from the asset contract, but final
+manufacturing placement still needs manual verification inside Fusion.
+
+The Fusion-only skeleton functions are explicit TODOs for later:
+
+- `ensure_component(...)`
+- `set_user_parameter(...)`
+- `create_panel_body(...)`
+- `create_galley_carcass_from_panels(...)`
+
+Those TODOs name the intended Fusion API concepts, but they intentionally do not
+guess unverified working API code. Geometry creation, joints, kerf, rabbets,
+dados, edging, door/drawer fronts, sink cut-out, hardware drilling, drawings,
+DXF/CNC, and manufacturing sign-off remain deferred.

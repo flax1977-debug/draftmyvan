@@ -54,14 +54,46 @@ deterministic simple carcass panel math. The current panel assumptions are:
 `export_galley_v1_panels.py` writes that panel breakdown as JSON and prints a
 summary. This is not a real cut list yet.
 
+`fusion_create_galley_v1.py` consumes that panel payload and produces a
+deterministic Fusion geometry plan. Normal Python can import it without
+Autodesk installed; `adsk` imports stay inside Fusion-only message helpers. The
+plan is not geometry execution. It records the future component/body names,
+sketch plane, extrude axis, extrusion distance, and provisional placement origin
+for every panel, all with `planned_not_executed` status.
+
+`check_fusion_geometry_plan.py` is the CI-safe wrapper for that plan:
+
+```bash
+python tools/fusion/check_fusion_geometry_plan.py \
+    tests/fixtures/galley_1000_panels.expected.json
+
+python tools/fusion/check_fusion_geometry_plan.py --verbose \
+    tests/fixtures/galley_1000_panels.expected.json
+```
+
+Current five-panel carcass diagram:
+
+```text
++---------------- top_panel ----------------+
+| left_side      back_panel      right_side |
+|                                          |
++-------------- bottom_panel --------------+
+```
+
+Current sequence:
+
+```text
+manifest -> parameter payload -> panel math -> geometry plan -> future Fusion geometry
+```
+
 The generated dry-run output is for review only and lives under `build/` by
 default, which is ignored by Git.
 
 ## Still Deferred
 
-- Fusion geometry creation.
+- Fusion geometry creation and manual Fusion verification.
 - Real cut lists, drawings, DXF, CNC, and post processors.
 - Manufacturing-ready output or sign-off.
 
 The next Fusion proof should create a simple parametric box/carcass inside
-Fusion from the validated panel math, still without CNC or production claims.
+Fusion from the validated geometry plan, still without CNC or production claims.

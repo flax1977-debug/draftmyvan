@@ -69,6 +69,9 @@ jobs:
       - name: Run Fusion panel-math suite (pure Python only)
         run: python -m tests.test_fusion_panel_math
 
+      - name: Run Fusion geometry-plan suite (pure Python only)
+        run: python -m tests.test_fusion_geometry_plan
+
       - name: Run runtime-consumer suite (manifest read as typed data)
         run: python -m tests.test_runtime_consumer
 
@@ -110,3 +113,6 @@ jobs:
 
       - name: Run Fusion panel-math export CLI
         run: python tools/fusion/export_galley_v1_panels.py --payload tests/fixtures/galley_1000_fusion_parameters.expected.json --out /tmp/galley_1000_panels.json
+
+      - name: Run Fusion geometry-plan CLI
+        run: python tools/fusion/check_fusion_geometry_plan.py tests/fixtures/galley_1000_panels.expected.json

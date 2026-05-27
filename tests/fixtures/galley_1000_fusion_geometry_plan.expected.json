@@ -1,0 +1,137 @@
+{
+  "template": "galley_v1",
+  "manifest_id": "galley_1000_sink_left_oak",
+  "units": "mm",
+  "source": "panel_payload",
+  "geometry_status": "planned_not_executed",
+  "panels": [
+    {
+      "name": "left_side",
+      "component_name": "Galley_LeftSide",
+      "body_name": "left_side_body",
+      "length_mm": 900,
+      "width_mm": 520,
+      "thickness_mm": 18,
+      "quantity": 1,
+      "material": "plywood",
+      "orientation": "vertical_side",
+      "sketch_plane": "YZ",
+      "extrude_axis": "X",
+      "extrude_distance_mm": 18,
+      "placement_origin_mm": [
+        0,
+        0,
+        0
+      ],
+      "placement_note": "floor_back_left carcass origin; final Fusion placement still manual/verified later",
+      "construction_method": "rectangular sketch + extrude",
+      "status": "planned_not_executed",
+      "notes": "Full-height left side; no kerf, rabbets, dados, or edging allowance."
+    },
+    {
+      "name": "right_side",
+      "component_name": "Galley_RightSide",
+      "body_name": "right_side_body",
+      "length_mm": 900,
+      "width_mm": 520,
+      "thickness_mm": 18,
+      "quantity": 1,
+      "material": "plywood",
+      "orientation": "vertical_side",
+      "sketch_plane": "YZ",
+      "extrude_axis": "X",
+      "extrude_distance_mm": 18,
+      "placement_origin_mm": [
+        982,
+        0,
+        0
+      ],
+      "placement_note": "right side offset by overall width minus panel thickness; verify in Fusion later",
+      "construction_method": "rectangular sketch + extrude",
+      "status": "planned_not_executed",
+      "notes": "Full-height right side; no kerf, rabbets, dados, or edging allowance."
+    },
+    {
+      "name": "bottom_panel",
+      "component_name": "Galley_BottomPanel",
+      "body_name": "bottom_panel_body",
+      "length_mm": 964,
+      "width_mm": 520,
+      "thickness_mm": 18,
+      "quantity": 1,
+      "material": "plywood",
+      "orientation": "horizontal_base",
+      "sketch_plane": "XY",
+      "extrude_axis": "Z",
+      "extrude_distance_mm": 18,
+      "placement_origin_mm": [
+        18,
+        0,
+        0
+      ],
+      "placement_note": "bottom panel fits between side panels at floor level; verify in Fusion later",
+      "construction_method": "rectangular sketch + extrude",
+      "status": "planned_not_executed",
+      "notes": "Fits between side panels; no kerf, rabbets, dados, or edging allowance."
+    },
+    {
+      "name": "top_panel",
+      "component_name": "Galley_TopPanel",
+      "body_name": "top_panel_body",
+      "length_mm": 964,
+      "width_mm": 520,
+      "thickness_mm": 18,
+      "quantity": 1,
+      "material": "plywood",
+      "orientation": "horizontal_top",
+      "sketch_plane": "XY",
+      "extrude_axis": "Z",
+      "extrude_distance_mm": 18,
+      "placement_origin_mm": [
+        18,
+        0,
+        882
+      ],
+      "placement_note": "top panel fits between side panels at overall height minus thickness; verify in Fusion later",
+      "construction_method": "rectangular sketch + extrude",
+      "status": "planned_not_executed",
+      "notes": "Fits between side panels; no sink cut-out, kerf, rabbets, dados, or edging allowance."
+    },
+    {
+      "name": "back_panel",
+      "component_name": "Galley_BackPanel",
+      "body_name": "back_panel_body",
+      "length_mm": 964,
+      "width_mm": 864,
+      "thickness_mm": 18,
+      "quantity": 1,
+      "material": "plywood",
+      "orientation": "vertical_back",
+      "sketch_plane": "XZ",
+      "extrude_axis": "Y",
+      "extrude_distance_mm": 18,
+      "placement_origin_mm": [
+        18,
+        0,
+        18
+      ],
+      "placement_note": "back panel fits inside side/top/bottom frame at rear plane; verify in Fusion later",
+      "construction_method": "rectangular sketch + extrude",
+      "status": "planned_not_executed",
+      "notes": "Fits between side panels and between top/bottom panels; no kerf or joinery allowance."
+    }
+  ],
+  "deferred": [
+    "Fusion API execution",
+    "joints",
+    "kerf",
+    "rabbets/dados",
+    "edging",
+    "door/drawer fronts",
+    "sink cut-out",
+    "hardware drilling",
+    "drawings",
+    "DXF/CNC",
+    "manufacturing sign-off"
+  ]
+}
