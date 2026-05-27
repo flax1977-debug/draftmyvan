@@ -1,11 +1,10 @@
 # DraftMyVan — Handoff
 
-> **Status (as of this PR):** the DraftMyVan foundation is self-contained
-> under `draftmyvan/`. It has six CI-gated pure-Python suites, a
-> generated GLB fixture, two validators (one for CI, one for human use in
-> Blender), and a runtime reference consumer + package report. It is
-> ready to be extracted out of the PaperAI repository and live in its
-> own home.
+> **Status:** the DraftMyVan foundation now lives in its own repository.
+> It has seven CI-gated pure-Python suites, a generated GLB fixture, two
+> validators (one for CI, one for human use in Blender), a runtime
+> reference consumer + package report, and the documented Blender export
+> procedure that was left behind in PaperAI PR #7.
 
 This document is the briefing for whoever picks the project up next —
 whether that's the same author moving the code to a new repository,
@@ -14,68 +13,61 @@ or someone else inheriting it.
 ## What exists today
 
 ```
-draftmyvan/
-  manifest.schema.json           # JSON Schema (Draft 2020-12), millimetres
-  examples/
-    galley_1000.json             # First module manifest
-    assets/
-      galley_1000.glb            # Deterministic 1000×520×900 mm fixture box
-      galley_1000.glb.md         # Per-fixture explainer
-      README.md                  # Asset directory rules
-  runtime/                       # Reference consumer (PR #8, #9)
-    __init__.py                  # Package docstring, boundary doc, re-exports
-    module.py                    # Module + Dimensions + ConsumerError
-    load_module.py               # Loader + `python -m runtime.load_module` CLI
-    package_report.py            # Catalog scanner + `python -m runtime.package_report` CLI
-  tools/
-    validate_manifest.py         # JSON-Schema validator CLI (PR #3)
-    assets/
-      generate_galley_fixture_glb.py  # Deterministic GLB generator (PR #6)
-    blender/
-      validate_glb_against_manifest.py  # Pure-Python GLB-vs-manifest gate (PR #4)
-      validate_in_blender.py            # Authoritative bpy variant (PR #4)
-      _anchor_contract.py               # Shared anchor enforcement (PR #5)
-      README.md
-    handoff/
-      check_handoff_ready.py     # This PR — extraction-readiness gate
-  tests/                         # Pure-Python; no Blender / Flutter required
-    test_validator.py            # 10 tests
-    test_blender_manifest_contract.py  # 30 tests
-    test_galley_fixture.py       # 8 tests
-    test_runtime_consumer.py     # 18 tests
-    test_package_report.py       # 16 tests
-    test_handoff_ready.py        # This PR
-  README.md
-  HANDOFF.md                     # this file
-  EXTRACT_TO_REAL_REPO.md        # step-by-step extraction checklist
-  COMMANDS.md                    # exhaustive command reference
+manifest.schema.json             # JSON Schema (Draft 2020-12), millimetres
+examples/
+  galley_1000.json               # First module manifest
+  assets/
+    galley_1000.glb              # Deterministic 1000×520×900 mm fixture box
+    galley_1000.glb.md           # Per-fixture explainer
+    README.md                    # Asset directory rules
+runtime/                         # Reference consumer (PR #8, #9)
+  __init__.py                    # Package docstring, boundary doc, re-exports
+  module.py                      # Module + Dimensions + ConsumerError
+  load_module.py                 # Loader + `python -m runtime.load_module` CLI
+  package_report.py              # Catalog scanner + `python -m runtime.package_report` CLI
+tools/
+  validate_manifest.py           # JSON-Schema validator CLI (PR #3)
+  assets/
+    generate_galley_fixture_glb.py  # Deterministic GLB generator (PR #6)
+  blender/
+    validate_glb_against_manifest.py  # Pure-Python GLB-vs-manifest gate (PR #4)
+    validate_in_blender.py            # Authoritative bpy variant (PR #4)
+    _anchor_contract.py               # Shared anchor enforcement (PR #5)
+    EXPORT_REAL_ASSET.md              # Human Blender export procedure (PR #2)
+    asset_export_checklist.md         # Per-asset sign-off sheet (PR #2)
+    check_asset_ready.py              # One-command readiness wrapper (PR #2)
+    README.md
+  handoff/
+    check_handoff_ready.py       # Extraction-readiness gate
+tests/                           # Pure-Python; no Blender required
+  test_validator.py              # 10 tests
+  test_blender_manifest_contract.py  # 30 tests
+  test_check_asset_ready.py      # 10 tests
+  test_galley_fixture.py         # 8 tests
+  test_runtime_consumer.py       # 18 tests
+  test_package_report.py         # 16 tests
+  test_handoff_ready.py          # 10 tests
+README.md
+HANDOFF.md                       # this file
+EXTRACT_TO_REAL_REPO.md          # extraction checklist/archive
+COMMANDS.md                      # exhaustive command reference
+.github/workflows/ci.yml         # pure-Python CI
 ```
 
-CI workflow lives at `.github/workflows/draftmyvan.yml` in the host
-repository. It is path-scoped to `draftmyvan/**` and the workflow
-file itself, so changes to PaperAI's Flutter code never trigger it
-and vice versa.
+CI workflow lives at `.github/workflows/ci.yml`. The repository is all
+DraftMyVan, so the workflow has no PaperAI path filters and no
+`working-directory: draftmyvan` wrapper.
 
-## Why this lives under PaperAI today
+## Extraction history
 
-PaperAI was an incubation host of convenience. The remote-execution
-environment that authored these PRs is scoped to the `paperai`
-repository, and the alternative — creating a new GitHub repo from
-scratch — was outside the environment's permissions. Co-locating in
-`draftmyvan/` was the documented compromise (see PR #3's audit
-report). The Flutter app under `lib/` and DraftMyVan under
-`draftmyvan/` have **zero** build coupling.
+PaperAI was an incubation host of convenience. DraftMyVan was extracted
+into this standalone repository after PaperAI PR #10 merged. This file is
+kept as project history plus a working handoff checklist for the remaining
+guardrails.
 
-PaperAI gains nothing from DraftMyVan continuing to grow inside it.
-The next slice (UE5 importer? Blender export procedure follow-up?
-A Unity reference port?) would be the first time the two projects'
-constraints actively conflict — when DraftMyVan wants its own
-release cadence, its own LICENSE, its own contributors, its own
-issue tracker.
+## Incubation PRs that built this — what each added
 
-## PRs that built this — what each added
-
-Merged into `main`:
+Merged into PaperAI `main` before extraction:
 
 | PR | Title | What it added |
 |---|---|---|
@@ -86,19 +78,17 @@ Merged into `main`:
 | #8 | runtime reference consumer for the manifest contract | `runtime/` package: `Module`/`Dimensions`/`ConsumerError` frozen dataclasses, `load_module(path)`, `python -m runtime.load_module` CLI, 18 tests. First **non-validator** consumer of the manifest. |
 | #9 | package readiness report for `examples/` catalog | `runtime/package_report.py`, `PackageReport` aggregator + `scan_package()` + `format_report()`, `python -m runtime.package_report` CLI, 16 tests; structural-integrity checks (duplicate ids, duplicate resolved asset paths, empty/missing inputs) |
 
-Open but not merged:
+Left behind during PaperAI incubation, then redone in this repository:
 
 | PR | Status | Why it matters |
 |---|---|---|
-| **#7** | open as **draft** on branch `claude/draftmyvan-export-procedure` | Adds `tools/blender/EXPORT_REAL_ASSET.md` (the documented Blender export procedure for real cabinet art), `tools/blender/asset_export_checklist.md` (printable per-asset sign-off), `tools/blender/check_asset_ready.py` (one-command readiness wrapper), and `tests/test_check_asset_ready.py` (9 tests). It is the prerequisite for ever replacing the generated fixture with human-authored art. The new repository should merge or re-do this before any real GLB lands. |
+| PaperAI **#7** | redone as draftmyvan PR #2 | Adds `tools/blender/EXPORT_REAL_ASSET.md` (the documented Blender export procedure for real cabinet art), `tools/blender/asset_export_checklist.md` (printable per-asset sign-off), `tools/blender/check_asset_ready.py` (one-command readiness wrapper), and `tests/test_check_asset_ready.py` (10 tests). It is the prerequisite for ever replacing the generated fixture with human-authored art. |
 
 ## Current command suite
 
 Full reference: `COMMANDS.md`. Headline commands:
 
 ```bash
-cd draftmyvan
-
 # Manifest validation
 python tools/validate_manifest.py --all
 
@@ -109,6 +99,10 @@ python tools/assets/generate_galley_fixture_glb.py
 python tools/blender/validate_glb_against_manifest.py \
     --manifest examples/galley_1000.json \
     --glb examples/assets/galley_1000.glb
+
+# Run the real-asset readiness wrapper
+python tools/blender/check_asset_ready.py \
+    --manifest examples/galley_1000.json
 
 # Read one manifest as typed runtime data
 python -m runtime.load_module examples/galley_1000.json
@@ -125,10 +119,11 @@ Test suites (all pure Python):
 ```bash
 python -m tests.test_validator                    # 10 tests
 python -m tests.test_blender_manifest_contract    # 30 tests
+python -m tests.test_check_asset_ready            # 10 tests
 python -m tests.test_galley_fixture               # 8 tests
 python -m tests.test_runtime_consumer             # 18 tests
 python -m tests.test_package_report               # 16 tests
-python -m tests.test_handoff_ready                # added by this PR
+python -m tests.test_handoff_ready                # 10 tests
 ```
 
 ## Current CI assumptions
@@ -140,14 +135,9 @@ python -m tests.test_handoff_ready                # added by this PR
 - Blender is **not** installed. The `bpy` validator
   (`tools/blender/validate_in_blender.py`) is documented as a
   local-only authoritative gate.
-- Trigger scope: `push` + `pull_request` on paths
-  `draftmyvan/**` and `.github/workflows/draftmyvan.yml`.
-  PaperAI / Flutter changes never trigger it.
+- Trigger scope: `workflow_dispatch`, `push`, and `pull_request`.
+  No path filters are needed because the whole repository is DraftMyVan.
 - Permissions: `contents: read`. Nothing more.
-
-When extracting, this workflow becomes `.github/workflows/ci.yml`
-(or similar) at the new repository's root and the `working-directory`
-prefix drops away. See `EXTRACT_TO_REAL_REPO.md`.
 
 ## Current limitations (deliberate, documented)
 
@@ -161,8 +151,8 @@ prefix drops away. See `EXTRACT_TO_REAL_REPO.md`.
   field; the validator does not yet check it inside the GLB.
 - **No material-slot enforcement.** Same — declared, not yet enforced.
 - **No real cabinet art.** The committed `galley_1000.glb` is the
-  deterministic generated box; replacing it needs the PR #7 procedure
-  to be merged (or re-done) first.
+  deterministic generated box. The export procedure now exists; the
+  fixture-swap mechanism and real asset sign-off are still separate work.
 - **Catalog of one.** `examples/galley_1000.json` is the only module.
 - **No UE5, Fusion 360, or CNC integration.** Every PR deferred them
   deliberately.
@@ -172,54 +162,17 @@ prefix drops away. See `EXTRACT_TO_REAL_REPO.md`.
 The gates above all live before the manifest reaches a renderer or a
 manufacturing tool. Before that handoff, in priority order:
 
-1. **Merge or redo PR #7** so the export procedure is documented and
-   `check_asset_ready.py` exists. Without it, the first real
-   human-authored GLB has no on-ramp.
-2. **Add the fixture-swap mechanism** — update
+1. **Add the fixture-swap mechanism** — update
    `test_committed_fixture_matches_generator_byte_for_byte` (or make
    it conditional on a "real art committed" marker) and add per-asset
    sign-off metadata. See step 9 of `tools/blender/EXPORT_REAL_ASSET.md`
-   (currently in PR #7).
-3. **Add collision-proxy and material-slot enforcement** to
+   before any real GLB replaces the generated fixture.
+2. **Add collision-proxy and material-slot enforcement** to
    `tools/blender/validate_glb_against_manifest.py`. These are the
    next things the UE5 import side will need to trust.
-4. **Add anchor support beyond `floor_back_left`** as the catalog
+3. **Add anchor support beyond `floor_back_left`** as the catalog
    grows. The enforcement table is in
    `tools/blender/_anchor_contract.py:expected_corners_mm`.
-5. **Decide axis-convention conversion** at the UE5 / Fusion boundary,
+4. **Decide axis-convention conversion** at the UE5 / Fusion boundary,
    not by mutating the source GLB. The contract is documented in
    `tools/blender/README.md` and `_anchor_contract.py`.
-
-## Recommended next repo structure
-
-In the new home, drop the `draftmyvan/` prefix — the repo itself is
-DraftMyVan. Suggested layout:
-
-```
-draftmyvan/                  # new repo root (was draftmyvan/ in PaperAI)
-  README.md
-  HANDOFF.md                 # this file, archived as project history
-  COMMANDS.md
-  manifest.schema.json
-  examples/
-  runtime/
-  tools/
-  tests/
-  .github/
-    workflows/
-      ci.yml                 # was .github/workflows/draftmyvan.yml,
-                             # with `working-directory: draftmyvan` removed
-                             # and path filters dropped (whole repo is in scope)
-  pyproject.toml             # NEW — package metadata so `runtime/` is installable
-  LICENSE                    # NEW — pick one before any external contributor PR
-```
-
-Suggested repository name: **`draftmyvan`** (lowercase, matches the
-existing folder name, GitHub-idiomatic). Description: "Manifest-first
-3D campervan configurator: data contract, validators, deterministic
-fixtures, runtime reference consumer."
-
-Default branch: `main`. Branch protection: require the
-`Validate manifests & run tests` job to be green.
-
-<!-- CI nudge: 2026-05-26 — re-trigger draftmyvan workflow path filter. -->

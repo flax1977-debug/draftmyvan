@@ -1,7 +1,7 @@
 # Command reference
 
-Every command currently shipped under `draftmyvan/`. Run from the
-`draftmyvan/` directory unless otherwise noted.
+Every command currently shipped in this repository. Run from the repository
+root unless otherwise noted.
 
 ## Setup
 
@@ -29,10 +29,20 @@ Optional flags: `--tolerance-mm <float>` (default 1.0), `--glb-units meters|mill
 ```bash
 # Blender / bpy variant — authoritative, local only
 blender --background --python \
-    draftmyvan/tools/blender/validate_in_blender.py -- \
-    --manifest draftmyvan/examples/galley_1000.json \
-    --glb draftmyvan/examples/assets/galley_1000.glb
+    tools/blender/validate_in_blender.py -- \
+    --manifest examples/galley_1000.json \
+    --glb examples/assets/galley_1000.glb
 ```
+
+## Asset readiness wrapper (PR #2)
+
+| Command | Purpose | Exit |
+|---|---|---|
+| `python tools/blender/check_asset_ready.py --manifest examples/galley_1000.json` | One-command wrapper around manifest schema, GLB path, dimension, and anchor checks. Defaults to the committed fixture from `visual.glb_path`. | 0 READY, 1 NOT READY, 2 ERROR |
+| `python tools/blender/check_asset_ready.py --manifest examples/galley_1000.json --glb /tmp/candidate.glb` | Check a candidate GLB before it is committed. | same |
+
+The full human export procedure is `tools/blender/EXPORT_REAL_ASSET.md`;
+the printable sign-off sheet is `tools/blender/asset_export_checklist.md`.
 
 ## Generated fixture (PR #6)
 
@@ -58,7 +68,7 @@ blender --background --python \
 
 | Command | Purpose | Exit |
 |---|---|---|
-| `python tools/handoff/check_handoff_ready.py` | Static checks: required files present, no Flutter/PaperAI references in `draftmyvan/*.py`. CI-safe. | 0 ready, 1 not ready |
+| `python tools/handoff/check_handoff_ready.py` | Static checks: required files present, no host-app references in DraftMyVan Python files. CI-safe. | 0 ready, 1 not ready |
 | `python tools/handoff/check_handoff_ready.py --include-dynamic` | All static checks + the package report + every test module via subprocess. Local-only (slower). | same |
 
 ## Test suites — pure Python, no Blender
@@ -66,31 +76,26 @@ blender --background --python \
 ```bash
 python -m tests.test_validator                    # 10 tests — schema + manifest
 python -m tests.test_blender_manifest_contract    # 30 tests — Blender gate, anchor enforcement
+python -m tests.test_check_asset_ready            # 10 tests — real-asset readiness wrapper
 python -m tests.test_galley_fixture               # 8 tests — committed fixture + generator determinism
 python -m tests.test_runtime_consumer             # 18 tests — manifest read as typed runtime data
 python -m tests.test_package_report               # 16 tests — catalog/package readiness
-python -m tests.test_handoff_ready                # this PR — extraction readiness helper
+python -m tests.test_handoff_ready                # 10 tests — extraction readiness helper
 ```
 
-Run them all (rough one-liner from `draftmyvan/`):
+Run them all:
 
 ```bash
 for t in tests.test_validator tests.test_blender_manifest_contract \
-         tests.test_galley_fixture tests.test_runtime_consumer \
-         tests.test_package_report tests.test_handoff_ready ; do
+         tests.test_check_asset_ready tests.test_galley_fixture \
+         tests.test_runtime_consumer tests.test_package_report \
+         tests.test_handoff_ready ; do
     echo "=== $t" ; python -m $t || break
 done
 ```
 
 ## What is NOT here
 
-These commands do not yet exist on `main`. They live in PR #7
-(`claude/draftmyvan-export-procedure`, currently draft) and ship if
-that PR is merged or redone in the extracted repo:
-
-- `python tools/blender/check_asset_ready.py …`
-- The procedure documents `tools/blender/EXPORT_REAL_ASSET.md` and
-  `tools/blender/asset_export_checklist.md`.
-
-See `HANDOFF.md` for PR #7's status and what to do about it on
-extraction.
+These commands are still deliberately absent: UE5 import, Fusion 360,
+CNC/post-processing, dashboard/UI, catalog expansion, material-slot
+enforcement, collision-proxy enforcement, and real cabinet art.

@@ -90,8 +90,8 @@ each POSITION accessor's `min`/`max` arrays (mandatory under glTF 2.0
 §3.6.2.4). No Blender needed; runs in GitHub Actions.
 
 ```bash
-python draftmyvan/tools/blender/validate_glb_against_manifest.py \
-    --manifest draftmyvan/examples/galley_1000.json \
+python tools/blender/validate_glb_against_manifest.py \
+    --manifest examples/galley_1000.json \
     --glb path/to/galley_1000.glb
 ```
 
@@ -117,8 +117,8 @@ before promoting a new GLB.
 
 ```bash
 blender --background --python \
-    draftmyvan/tools/blender/validate_in_blender.py -- \
-    --manifest draftmyvan/examples/galley_1000.json \
+    tools/blender/validate_in_blender.py -- \
+    --manifest examples/galley_1000.json \
     --glb path/to/galley_1000.glb
 ```
 

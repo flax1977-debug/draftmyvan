@@ -38,6 +38,9 @@ def test_required_files_pass_on_current_repo() -> None:
         "runtime/load_module.py",
         "runtime/package_report.py",
         "tools/blender/_anchor_contract.py",
+        "tools/blender/EXPORT_REAL_ASSET.md",
+        "tools/blender/check_asset_ready.py",
+        "tests/test_check_asset_ready.py",
         "HANDOFF.md",
         "EXTRACT_TO_REAL_REPO.md",
         "COMMANDS.md",
@@ -46,7 +49,7 @@ def test_required_files_pass_on_current_repo() -> None:
 
 
 def test_required_files_fail_when_one_is_missing() -> None:
-    # Build a temp draftmyvan/ that has *everything except* manifest.schema.json,
+    # Build a temp project root that has *everything except* manifest.schema.json,
     # then point the checker at it.
     tmp = Path(tempfile.mkdtemp(prefix="dmv_handoff_"))
     try:
@@ -190,6 +193,14 @@ def test_required_files_list_includes_all_critical_categories() -> None:
     assert any(r.startswith("tools/blender/") for r in rels)
     assert any(r.startswith("tools/assets/") for r in rels)
     assert any(r.startswith("tests/") for r in rels)
+    for rel in (
+        "tools/blender/EXPORT_REAL_ASSET.md",
+        "tools/blender/asset_export_checklist.md",
+        "tools/blender/check_asset_ready.py",
+        "tests/test_check_asset_ready.py",
+    ):
+        assert rel in rels, f"required-files list dropped {rel}"
+    assert "tests.test_check_asset_ready" in h.DYNAMIC_TEST_MODULES
     # Handoff docs must be listed as required (this PR's whole point).
     for doc in ("HANDOFF.md", "EXTRACT_TO_REAL_REPO.md", "COMMANDS.md"):
         assert doc in rels, f"required-files list dropped {doc}"

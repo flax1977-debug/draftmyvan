@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Is the draftmyvan/ foundation ready to extract to its own repo?
+"""Is the DraftMyVan foundation internally consistent?
 
 Two modes:
 
   default (CI-safe, fast)
       * Every canonical file / module exists at the expected path.
-      * No `draftmyvan/*.py` file contains a forbidden host-app
+      * No Python file contains a forbidden host-app
         reference (`lib/`, `pubspec`, `flutter`, `dart`).
 
   --include-dynamic (local-only, slower)
@@ -14,7 +14,7 @@ Two modes:
       * Every known test module must exit 0 when invoked via
         `python -m tests.<name>`.
 
-Run from `draftmyvan/`:
+Run from the repository root:
 
     python tools/handoff/check_handoff_ready.py
     python tools/handoff/check_handoff_ready.py --include-dynamic
@@ -31,11 +31,11 @@ import subprocess
 import sys
 from pathlib import Path
 
-# tools/handoff/check_handoff_ready.py → draftmyvan/
+# tools/handoff/check_handoff_ready.py -> repository root
 DRAFTMYVAN_ROOT = Path(__file__).resolve().parent.parent.parent
 
 # Files that must exist for the project to be considered standalone.
-# Editing this list is a significant act — it pins what "extraction
+# Editing this list is a significant act — it pins what "handoff
 # ready" means at this point in time. Anything added here becomes a
 # CI-gated invariant.
 REQUIRED_FILES: tuple[str, ...] = (
@@ -57,10 +57,14 @@ REQUIRED_FILES: tuple[str, ...] = (
     "tools/blender/validate_in_blender.py",
     "tools/blender/_anchor_contract.py",
     "tools/blender/README.md",
+    "tools/blender/EXPORT_REAL_ASSET.md",
+    "tools/blender/asset_export_checklist.md",
+    "tools/blender/check_asset_ready.py",
     "tools/handoff/check_handoff_ready.py",
     # Tests
     "tests/test_validator.py",
     "tests/test_blender_manifest_contract.py",
+    "tests/test_check_asset_ready.py",
     "tests/test_galley_fixture.py",
     "tests/test_runtime_consumer.py",
     "tests/test_package_report.py",
@@ -72,8 +76,8 @@ REQUIRED_FILES: tuple[str, ...] = (
     "COMMANDS.md",
 )
 
-# Substrings that must not appear in any draftmyvan/*.py file.
-# These would mean draftmyvan/ is leaking knowledge of the PaperAI host.
+# Substrings that must not appear in DraftMyVan Python files.
+# These would mean the standalone project is leaking host-app assumptions.
 FORBIDDEN_PY_SUBSTRINGS: tuple[str, ...] = (
     "lib/",
     "pubspec",
@@ -86,6 +90,7 @@ FORBIDDEN_PY_SUBSTRINGS: tuple[str, ...] = (
 DYNAMIC_TEST_MODULES: tuple[str, ...] = (
     "tests.test_validator",
     "tests.test_blender_manifest_contract",
+    "tests.test_check_asset_ready",
     "tests.test_galley_fixture",
     "tests.test_runtime_consumer",
     "tests.test_package_report",
@@ -142,7 +147,7 @@ def check_no_host_app_references(root: Path) -> tuple[bool, list[str]]:
             lines.append(f"[FAIL] {rel} contains {pattern!r}")
         return False, lines
     lines.append(
-        f"[OK]   no host-app references in draftmyvan/**/*.py "
+        f"[OK]   no host-app references in Python files "
         f"(checked patterns: {', '.join(repr(p) for p in FORBIDDEN_PY_SUBSTRINGS)})"
     )
     return True, lines
@@ -189,16 +194,16 @@ def check_test_modules(root: Path) -> tuple[bool, list[str]]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Check that draftmyvan/ is ready for extraction to its own repo.",
+        description="Check that the DraftMyVan foundation is internally consistent.",
     )
     parser.add_argument(
         "--include-dynamic", action="store_true",
         help="Also run the package report and every test module in "
-             "subprocesses (slower; intended for local pre-extraction sweeps).",
+             "subprocesses (slower; intended for local handoff sweeps).",
     )
     parser.add_argument(
         "--root", type=Path, default=DRAFTMYVAN_ROOT,
-        help="Path to the draftmyvan/ directory (default: this script's project root).",
+        help="Path to the DraftMyVan repository root (default: this script's project root).",
     )
     args = parser.parse_args(argv)
 
@@ -235,7 +240,7 @@ def main(argv: list[str] | None = None) -> int:
         print()
         print(
             "(skipping dynamic checks — package_report and test modules. "
-            "Re-run with --include-dynamic before extraction.)"
+            "Re-run with --include-dynamic before a handoff or release.)"
         )
 
     print()
