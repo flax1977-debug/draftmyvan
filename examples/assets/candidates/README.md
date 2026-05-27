@@ -1,8 +1,8 @@
 # Candidate assets
 
-This directory holds candidate GLBs, candidate acceptance metadata, and
-candidate review metadata. These files are not production assets and are not
-referenced by any manifest.
+This directory holds candidate GLBs, candidate acceptance metadata, candidate
+review metadata, and visual audit metadata. These files are not production
+assets and are not referenced by any manifest.
 
 Candidates exist to test the real Blender export workflow before replacing
 the manifest-selected asset at `examples/assets/galley_1000.glb`.
@@ -24,6 +24,11 @@ the manifest-selected asset at `examples/assets/galley_1000.glb`.
 - Candidate review metadata is mandatory. It must stay current with the exact
   candidate file SHA and must keep `production_art: false` and
   `promotion_ready: false` until a future explicit promotion PR.
+- Visual audit metadata is separate from contract validation. It records
+  observed visual findings, must stay current with the exact candidate file
+  SHA, and must keep `visual_status: not_production_ready` and
+  `promotion_recommendation: do_not_promote` until a future explicit
+  promotion PR.
 
 ## Lifecycle
 
@@ -32,12 +37,14 @@ golden contract fixture
 -> generated manifest asset
 -> candidate asset
 -> candidate review
+-> visual audit
 -> accepted production asset
 -> future UE5/Fusion consumers
 ```
 
-This PR only reaches the candidate review stage. It records what the current
-candidate proves and what is still missing before any production claim.
+The current state reaches the visual audit stage. It records what the current
+candidate proves, what can be seen from the current candidate, and what is
+still missing before any production claim.
 
 ## Current candidate
 
@@ -60,8 +67,20 @@ python tools/assets/validate_candidate_review.py \
     examples/assets/candidates/galley_1000_candidate_review.json
 ```
 
+Audit its current visual state with:
+
+```bash
+python tools/assets/validate_candidate_visual_audit.py \
+    examples/assets/candidates/galley_1000_candidate_visual_audit.json
+```
+
 The current review report is
 `examples/assets/candidates/galley_1000_candidate_review.md`. It says the
 candidate is contract-valid but not production art and not promotion-ready.
-Use `candidate_review_checklist.md` and `PROMOTION_CRITERIA.md` before any
-future promotion work.
+The current visual audit is
+`examples/assets/candidates/galley_1000_candidate_visual_audit.md`; it says
+the candidate is not production-ready and should not be promoted.
+
+Use `candidate_review_checklist.md`, `PROMOTION_CRITERIA.md`, and
+`tools/blender/RENDER_CANDIDATE_AUDIT.md` before any future promotion work.
+No render images are committed yet.

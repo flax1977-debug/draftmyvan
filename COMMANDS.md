@@ -96,6 +96,17 @@ visual quality, topology quality, UV/material quality, manufacturability, or
 promotion readiness has been accepted. Candidate review metadata must stay in
 sync with the exact candidate SHA, and promotion requires a future explicit PR.
 
+## Candidate visual audit metadata
+
+| Command | Purpose | Exit |
+|---|---|---|
+| `python tools/assets/validate_candidate_visual_audit.py examples/assets/candidates/galley_1000_candidate_visual_audit.json` | Validate SHA-synced visual audit metadata, non-production visual status, do-not-promote recommendation, findings, and required visual improvements. | 0 valid, 1 invalid |
+
+Visual audit is separate from validation and review. It records current visual
+findings and required improvements, but does not make the candidate
+production-ready. Render images are not committed or required in CI yet; the
+local procedure is `tools/blender/RENDER_CANDIDATE_AUDIT.md`.
+
 ## Runtime consumer (PR #8)
 
 | Command | Purpose | Exit |
@@ -125,6 +136,7 @@ python -m tests.test_galley_fixture               # 15 tests — golden fixture 
 python -m tests.test_asset_acceptance             # 12 tests — fixture-swap metadata guard
 python -m tests.test_candidate_asset              # 13 tests — candidate workflow guard
 python -m tests.test_candidate_review             # 13 tests — candidate review guard
+python -m tests.test_candidate_visual_audit       # 11 tests — candidate visual audit guard
 python -m tests.test_runtime_consumer             # 18 tests — manifest read as typed runtime data
 python -m tests.test_package_report               # 16 tests — catalog/package readiness
 python -m tests.test_handoff_ready                # 10 tests — extraction readiness helper
@@ -136,7 +148,8 @@ Run them all:
 for t in tests.test_validator tests.test_blender_manifest_contract \
          tests.test_check_asset_ready tests.test_galley_fixture \
          tests.test_asset_acceptance tests.test_candidate_asset \
-         tests.test_candidate_review tests.test_runtime_consumer \
+         tests.test_candidate_review tests.test_candidate_visual_audit \
+         tests.test_runtime_consumer \
          tests.test_package_report \
          tests.test_handoff_ready ; do
     echo "=== $t" ; python -m $t || break

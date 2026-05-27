@@ -66,6 +66,7 @@ python -m tests.test_galley_fixture               # golden fixture + manifest as
 python -m tests.test_asset_acceptance             # fixture-swap acceptance metadata
 python -m tests.test_candidate_asset              # candidate export workflow
 python -m tests.test_candidate_review             # candidate review metadata
+python -m tests.test_candidate_visual_audit       # candidate visual audit metadata
 python -m tests.test_runtime_consumer             # manifest read as typed runtime data
 python -m tests.test_package_report               # catalog/package readiness
 python -m tests.test_handoff_ready                # extraction-readiness helper
@@ -283,6 +284,15 @@ python tools/assets/validate_candidate_review.py \
     examples/assets/candidates/galley_1000_candidate_review.json
 ```
 
+The visual audit is a separate SHA-pinned record of visual findings. It is not
+an acceptance of production quality, and the current audit explicitly says
+`not_production_ready` and `do_not_promote`:
+
+```bash
+python tools/assets/validate_candidate_visual_audit.py \
+    examples/assets/candidates/galley_1000_candidate_visual_audit.json
+```
+
 Lifecycle:
 
 1. **Golden fixture** — permanent byte-for-byte regression reference under
@@ -291,19 +301,22 @@ Lifecycle:
    `examples/assets/candidates/`, never referenced by the manifest.
 3. **Candidate review** — SHA-pinned report and metadata saying what the
    candidate proves and what remains missing.
-4. **Accepted manifest asset** — future PR copies an accepted candidate to
+4. **Visual audit** — SHA-pinned visual findings and repeatable local render
+   procedure, without committed render-image requirements yet.
+5. **Accepted manifest asset** — future PR copies an accepted candidate to
    `examples/assets/galley_1000.glb` and updates acceptance metadata.
-5. **Future real art** — later quality work can improve the accepted asset,
+6. **Future real art** — later quality work can improve the accepted asset,
    still behind the same gates.
 
 ## CI
 
 `.github/workflows/ci.yml` runs the manifest validator, the pure-Python
 test suites, the static handoff check, the asset-readiness CLI, the
-asset-acceptance metadata CLI, the candidate-asset metadata CLI, and the
-candidate-review metadata CLI on every push and pull request. Blender itself
-is intentionally not installed in CI; the Blender mode is a local-only
-authoritative gate.
+asset-acceptance metadata CLI, the candidate-asset metadata CLI, the
+candidate-review metadata CLI, and the candidate-visual-audit metadata CLI on
+every push and pull request. Blender itself is intentionally not installed in
+CI; render images are not required yet and remain local evidence for a future
+PR.
 
 ## What's next (not in this slice)
 
