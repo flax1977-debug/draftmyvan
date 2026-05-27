@@ -1,26 +1,25 @@
-# DraftMyVan — Foundation
+# DraftMyVan - Foundation
 
-> **This folder is not part of the PaperAI Flutter app.** It shares the repository for
-> persistence convenience only. The Flutter project lives under `lib/`; DraftMyVan
-> lives entirely under `draftmyvan/` and has no build coupling to it.
-
-DraftMyVan is a manufacturing-oriented 3D campervan configurator. This directory
-holds the **data contract** — the single source of truth that UE5 (visualisation),
-Blender (asset factory), and Fusion 360 (manufacturing brain) will all read from.
+DraftMyVan is a manufacturing-oriented 3D campervan configurator. This repository
+holds the **data contract** — the single source of truth that future visualization,
+asset-factory, and manufacturing tooling will read from.
 
 Nothing else. No UE5, no Blender, no Fusion, no UI, no CNC post processors yet.
 
 ## Layout
 
 ```
-draftmyvan/
-  manifest.schema.json     # JSON Schema (Draft 2020-12) for a module
-  examples/
-    galley_1000.json       # First module: 1000 mm galley cabinet
-  tools/
-    validate_manifest.py   # CLI validator
-  tests/
-    test_validator.py      # Schema + sample + negative tests
+manifest.schema.json       # JSON Schema (Draft 2020-12) for a module
+examples/
+  galley_1000.json         # First module: 1000 mm galley cabinet
+  assets/                  # Deterministic fixture GLB and asset notes
+runtime/                   # Reference manifest consumer + package report
+tools/
+  validate_manifest.py     # CLI validator
+  assets/                  # Deterministic fixture generator
+  blender/                 # GLB validators and export procedure
+  handoff/                 # Extraction-readiness helper
+tests/                     # Pure-Python suites; no Blender required
 ```
 
 ## Ground rules
@@ -41,7 +40,6 @@ shape, allowed enum values, and constraints.
 ## Validate the sample
 
 ```bash
-cd draftmyvan
 pip install jsonschema           # one-time, if not already installed
 python tools/validate_manifest.py examples/galley_1000.json
 # or, validate every example at once:
@@ -59,12 +57,13 @@ OK    examples/galley_1000.json
 ## Run the tests
 
 ```bash
-cd draftmyvan
 python -m tests.test_validator                    # schema + manifest
 python -m tests.test_blender_manifest_contract    # Blender gate, anchor enforcement
+python -m tests.test_check_asset_ready            # real-asset readiness wrapper
 python -m tests.test_galley_fixture               # committed fixture + generator determinism
 python -m tests.test_runtime_consumer             # manifest read as typed runtime data
 python -m tests.test_package_report               # catalog/package readiness
+python -m tests.test_handoff_ready                # extraction-readiness helper
 ```
 
 Each suite prints `N/N passed` on success. None of them require Blender —
@@ -74,7 +73,7 @@ the fixture suite uses a pure-Python GLB generator
 
 ## Runtime consumer (reference implementation)
 
-`draftmyvan/runtime/` is the **reference consumer** of a module manifest.
+`runtime/` is the **reference consumer** of a module manifest.
 It is deliberately distinct from `tools/`: the tools directory holds
 **gates** (schema validator, GLB validator) that run before code is
 committed; `runtime/` is what something downstream — an editor
@@ -82,7 +81,6 @@ importer, a build script, an actual app — calls to **read** an
 already-validated manifest into typed in-memory data.
 
 ```bash
-cd draftmyvan
 python -m runtime.load_module examples/galley_1000.json
 ```
 
@@ -104,9 +102,8 @@ Exit 0 = CONSUMABLE (manifest + GLB both present). Exit 1 = GLB
 missing. Exit 2 = manifest malformed (clear error to stderr).
 
 This package proves the manifest contract is consumable by something
-**other than a validator** — a Unity / UE5 / Flutter importer in a
-different language would implement the same shape (`Module`,
-`Dimensions`, `load_module`).
+**other than a validator** — a downstream importer in another language
+would implement the same shape (`Module`, `Dimensions`, `load_module`).
 
 ## Package readiness report
 
@@ -117,7 +114,6 @@ typed `Module`, and reports the aggregate state plus structural-
 integrity checks (duplicate ids, duplicate resolved asset paths).
 
 ```bash
-cd draftmyvan
 python -m runtime.package_report examples/
 ```
 
@@ -193,8 +189,8 @@ conversion is downstream's job and must not mutate the source GLB.
 
   ```bash
   blender --background --python \
-      draftmyvan/tools/blender/validate_in_blender.py -- \
-      --manifest draftmyvan/examples/galley_1000.json \
+      tools/blender/validate_in_blender.py -- \
+      --manifest examples/galley_1000.json \
       --glb path/to/galley_1000.glb
   ```
 
@@ -202,14 +198,34 @@ conversion is downstream's job and must not mutate the source GLB.
 default 1 mm). Exit 1 = drift. Exit 2 = malformed manifest or unreadable
 GLB. The asset is not committable until the exit code is 0.
 
+## Real-asset export procedure
+
+Real cabinet art is still deferred, but the procedure and guardrails for
+introducing it now live in `tools/blender/`:
+
+- `EXPORT_REAL_ASSET.md` documents the Blender setup, units, axes,
+  `floor_back_left` origin rule, transform application, export settings,
+  and validator sweep.
+- `asset_export_checklist.md` is the per-asset sign-off sheet.
+- `check_asset_ready.py` wraps the schema, path, dimension, and anchor
+  checks into one pure-Python command:
+
+  ```bash
+  python tools/blender/check_asset_ready.py \
+      --manifest examples/galley_1000.json \
+      --glb /tmp/candidate.glb
+  ```
+
+The committed `examples/assets/galley_1000.glb` remains the deterministic
+fixture. Replacing it with real art is a separate future PR that must also
+update the fixture test and add sign-off metadata.
+
 ## CI
 
-`.github/workflows/draftmyvan.yml` runs the manifest validator (`--all`) and
-both test suites — `tests.test_validator` and
-`tests.test_blender_manifest_contract` — on every push and pull request
-that touches `draftmyvan/**` or the workflow file itself. It does **not**
-run for changes that only touch the PaperAI Flutter app. Blender itself is
-intentionally not installed in CI; the Blender mode is a local-only gate.
+`.github/workflows/ci.yml` runs the manifest validator, the pure-Python
+test suites, the static handoff check, and the asset-readiness CLI on every
+push and pull request. Blender itself is intentionally not installed in CI;
+the Blender mode is a local-only authoritative gate.
 
 ## What's next (not in this slice)
 

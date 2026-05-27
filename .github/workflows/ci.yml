@@ -33,6 +33,9 @@ jobs:
       - name: Run Blender-contract test suite (pure Python only)
         run: python -m tests.test_blender_manifest_contract
 
+      - name: Run asset-readiness wrapper suite (pure Python only)
+        run: python -m tests.test_check_asset_ready
+
       - name: Run galley-fixture suite (generator determinism + end-to-end)
         run: python -m tests.test_galley_fixture
 
@@ -47,3 +50,6 @@ jobs:
 
       - name: Run handoff-ready CLI (static-only mode)
         run: python tools/handoff/check_handoff_ready.py
+
+      - name: Run asset-readiness CLI on committed fixture
+        run: python tools/blender/check_asset_ready.py --manifest examples/galley_1000.json
