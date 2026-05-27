@@ -20,13 +20,21 @@ import json
 import sys
 from pathlib import Path
 
-try:
-    import bpy
-except ImportError as e:  # pragma: no cover - this script is run inside Blender.
-    raise SystemExit("create_galley_candidate.py must be run inside Blender") from e
-
 
 REQUIRED_MATERIALS = ("oak_body", "sink_metal")
+DIMENSION_KEYS = ("width", "depth", "height")
+bpy = None
+
+
+def _require_blender() -> None:
+    global bpy
+    if bpy is not None:
+        return
+    try:
+        import bpy as blender_python  # type: ignore
+    except ImportError as e:  # pragma: no cover - this script is run inside Blender.
+        raise SystemExit("create_galley_candidate.py must be run inside Blender") from e
+    bpy = blender_python
 
 
 def _argv_after_blender_separator() -> list[str]:
@@ -64,12 +72,36 @@ def _load_manifest(path: Path) -> dict:
     return manifest
 
 
+def _strict_dimension_mm(dims: object, key: str) -> int:
+    field = f"dimensions_mm.{key}"
+    if not isinstance(dims, dict):
+        raise SystemExit("manifest dimensions_mm must be an object")
+    if key not in dims:
+        raise SystemExit(f"manifest {field} is required")
+    value = dims[key]
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise SystemExit(f"manifest {field} must be a positive integer millimetre value")
+    if value <= 0:
+        raise SystemExit(f"manifest {field} must be > 0")
+    return value
+
+
+def _dimensions_m(manifest: dict) -> tuple[float, float, float]:
+    dims = manifest.get("dimensions_mm")
+    width_mm, depth_mm, height_mm = (
+        _strict_dimension_mm(dims, key) for key in DIMENSION_KEYS
+    )
+    return width_mm / 1000.0, depth_mm / 1000.0, height_mm / 1000.0
+
+
 def _clear_scene() -> None:
+    _require_blender()
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete()
 
 
 def _material(name: str, color: tuple[float, float, float, float]) -> bpy.types.Material:
+    _require_blender()
     material = bpy.data.materials.new(name)
     material.use_nodes = True
     principled = material.node_tree.nodes.get("Principled BSDF")
@@ -93,6 +125,7 @@ def _make_box(
     max_xyz: tuple[float, float, float],
     material: bpy.types.Material,
 ) -> bpy.types.Object:
+    _require_blender()
     min_x, min_y, min_z = min_xyz
     max_x, max_y, max_z = max_xyz
     verts = [
@@ -125,10 +158,8 @@ def _make_box(
 
 
 def _build_candidate(manifest: dict) -> None:
-    dims = manifest.get("dimensions_mm") or {}
-    width = int(dims["width"]) / 1000.0
-    depth = int(dims["depth"]) / 1000.0
-    height = int(dims["height"]) / 1000.0
+    _require_blender()
+    width, depth, height = _dimensions_m(manifest)
 
     slots = tuple((manifest.get("visual") or {}).get("material_slots") or ())
     missing = [slot for slot in REQUIRED_MATERIALS if slot not in slots]
@@ -204,6 +235,7 @@ def _build_candidate(manifest: dict) -> None:
 
 
 def _export_glb(out_path: Path) -> None:
+    _require_blender()
     out_path.parent.mkdir(parents=True, exist_ok=True)
     bpy.ops.export_scene.gltf(
         filepath=str(out_path),
@@ -219,6 +251,7 @@ def _export_glb(out_path: Path) -> None:
 
 def main() -> int:
     args = _parse_args()
+    _require_blender()
     manifest = _load_manifest(args.manifest)
     _clear_scene()
     _build_candidate(manifest)

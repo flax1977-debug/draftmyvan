@@ -73,6 +73,7 @@ tests/                           # Pure-Python; no Blender required
   test_galley_fixture.py         # 15 tests
   test_asset_acceptance.py       # 12 tests
   test_candidate_asset.py        # 13 tests
+  test_create_galley_candidate.py # 7 tests
   test_candidate_review.py       # 13 tests
   test_candidate_visual_audit.py # 11 tests
   test_render_evidence.py        # 9 tests
@@ -191,6 +192,7 @@ python -m tests.test_check_asset_ready            # 12 tests
 python -m tests.test_galley_fixture               # 15 tests
 python -m tests.test_asset_acceptance             # 12 tests
 python -m tests.test_candidate_asset              # 13 tests
+python -m tests.test_create_galley_candidate      # 7 tests
 python -m tests.test_candidate_review             # 13 tests
 python -m tests.test_candidate_visual_audit       # 11 tests
 python -m tests.test_render_evidence              # 9 tests
@@ -227,8 +229,10 @@ python -m tests.test_handoff_ready                # 10 tests
   `examples/assets/galley_1000.asset_acceptance.json` records that no
   production art has been reviewed or accepted. The candidate GLB under
   `examples/assets/candidates/` is a script-generated blockout only and is not
-  referenced by the manifest. Candidate review metadata is SHA-pinned and explicitly
-  says the candidate is not production art and not promotion-ready. Candidate
+  referenced by the manifest. Its generator strictly rejects non-integer,
+  boolean, missing, or non-positive dimensions rather than casting them.
+  Candidate review metadata is SHA-pinned and explicitly says the candidate is
+  not production art and not promotion-ready. Candidate
   visual audit metadata is also SHA-pinned and currently says
   `not_production_ready` / `do_not_promote`; render images are not committed
   yet. Render evidence metadata is procedure-only for now and points to an

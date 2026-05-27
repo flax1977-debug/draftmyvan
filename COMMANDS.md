@@ -84,9 +84,11 @@ Candidate states:
 | `CANDIDATE INVALID` | Metadata is malformed, claims production/promotion too early, references missing required files, or the candidate GLB fails a gate. |
 
 The current `galley_1000_candidate.glb` is a script-generated Blender cabinet
-blockout. It has visible panel seams, a countertop break, plinth, and sink
-marker, but it is still not production art and does not replace
-`examples/assets/galley_1000.glb`.
+blockout. The generator strictly requires integer manifest dimensions and
+rejects strings, floats, booleans, missing fields, and non-positive values
+before any geometry is authored. The candidate has visible panel seams, a
+countertop break, plinth, and sink marker, but it is still not production art
+and does not replace `examples/assets/galley_1000.glb`.
 
 ## Candidate review metadata
 
@@ -149,6 +151,7 @@ python -m tests.test_check_asset_ready            # 12 tests — real-asset read
 python -m tests.test_galley_fixture               # 15 tests — golden fixture + current manifest asset
 python -m tests.test_asset_acceptance             # 12 tests — fixture-swap metadata guard
 python -m tests.test_candidate_asset              # 13 tests — candidate workflow guard
+python -m tests.test_create_galley_candidate      # 7 tests — candidate generator manifest guard
 python -m tests.test_candidate_review             # 13 tests — candidate review guard
 python -m tests.test_candidate_visual_audit       # 11 tests — candidate visual audit guard
 python -m tests.test_render_evidence              # 9 tests — render evidence metadata guard
@@ -163,8 +166,9 @@ Run them all:
 for t in tests.test_validator tests.test_blender_manifest_contract \
          tests.test_check_asset_ready tests.test_galley_fixture \
          tests.test_asset_acceptance tests.test_candidate_asset \
-         tests.test_candidate_review tests.test_candidate_visual_audit \
-         tests.test_render_evidence tests.test_runtime_consumer \
+         tests.test_create_galley_candidate tests.test_candidate_review \
+         tests.test_candidate_visual_audit tests.test_render_evidence \
+         tests.test_runtime_consumer \
          tests.test_package_report \
          tests.test_handoff_ready ; do
     echo "=== $t" ; python -m $t || break

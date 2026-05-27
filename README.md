@@ -65,6 +65,7 @@ python -m tests.test_check_asset_ready            # real-asset readiness wrapper
 python -m tests.test_galley_fixture               # golden fixture + manifest asset
 python -m tests.test_asset_acceptance             # fixture-swap acceptance metadata
 python -m tests.test_candidate_asset              # candidate export workflow
+python -m tests.test_create_galley_candidate      # candidate generator manifest guard
 python -m tests.test_candidate_review             # candidate review metadata
 python -m tests.test_candidate_visual_audit       # candidate visual audit metadata
 python -m tests.test_render_evidence              # local render evidence metadata
@@ -280,7 +281,10 @@ The blockout adds visible cabinet carcass massing, front panel seams, a plinth,
 countertop separation, and a simple sink marker using the existing
 `oak_body` and `sink_metal` material slots. It still omits UVs, real PBR
 materials, topology cleanup, joinery detail, hardware, manufacturability
-review, and visual sign-off.
+review, and visual sign-off. The generator treats the manifest as source of
+truth: it requires positive integer `dimensions_mm.width`, `depth`, and
+`height`, and rejects strings, floats, booleans, or missing dimension fields
+instead of casting them.
 
 Validate the candidate state with:
 
