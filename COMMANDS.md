@@ -124,6 +124,8 @@ promote the candidate. The local procedure is
 Render evidence supports human review only. The six approved PNGs under
 `examples/assets/candidates/render_evidence/galley_1000_candidate/` are
 committed review evidence for the current blockout, not product screenshots.
+Their metadata records the 1024 x 1024 Workbench render setup and local area
+key light description from `tools/blender/render_candidate_views.py`.
 Other generated PNG output under `examples/assets/candidates/render_evidence/`
 remains ignored. Future candidate changes require regenerating the PNGs and
 updating their pinned file sizes and SHA256 values.
@@ -159,7 +161,7 @@ python -m tests.test_candidate_asset              # 13 tests — candidate workf
 python -m tests.test_create_galley_candidate      # 7 tests — candidate generator manifest guard
 python -m tests.test_candidate_review             # 13 tests — candidate review guard
 python -m tests.test_candidate_visual_audit       # 11 tests — candidate visual audit guard
-python -m tests.test_render_evidence              # 15 tests — render evidence metadata guard
+python -m tests.test_render_evidence              # 20 tests — render evidence metadata guard
 python -m tests.test_runtime_consumer             # 18 tests — manifest read as typed runtime data
 python -m tests.test_package_report               # 16 tests — catalog/package readiness
 python -m tests.test_handoff_ready                # 10 tests — extraction readiness helper

@@ -352,7 +352,8 @@ test suites, the static handoff check, the asset-readiness CLI, the
 asset-acceptance metadata CLI, the candidate-asset metadata CLI, the
 candidate-review metadata CLI, and the candidate-visual-audit metadata CLI on
 every push and pull request. CI also validates render-evidence metadata,
-including the six committed PNG paths, sizes, and SHA256 values. Blender itself
+including the six committed PNG paths, sizes, SHA256 values, 1024 x 1024
+resolution, Workbench render engine, and local lighting setup. Blender itself
 is intentionally not installed in CI; CI validates committed evidence metadata
 and files, not live Blender rendering. Future candidate changes require
 regenerating the PNGs and re-signing render-evidence metadata to the new

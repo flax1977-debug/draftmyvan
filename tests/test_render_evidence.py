@@ -203,6 +203,69 @@ def test_render_path_outside_allowed_folder_fails() -> None:
     assert "must be under examples/assets/candidates/render_evidence" in joined
 
 
+def test_extra_unapproved_png_in_render_folder_fails() -> None:
+    def after_write(root: Path, _data: dict) -> None:
+        extra = (
+            root
+            / "examples"
+            / "assets"
+            / "candidates"
+            / "render_evidence"
+            / "galley_1000_candidate"
+            / "extra.png"
+        )
+        shutil.copy2(RENDER_EVIDENCE_DIR / "front.png", extra)
+
+    status, joined = _validate_mutation(lambda d: d, after_write=after_write)
+    assert status == r.STATUS_INVALID
+    assert "render_output_dir contains unapproved file" in joined
+
+
+def test_hidden_junk_in_render_folder_fails() -> None:
+    def after_write(root: Path, _data: dict) -> None:
+        extra = (
+            root
+            / "examples"
+            / "assets"
+            / "candidates"
+            / "render_evidence"
+            / "galley_1000_candidate"
+            / ".DS_Store"
+        )
+        extra.write_text("junk", encoding="utf-8")
+
+    status, joined = _validate_mutation(lambda d: d, after_write=after_write)
+    assert status == r.STATUS_INVALID
+    assert "render_output_dir contains unapproved file" in joined
+
+
+def test_missing_render_resolution_fails() -> None:
+    def mutate(data: dict) -> None:
+        data.pop("render_resolution")
+
+    status, joined = _validate_mutation(mutate)
+    assert status == r.STATUS_INVALID
+    assert "render_resolution must be an object" in joined
+
+
+def test_bad_render_engine_fails() -> None:
+    def mutate(data: dict) -> None:
+        data["render_engine"] = "CYCLES"
+
+    status, joined = _validate_mutation(mutate)
+    assert status == r.STATUS_INVALID
+    assert 'render_engine must be "BLENDER_WORKBENCH"' in joined
+
+
+def test_missing_lighting_setup_fails() -> None:
+    def mutate(data: dict) -> None:
+        data.pop("lighting_setup")
+
+    status, joined = _validate_mutation(mutate)
+    assert status == r.STATUS_INVALID
+    assert "lighting_setup must be a non-empty string" in joined
+
+
 def test_committed_renders_false_procedure_ready_metadata_still_validates() -> None:
     def mutate(data: dict) -> None:
         data["committed_renders"] = False
@@ -263,6 +326,11 @@ def main() -> int:
         test_wrong_png_sha_fails,
         test_wrong_png_size_fails,
         test_render_path_outside_allowed_folder_fails,
+        test_extra_unapproved_png_in_render_folder_fails,
+        test_hidden_junk_in_render_folder_fails,
+        test_missing_render_resolution_fails,
+        test_bad_render_engine_fails,
+        test_missing_lighting_setup_fails,
         test_committed_renders_false_procedure_ready_metadata_still_validates,
         test_committed_renders_false_requires_procedure_ready_status,
         test_promotion_ready_true_fails,

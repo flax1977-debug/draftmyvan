@@ -203,7 +203,7 @@ python -m tests.test_candidate_asset              # 13 tests
 python -m tests.test_create_galley_candidate      # 7 tests
 python -m tests.test_candidate_review             # 13 tests
 python -m tests.test_candidate_visual_audit       # 11 tests
-python -m tests.test_render_evidence              # 15 tests
+python -m tests.test_render_evidence              # 20 tests
 python -m tests.test_runtime_consumer             # 18 tests
 python -m tests.test_package_report               # 16 tests
 python -m tests.test_handoff_ready                # 10 tests
@@ -243,9 +243,10 @@ python -m tests.test_handoff_ready                # 10 tests
   not production art and not promotion-ready. Candidate
   visual audit metadata is also SHA-pinned and currently says
   `not_production_ready` / `do_not_promote`. Six PNGs are committed as review
-  evidence for the current blockout and pinned by path, size, and SHA256; they
-  are not product screenshots, visual sign-off, or promotion. Future candidate
-  changes must regenerate those images and re-sign render-evidence metadata.
+  evidence for the current blockout and pinned by path, size, SHA256,
+  resolution, render engine, and lighting setup; they are not product
+  screenshots, visual sign-off, or promotion. Future candidate changes must
+  regenerate those images and re-sign render-evidence metadata.
 - **Catalog of one.** `examples/galley_1000.json` is the only module.
 - **No UE5, Fusion 360, or CNC integration.** Every PR deferred them
   deliberately.

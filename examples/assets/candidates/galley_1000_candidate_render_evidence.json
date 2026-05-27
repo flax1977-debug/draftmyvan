@@ -7,6 +7,12 @@
   "render_script": "tools/blender/render_candidate_views.py",
   "render_command": "blender --background --python tools/blender/render_candidate_views.py -- --candidate examples/assets/candidates/galley_1000_candidate.glb --out examples/assets/candidates/render_evidence/galley_1000_candidate/",
   "render_tool": "Blender",
+  "render_resolution": {
+    "width_px": 1024,
+    "height_px": 1024
+  },
+  "render_engine": "BLENDER_WORKBENCH",
+  "lighting_setup": "Single area key light named audit_key_light; energy 450; size is max candidate axis span; location is candidate center plus (-size.x, -size.y, size.z * 2.5).",
   "render_output_dir": "examples/assets/candidates/render_evidence/galley_1000_candidate/",
   "committed_renders": true,
   "expected_views": [

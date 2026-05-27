@@ -92,8 +92,9 @@ three_quarter.png
 ## CI Policy
 
 CI does not run Blender. It checks the JSON visual-audit metadata,
-render-evidence metadata, render script path, and the six committed PNGs by
-path, file size, and SHA256. Generated PNGs outside the approved
+render-evidence metadata, render script path, render resolution, render engine,
+lighting setup, and the six committed PNGs by path, file size, and SHA256.
+Generated PNGs outside the approved
 `examples/assets/candidates/render_evidence/galley_1000_candidate/` set remain
 ignored by Git until a future PR explicitly approves them.
 

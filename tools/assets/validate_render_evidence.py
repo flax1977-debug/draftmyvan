@@ -62,6 +62,13 @@ def _required_positive_int(data: dict[str, Any], key: str, label: str) -> int:
     return value
 
 
+def _required_object(data: dict[str, Any], key: str) -> dict[str, Any]:
+    value = data.get(key)
+    if not isinstance(value, dict):
+        raise RenderEvidenceError(f"{key} must be an object")
+    return value
+
+
 def _repo_relative_path(root: Path, value: str, key: str) -> Path:
     path = Path(value)
     if path.is_absolute() or ".." in path.parts:
@@ -116,6 +123,7 @@ def _validate_committed_render_files(
         )
     allowed_root = (root / ALLOWED_RENDER_ROOT_REL).resolve()
     seen: set[str] = set()
+    listed_paths: set[Path] = set()
     for idx, entry in enumerate(render_files):
         label = f"render_files[{idx}]"
         if not isinstance(entry, dict):
@@ -143,6 +151,7 @@ def _validate_committed_render_files(
             raise RenderEvidenceError(
                 f"{label}.path must be under render_output_dir"
             ) from e
+        listed_paths.add(path)
 
         expected_size = _required_positive_int(entry, "file_size_bytes", label)
         actual_size = path.stat().st_size
@@ -161,6 +170,24 @@ def _validate_committed_render_files(
     missing = sorted(expected_views.difference(seen))
     if missing:
         raise RenderEvidenceError("render_files is missing: " + ", ".join(missing))
+
+    extra_files = sorted(
+        path
+        for path in render_output_dir.rglob("*")
+        if path.is_file() and path.resolve() not in listed_paths
+    )
+    if extra_files:
+        extras = ", ".join(str(path.relative_to(root)) for path in extra_files)
+        raise RenderEvidenceError("render_output_dir contains unapproved file(s): " + extras)
+
+
+def _validate_render_provenance(data: dict[str, Any]) -> None:
+    resolution = _required_object(data, "render_resolution")
+    _required_positive_int(resolution, "width_px", "render_resolution")
+    _required_positive_int(resolution, "height_px", "render_resolution")
+    if _required_str(data, "render_engine") != "BLENDER_WORKBENCH":
+        raise RenderEvidenceError('render_engine must be "BLENDER_WORKBENCH"')
+    _required_str(data, "lighting_setup")
 
 
 def validate_render_evidence(
@@ -227,8 +254,12 @@ def validate_render_evidence(
             if _required_str(data, "render_tool") != "Blender":
                 raise RenderEvidenceError('render_tool must be "Blender"')
             _required_str(data, "render_note")
+            _validate_render_provenance(data)
+            lines.append("[OK] render provenance fields are recorded")
             _validate_committed_render_files(root, data, render_output_dir, expected_views)
-            lines.append("[OK] committed render PNGs are present and SHA/size pinned")
+            lines.append(
+                "[OK] committed render PNGs are present, SHA/size pinned, and no extra files found"
+            )
         else:
             if "generated_from_candidate_sha256" in data:
                 generated_from = data["generated_from_candidate_sha256"]
