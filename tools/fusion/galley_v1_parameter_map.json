@@ -1,0 +1,43 @@
+{
+  "map_version": "0.1.0",
+  "source_manifest": "examples/galley_1000.json",
+  "template": "galley_v1",
+  "template_source": "manufacturing.fusion_template",
+  "metadata": {
+    "manifest_id": {
+      "source": "manifest.id",
+      "type": "string"
+    }
+  },
+  "parameters": {
+    "Width": {
+      "source": "dimensions_mm.width",
+      "type": "integer_mm"
+    },
+    "Depth": {
+      "source": "dimensions_mm.depth",
+      "type": "integer_mm"
+    },
+    "Height": {
+      "source": "dimensions_mm.height",
+      "type": "integer_mm"
+    },
+    "PlyThickness": {
+      "source": "manufacturing.plywood_thickness_mm",
+      "type": "integer_mm"
+    }
+  },
+  "hardware": {
+    "source": "manufacturing.hardware",
+    "type": "string_list"
+  },
+  "ignored_fields": [
+    "visual.glb_path",
+    "visual.material_slots",
+    "visual.collision_proxy",
+    "anchor",
+    "placement",
+    "clearances",
+    "rules.service_access"
+  ]
+}

@@ -60,6 +60,9 @@ jobs:
       - name: Run human-visual-review suite (review observations metadata)
         run: python -m tests.test_human_visual_review
 
+      - name: Run Fusion parameter-map suite (pure Python dry-run)
+        run: python -m tests.test_fusion_parameter_map
+
       - name: Run runtime-consumer suite (manifest read as typed data)
         run: python -m tests.test_runtime_consumer
 
@@ -92,3 +95,6 @@ jobs:
 
       - name: Run human-visual-review metadata CLI
         run: python tools/assets/validate_human_visual_review.py
+
+      - name: Run Fusion parameter-map metadata CLI
+        run: python tools/fusion/validate_fusion_parameter_map.py
