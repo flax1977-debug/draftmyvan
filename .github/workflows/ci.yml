@@ -81,6 +81,12 @@ jobs:
       - name: Run Fusion MCP bridge suite (pure Python only)
         run: python -m tests.test_fusion_mcp_bridge
 
+      - name: Run Fusion MCP opt-in docs suite (pure Python only)
+        run: python -m tests.test_fusion_mcp_opt_in_docs
+
+      - name: Run Fusion MCP bridge smoke helper (pure Python only)
+        run: python tools/mcp/smoke_fusion_bridge.py
+
       - name: Run runtime-consumer suite (manifest read as typed data)
         run: python -m tests.test_runtime_consumer
 
