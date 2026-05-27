@@ -143,17 +143,20 @@ useful for visual review but still not production-ready. The next recommended
 action is either to improve the candidate again or begin a separate Fusion
 proof while the visual candidate remains blockout-only.
 
-## Fusion parameter map dry-run
+## Fusion parameter map dry-run and skeleton
 
 | Command | Purpose | Exit |
 |---|---|---|
 | `python tools/fusion/validate_fusion_parameter_map.py tools/fusion/galley_v1_parameter_map.json` | Validate the pure-Python manifest-to-`galley_v1` parameter map, required integer millimetre parameters, explicit ignored fields, and no visual-field consumption. | 0 valid, 1 invalid |
 | `python tools/fusion/export_galley_v1_parameters.py --manifest examples/galley_1000.json --out build/fusion/galley_1000_fusion_parameters.json` | Write deterministic dry-run parameters for later Fusion work. The `build/` output is ignored by Git. | 0 written, 1 error |
+| `python tools/fusion/check_fusion_payload.py tests/fixtures/galley_1000_fusion_parameters.expected.json` | Validate a `galley_v1` payload through the Fusion script skeleton helpers and print template, manifest id, dimensions, plywood thickness, and hardware count. | 0 valid, 1 invalid |
 
-This is not Fusion 360 automation. It does not require Autodesk libraries, does
-not generate drawings, does not emit DXF/CNC files, and does not claim
-manufacturing-ready output. It proves the manufacturing side can begin from the
-same manifest truth as the visual and runtime gates.
+This is not Fusion 360 automation. The script skeleton guards Autodesk `adsk`
+imports so normal Python CI can import and test it without Fusion installed. It
+does not create geometry yet, does not generate drawings, does not emit DXF/CNC
+files, and does not claim manufacturing-ready output. It proves the
+manufacturing side can begin from the same manifest truth as the visual and
+runtime gates.
 
 ## Runtime consumer (PR #8)
 
@@ -189,6 +192,7 @@ python -m tests.test_candidate_visual_audit       # 11 tests — candidate visua
 python -m tests.test_render_evidence              # 20 tests — render evidence metadata guard
 python -m tests.test_human_visual_review          # 14 tests — human visual review guard
 python -m tests.test_fusion_parameter_map         # 10 tests — Fusion dry-run mapping guard
+python -m tests.test_fusion_skeleton              # 10 tests — Fusion skeleton payload guard
 python -m tests.test_runtime_consumer             # 18 tests — manifest read as typed runtime data
 python -m tests.test_package_report               # 16 tests — catalog/package readiness
 python -m tests.test_handoff_ready                # 10 tests — extraction readiness helper
@@ -204,6 +208,7 @@ for t in tests.test_validator tests.test_blender_manifest_contract \
          tests.test_candidate_visual_audit tests.test_render_evidence \
          tests.test_human_visual_review \
          tests.test_fusion_parameter_map \
+         tests.test_fusion_skeleton \
          tests.test_runtime_consumer \
          tests.test_package_report \
          tests.test_handoff_ready ; do

@@ -52,3 +52,20 @@ mapping:
 
 They remain part of the broader manifest contract, but this mapping keeps the
 manufacturing proof focused on dry-run parameter consumption.
+
+## Script Skeleton
+
+`fusion_galley_v1_skeleton.py` is the first Fusion-side script skeleton. Normal
+Python can import it without Fusion installed because Autodesk `adsk` imports
+remain inside guarded Fusion-only functions. The skeleton currently:
+
+- Loads a `galley_v1` parameter payload JSON.
+- Validates `template`, `manifest_id`, `Width`, `Depth`, `Height`, and
+  `PlyThickness`.
+- Rejects float, string, boolean, missing, or non-positive parameter values.
+- Produces a text summary for CLI output or future Fusion UI logging.
+- Provides a `run(context)` entry point for a later Fusion script/add-in.
+
+It does not create geometry, drawings, cut lists, DXF, CNC, or
+manufacturing-ready output. The next future step is a simple parametric
+box/carcass proof inside Fusion from the validated payload.

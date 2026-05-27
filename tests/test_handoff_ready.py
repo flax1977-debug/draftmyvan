@@ -74,6 +74,8 @@ def test_required_files_pass_on_current_repo() -> None:
         "tools/fusion/galley_v1_parameter_map.json",
         "tools/fusion/validate_fusion_parameter_map.py",
         "tools/fusion/export_galley_v1_parameters.py",
+        "tools/fusion/fusion_galley_v1_skeleton.py",
+        "tools/fusion/check_fusion_payload.py",
         "tools/blender/check_asset_ready.py",
         "tests/test_check_asset_ready.py",
         "HANDOFF.md",
@@ -264,6 +266,8 @@ def test_required_files_list_includes_all_critical_categories() -> None:
         "tools/fusion/galley_v1_parameter_map.json",
         "tools/fusion/validate_fusion_parameter_map.py",
         "tools/fusion/export_galley_v1_parameters.py",
+        "tools/fusion/fusion_galley_v1_skeleton.py",
+        "tools/fusion/check_fusion_payload.py",
         "tests/test_check_asset_ready.py",
         "tests/test_asset_acceptance.py",
         "tests/test_candidate_asset.py",
@@ -273,6 +277,7 @@ def test_required_files_list_includes_all_critical_categories() -> None:
         "tests/test_render_evidence.py",
         "tests/test_human_visual_review.py",
         "tests/test_fusion_parameter_map.py",
+        "tests/test_fusion_skeleton.py",
         "tests/fixtures/galley_1000_fusion_parameters.expected.json",
     ):
         assert rel in rels, f"required-files list dropped {rel}"
@@ -285,6 +290,7 @@ def test_required_files_list_includes_all_critical_categories() -> None:
     assert "tests.test_render_evidence" in h.DYNAMIC_TEST_MODULES
     assert "tests.test_human_visual_review" in h.DYNAMIC_TEST_MODULES
     assert "tests.test_fusion_parameter_map" in h.DYNAMIC_TEST_MODULES
+    assert "tests.test_fusion_skeleton" in h.DYNAMIC_TEST_MODULES
     # Handoff docs must be listed as required (this PR's whole point).
     for doc in ("HANDOFF.md", "EXTRACT_TO_REAL_REPO.md", "COMMANDS.md"):
         assert doc in rels, f"required-files list dropped {doc}"

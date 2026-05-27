@@ -63,6 +63,9 @@ jobs:
       - name: Run Fusion parameter-map suite (pure Python dry-run)
         run: python -m tests.test_fusion_parameter_map
 
+      - name: Run Fusion skeleton suite (pure Python only)
+        run: python -m tests.test_fusion_skeleton
+
       - name: Run runtime-consumer suite (manifest read as typed data)
         run: python -m tests.test_runtime_consumer
 
@@ -98,3 +101,6 @@ jobs:
 
       - name: Run Fusion parameter-map metadata CLI
         run: python tools/fusion/validate_fusion_parameter_map.py
+
+      - name: Run Fusion payload skeleton CLI
+        run: python tools/fusion/check_fusion_payload.py tests/fixtures/galley_1000_fusion_parameters.expected.json
