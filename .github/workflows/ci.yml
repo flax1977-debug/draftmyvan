@@ -48,6 +48,9 @@ jobs:
       - name: Run candidate-review suite (candidate review metadata)
         run: python -m tests.test_candidate_review
 
+      - name: Run candidate-visual-audit suite (visual audit metadata)
+        run: python -m tests.test_candidate_visual_audit
+
       - name: Run runtime-consumer suite (manifest read as typed data)
         run: python -m tests.test_runtime_consumer
 
@@ -71,3 +74,6 @@ jobs:
 
       - name: Run candidate-review metadata CLI
         run: python tools/assets/validate_candidate_review.py
+
+      - name: Run candidate-visual-audit metadata CLI
+        run: python tools/assets/validate_candidate_visual_audit.py
