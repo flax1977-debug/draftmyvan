@@ -20,6 +20,6 @@ Module: `____________________`         Anchor: `floor_back_left`
 | 10 | Bounding box equals the generated fixture's to the mm (step 8 in `EXPORT_REAL_ASSET.md`) | ☐ |
 | 11 | `check_asset_ready.py --manifest … --glb /tmp/<module>.glb` → `RESULT: READY` | ☐ |
 | 12 | **Do not** hand-edit the GLB binary; **do not** rely on a downstream tool to "fix" scale or axis | ☐ |
-| 13 | Replace the committed fixture only after a separate fixture-swap PR adds the test update + sign-off marker | ☐ |
+| 13 | For a future real-art swap: keep `tests/fixtures/galley_1000_contract_box.glb`, replace only `examples/assets/<module>.glb`, update acceptance metadata, and run `python tools/assets/validate_asset_acceptance.py` | ☐ |
 
 If any row is unchecked, the GLB does not ship.

@@ -10,8 +10,8 @@ What it runs:
 
   1. Manifest schema validation (via the manifest validator).
   2. Path existence + basename match against `visual.glb_path`.
-  3. Dimension + origin/anchor validation (via the Blender-side
-     pure-Python validator).
+  3. Dimension + origin/anchor + material-slot + collision-proxy validation
+     (via the Blender-side pure-Python validator).
 
 Usage from the repository root (default GLB resolved from the manifest):
 

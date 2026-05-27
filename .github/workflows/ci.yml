@@ -39,6 +39,9 @@ jobs:
       - name: Run galley-fixture suite (generator determinism + end-to-end)
         run: python -m tests.test_galley_fixture
 
+      - name: Run asset-acceptance suite (fixture-swap metadata)
+        run: python -m tests.test_asset_acceptance
+
       - name: Run runtime-consumer suite (manifest read as typed data)
         run: python -m tests.test_runtime_consumer
 
@@ -53,3 +56,6 @@ jobs:
 
       - name: Run asset-readiness CLI on committed fixture
         run: python tools/blender/check_asset_ready.py --manifest examples/galley_1000.json
+
+      - name: Run asset-acceptance metadata CLI
+        run: python tools/assets/validate_asset_acceptance.py

@@ -95,9 +95,13 @@ for example:
 [OK] collision proxy 'UCX_galley_1000'
 ```
 
-The deterministic fixture uses placeholder material definitions and a
-placeholder `UCX_galley_1000` box mesh only to prove the contract. It is
-still not production art or a production collision hull.
+The permanent deterministic fixture at
+`tests/fixtures/galley_1000_contract_box.glb` uses placeholder material
+definitions and a placeholder `UCX_galley_1000` box mesh only to prove the
+contract. It is still not production art or a production collision hull.
+The current manifest asset at `examples/assets/galley_1000.glb` matches
+that fixture today, but future real art may replace only the manifest
+asset after acceptance metadata and all validators pass.
 
 ### Supported anchors (V1)
 

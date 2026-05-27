@@ -3,8 +3,9 @@
 This is the procedure a human (or a future helper script) must follow
 when replacing a generated fixture under `examples/assets/`
 with a real cabinet GLB. Until this procedure passes for a candidate
-asset, the generated fixture stays — the generated box is the **golden
-boring reference**, not a placeholder to be silently overwritten.
+asset, the current manifest asset stays generated. The generated box under
+`tests/fixtures/galley_1000_contract_box.glb` is the **golden boring
+reference**, not a placeholder to be silently overwritten.
 
 > **Why a procedure at all?** Every prior PR (#3–#6) was about closing
 > the gap between "looks fine" and "actually buildable." Hand-exported
@@ -153,9 +154,9 @@ python -c "
 from pathlib import Path
 import sys; sys.path.insert(0, 'tools/blender')
 import validate_glb_against_manifest as v
-a = v.load_glb_bbox(Path('examples/assets/<module>.glb')).scaled(1000)
+a = v.load_glb_bbox(Path('tests/fixtures/galley_1000_contract_box.glb')).scaled(1000)
 b = v.load_glb_bbox(Path('/tmp/<module>.glb')).scaled(1000)
-print('fixture:', a.size_xyz, 'candidate:', b.size_xyz)
+print('golden fixture:', a.size_xyz, 'candidate:', b.size_xyz)
 "
 ```
 
@@ -163,22 +164,22 @@ If the candidate's bounding box doesn't match the fixture's to the mm,
 the candidate is wrong — the fixture's dimensions are derived from
 the manifest, and so should the candidate's be.
 
-### 9. (Future, not in this PR) Replace the fixture
+### 9. Replace only the manifest asset
 
-This is the step that does not yet exist. Today, the committed GLB
-under `examples/assets/<module>.glb` is the deterministic box from
-`tools/assets/generate_galley_fixture_glb.py`, pinned by
-`test_committed_fixture_matches_generator_byte_for_byte`. Replacing
-it with real art means:
+The fixture-swap gate now exists, but no real art lands until a future
+real-art PR. In that PR:
 
-* Updating that test (or making it conditional).
-* Adding a per-asset "the committed binary is real art, signed off
-  on <date> by <author>" marker.
-* Ensuring the bpy validator agrees with the pure-Python one.
-
-None of this lands in PR #2. PR #2 only documents the procedure and
-provides a single helper command (`check_asset_ready.py`) that runs
-the validators end-to-end on a candidate GLB.
+* Keep `tests/fixtures/galley_1000_contract_box.glb` unchanged unless the
+  manifest contract itself changed.
+* Replace `examples/assets/<module>.glb` with the candidate that passed
+  steps 6 and 7.
+* Update `examples/assets/<module>.asset_acceptance.json` from
+  `asset_kind: "generated_contract_fixture"` to a real-art sign-off state:
+  `generated_fixture_replaced: true`, `production_art: true`,
+  `visual_reviewed: true`, and a non-null reviewer.
+* Run `python tools/assets/validate_asset_acceptance.py`.
+* Ensure the bpy validator agrees with the pure-Python validator before
+  requesting review.
 
 ## Anti-patterns (never do this)
 
