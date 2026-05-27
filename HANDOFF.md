@@ -1,12 +1,12 @@
 # DraftMyVan — Handoff
 
 > **Status:** the DraftMyVan foundation now lives in its own repository.
-> It has eleven CI-gated pure-Python suites, a permanent generated GLB
+> It has twelve CI-gated pure-Python suites, a permanent generated GLB
 > contract fixture, current-asset acceptance metadata, candidate acceptance,
-> review, and visual-audit metadata, two GLB validators (one for CI, one for
-> human use in Blender), material-slot and collision-proxy enforcement, a
-> runtime reference consumer + package report, and documented Blender export
-> and local visual-audit procedures.
+> review, visual-audit, and render-evidence metadata, two GLB validators (one
+> for CI, one for human use in Blender), material-slot and collision-proxy
+> enforcement, a runtime reference consumer + package report, and documented
+> Blender export and local visual-audit/render procedures.
 
 This document is the briefing for whoever picks the project up next —
 whether that's the same author moving the code to a new repository,
@@ -32,6 +32,9 @@ examples/
       galley_1000_candidate_review.md
       galley_1000_candidate_visual_audit.json
       galley_1000_candidate_visual_audit.md
+      galley_1000_candidate_render_evidence.json
+      render_evidence/
+        README.md                # Local render output policy; PNGs ignored
     README.md                    # Asset directory rules
 runtime/                         # Reference consumer (PR #8, #9)
   __init__.py                    # Package docstring, boundary doc, re-exports
@@ -46,12 +49,14 @@ tools/
     validate_candidate_asset.py     # Candidate workflow metadata + GLB gate
     validate_candidate_review.py    # Candidate review metadata + SHA gate
     validate_candidate_visual_audit.py  # Visual audit metadata + SHA gate
+    validate_render_evidence.py     # Render evidence metadata gate
   blender/
     validate_glb_against_manifest.py  # Pure-Python GLB-vs-manifest gate (PR #4)
     validate_in_blender.py            # Authoritative bpy variant (PR #4)
     _anchor_contract.py               # Shared anchor enforcement (PR #5)
     EXPORT_REAL_ASSET.md              # Human Blender export procedure (PR #2)
     RENDER_CANDIDATE_AUDIT.md         # Local visual audit render procedure
+    render_candidate_views.py         # Local Blender PNG view renderer
     asset_export_checklist.md         # Per-asset sign-off sheet (PR #2)
     check_asset_ready.py              # One-command readiness wrapper (PR #2)
     README.md
@@ -69,6 +74,7 @@ tests/                           # Pure-Python; no Blender required
   test_candidate_asset.py        # 13 tests
   test_candidate_review.py       # 13 tests
   test_candidate_visual_audit.py # 11 tests
+  test_render_evidence.py        # 9 tests
   test_runtime_consumer.py       # 18 tests
   test_package_report.py         # 16 tests
   test_handoff_ready.py          # 10 tests
@@ -112,7 +118,8 @@ Left behind during PaperAI incubation, then redone in this repository:
 | draftmyvan **#4** | merged | Separates the permanent generated contract fixture (`tests/fixtures/galley_1000_contract_box.glb`) from the current manifest asset (`examples/assets/galley_1000.glb`) and adds acceptance metadata/validation so a future real-art swap cannot weaken schema, dimension, anchor, material-slot, or collision-proxy gates. |
 | Candidate workflow PR | merged | Adds the first candidate asset area and a simple Blender-exported `galley_1000_candidate.glb`, plus candidate-only metadata and validation. It does not replace the manifest asset or polished real art. |
 | Candidate review PR | merged | Adds SHA-pinned review metadata, a review report, checklist, promotion criteria, and a validator that keeps the candidate non-production and non-promotable. |
-| Candidate visual audit PR | this slice | Adds SHA-pinned visual audit metadata and a local Blender render/audit procedure. It records findings without committing render images or promoting the candidate. |
+| Candidate visual audit PR | merged | Adds SHA-pinned visual audit metadata and a local Blender render/audit procedure. It records findings without committing render images or promoting the candidate. |
+| Candidate render evidence PR | this slice | Adds a local Blender view-render script, ignored render output area, render-evidence metadata, and a pure-Python metadata validator. It does not commit PNG renders or promote the candidate. |
 
 ## Current command suite
 
@@ -149,6 +156,15 @@ python tools/assets/validate_candidate_review.py \
 python tools/assets/validate_candidate_visual_audit.py \
     examples/assets/candidates/galley_1000_candidate_visual_audit.json
 
+# Validate candidate render evidence metadata
+python tools/assets/validate_render_evidence.py \
+    examples/assets/candidates/galley_1000_candidate_render_evidence.json
+
+# Generate local render evidence when Blender is available
+blender --background --python tools/blender/render_candidate_views.py -- \
+    --candidate examples/assets/candidates/galley_1000_candidate.glb \
+    --out examples/assets/candidates/render_evidence/galley_1000_candidate/
+
 # Read one manifest as typed runtime data
 python -m runtime.load_module examples/galley_1000.json
 
@@ -170,6 +186,7 @@ python -m tests.test_asset_acceptance             # 12 tests
 python -m tests.test_candidate_asset              # 13 tests
 python -m tests.test_candidate_review             # 13 tests
 python -m tests.test_candidate_visual_audit       # 11 tests
+python -m tests.test_render_evidence              # 9 tests
 python -m tests.test_runtime_consumer             # 18 tests
 python -m tests.test_package_report               # 16 tests
 python -m tests.test_handoff_ready                # 10 tests
@@ -207,7 +224,8 @@ python -m tests.test_handoff_ready                # 10 tests
   says the candidate is not production art and not promotion-ready. Candidate
   visual audit metadata is also SHA-pinned and currently says
   `not_production_ready` / `do_not_promote`; render images are not committed
-  yet.
+  yet. Render evidence metadata is procedure-only for now and points to an
+  ignored local output directory.
 - **Catalog of one.** `examples/galley_1000.json` is the only module.
 - **No UE5, Fusion 360, or CNC integration.** Every PR deferred them
   deliberately.
@@ -221,8 +239,9 @@ manufacturing tool. Before that handoff, in priority order:
    The candidate must pass schema, dimensions, `floor_back_left` anchor,
    material-slot, and collision-proxy validation; its review metadata must
    match the exact candidate SHA; its visual audit metadata must match the
-   exact candidate SHA and record current findings; human visual/manufacturing
-   sign-off must be recorded; promotion replaces only
+   exact candidate SHA and record current findings; render evidence must be
+   generated or reviewed according to the current render-evidence policy;
+   human visual/manufacturing sign-off must be recorded; promotion replaces only
    `examples/assets/galley_1000.glb`; and the golden generated fixture under
    `tests/fixtures/` stays as the byte-for-byte regression reference.
 2. **Add anchor support beyond `floor_back_left`** as the catalog

@@ -51,6 +51,9 @@ jobs:
       - name: Run candidate-visual-audit suite (visual audit metadata)
         run: python -m tests.test_candidate_visual_audit
 
+      - name: Run render-evidence suite (local render procedure metadata)
+        run: python -m tests.test_render_evidence
+
       - name: Run runtime-consumer suite (manifest read as typed data)
         run: python -m tests.test_runtime_consumer
 
@@ -77,3 +80,6 @@ jobs:
 
       - name: Run candidate-visual-audit metadata CLI
         run: python tools/assets/validate_candidate_visual_audit.py
+
+      - name: Run render-evidence metadata CLI
+        run: python tools/assets/validate_render_evidence.py

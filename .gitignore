@@ -10,3 +10,4 @@ build/
 .coverage
 htmlcov/
 .DS_Store
+examples/assets/candidates/render_evidence/**/*.png

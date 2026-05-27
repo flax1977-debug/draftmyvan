@@ -107,6 +107,17 @@ findings and required improvements, but does not make the candidate
 production-ready. Render images are not committed or required in CI yet; the
 local procedure is `tools/blender/RENDER_CANDIDATE_AUDIT.md`.
 
+## Candidate render evidence workflow
+
+| Command | Purpose | Exit |
+|---|---|---|
+| `python tools/assets/validate_render_evidence.py examples/assets/candidates/galley_1000_candidate_render_evidence.json` | Validate render-evidence metadata: candidate SHA, visual-audit reference, render script path, expected views, local-only render state, and non-promotion flags. | 0 valid, 1 invalid |
+| `blender --background --python tools/blender/render_candidate_views.py -- --candidate examples/assets/candidates/galley_1000_candidate.glb --out examples/assets/candidates/render_evidence/galley_1000_candidate/` | Generate local PNG evidence views when Blender is available. | Blender exit code |
+
+Render evidence supports human review only. Generated PNGs under
+`examples/assets/candidates/render_evidence/` are ignored by Git for now, and
+CI validates only the metadata/procedure.
+
 ## Runtime consumer (PR #8)
 
 | Command | Purpose | Exit |
@@ -137,6 +148,7 @@ python -m tests.test_asset_acceptance             # 12 tests — fixture-swap me
 python -m tests.test_candidate_asset              # 13 tests — candidate workflow guard
 python -m tests.test_candidate_review             # 13 tests — candidate review guard
 python -m tests.test_candidate_visual_audit       # 11 tests — candidate visual audit guard
+python -m tests.test_render_evidence              # 9 tests — render evidence metadata guard
 python -m tests.test_runtime_consumer             # 18 tests — manifest read as typed runtime data
 python -m tests.test_package_report               # 16 tests — catalog/package readiness
 python -m tests.test_handoff_ready                # 10 tests — extraction readiness helper
@@ -149,7 +161,7 @@ for t in tests.test_validator tests.test_blender_manifest_contract \
          tests.test_check_asset_ready tests.test_galley_fixture \
          tests.test_asset_acceptance tests.test_candidate_asset \
          tests.test_candidate_review tests.test_candidate_visual_audit \
-         tests.test_runtime_consumer \
+         tests.test_render_evidence tests.test_runtime_consumer \
          tests.test_package_report \
          tests.test_handoff_ready ; do
     echo "=== $t" ; python -m $t || break
