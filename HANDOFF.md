@@ -42,7 +42,7 @@ tools/
 tests/                           # Pure-Python; no Blender required
   test_validator.py              # 10 tests
   test_blender_manifest_contract.py  # 30 tests
-  test_check_asset_ready.py      # 9 tests
+  test_check_asset_ready.py      # 10 tests
   test_galley_fixture.py         # 8 tests
   test_runtime_consumer.py       # 18 tests
   test_package_report.py         # 16 tests
@@ -82,7 +82,7 @@ Left behind during PaperAI incubation, then redone in this repository:
 
 | PR | Status | Why it matters |
 |---|---|---|
-| PaperAI **#7** | redone as draftmyvan PR #2 | Adds `tools/blender/EXPORT_REAL_ASSET.md` (the documented Blender export procedure for real cabinet art), `tools/blender/asset_export_checklist.md` (printable per-asset sign-off), `tools/blender/check_asset_ready.py` (one-command readiness wrapper), and `tests/test_check_asset_ready.py` (9 tests). It is the prerequisite for ever replacing the generated fixture with human-authored art. |
+| PaperAI **#7** | redone as draftmyvan PR #2 | Adds `tools/blender/EXPORT_REAL_ASSET.md` (the documented Blender export procedure for real cabinet art), `tools/blender/asset_export_checklist.md` (printable per-asset sign-off), `tools/blender/check_asset_ready.py` (one-command readiness wrapper), and `tests/test_check_asset_ready.py` (10 tests). It is the prerequisite for ever replacing the generated fixture with human-authored art. |
 
 ## Current command suite
 
@@ -119,7 +119,7 @@ Test suites (all pure Python):
 ```bash
 python -m tests.test_validator                    # 10 tests
 python -m tests.test_blender_manifest_contract    # 30 tests
-python -m tests.test_check_asset_ready            # 9 tests
+python -m tests.test_check_asset_ready            # 10 tests
 python -m tests.test_galley_fixture               # 8 tests
 python -m tests.test_runtime_consumer             # 18 tests
 python -m tests.test_package_report               # 16 tests

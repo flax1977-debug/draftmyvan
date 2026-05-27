@@ -110,6 +110,19 @@ def test_unreadable_manifest_returns_error_exit_2() -> None:
     assert "manifest" in joined.lower()
 
 
+def test_missing_jsonschema_returns_error_exit_2() -> None:
+    original = car.Draft202012Validator
+    car.Draft202012Validator = None
+    try:
+        code, lines = car.check(SAMPLE_MANIFEST, FIXTURE_GLB)
+    finally:
+        car.Draft202012Validator = original
+    joined = "\n".join(lines)
+    assert code == 2, joined
+    assert "jsonschema not installed" in joined
+    assert "RESULT: READY" not in joined
+
+
 # ---------------------------------------------------------------------------
 # Argparse
 # ---------------------------------------------------------------------------
@@ -152,6 +165,7 @@ def main() -> int:
         test_wrong_size_glb_reports_not_ready,
         test_manifest_schema_failure_reports_not_ready,
         test_unreadable_manifest_returns_error_exit_2,
+        test_missing_jsonschema_returns_error_exit_2,
         test_argparse_requires_manifest,
         test_main_returns_0_for_committed_fixture,
         test_default_glb_resolver_strips_assets_prefix_correctly,

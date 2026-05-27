@@ -76,7 +76,7 @@ the printable sign-off sheet is `tools/blender/asset_export_checklist.md`.
 ```bash
 python -m tests.test_validator                    # 10 tests — schema + manifest
 python -m tests.test_blender_manifest_contract    # 30 tests — Blender gate, anchor enforcement
-python -m tests.test_check_asset_ready            # 9 tests — real-asset readiness wrapper
+python -m tests.test_check_asset_ready            # 10 tests — real-asset readiness wrapper
 python -m tests.test_galley_fixture               # 8 tests — committed fixture + generator determinism
 python -m tests.test_runtime_consumer             # 18 tests — manifest read as typed runtime data
 python -m tests.test_package_report               # 16 tests — catalog/package readiness

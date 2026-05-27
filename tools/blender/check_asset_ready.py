@@ -93,10 +93,10 @@ def check(
 
     # --- 2. Manifest schema ---
     if Draft202012Validator is None:
-        lines.append(
-            "[WARN] jsonschema not installed; skipping schema validation. "
-            "Run `pip install jsonschema` to enable."
-        )
+        return 2, lines + [
+            "[ERROR] jsonschema not installed; cannot run manifest schema validation. "
+            "Run `pip install jsonschema` and re-run."
+        ]
     else:
         try:
             schema = json.loads(_schema_path().read_text(encoding="utf-8"))
