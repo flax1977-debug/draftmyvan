@@ -11,3 +11,10 @@ build/
 htmlcov/
 .DS_Store
 examples/assets/candidates/render_evidence/**/*.png
+!examples/assets/candidates/render_evidence/galley_1000_candidate/
+!examples/assets/candidates/render_evidence/galley_1000_candidate/front.png
+!examples/assets/candidates/render_evidence/galley_1000_candidate/rear.png
+!examples/assets/candidates/render_evidence/galley_1000_candidate/left.png
+!examples/assets/candidates/render_evidence/galley_1000_candidate/right.png
+!examples/assets/candidates/render_evidence/galley_1000_candidate/top.png
+!examples/assets/candidates/render_evidence/galley_1000_candidate/three_quarter.png

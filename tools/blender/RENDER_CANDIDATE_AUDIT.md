@@ -3,7 +3,9 @@
 This local procedure explains how to inspect or render
 `examples/assets/candidates/galley_1000_candidate.glb` in Blender. It records a
 repeatable audit path only; it does not commit production renders and does not
-promote the candidate.
+promote the candidate. The current repository includes six committed PNGs as
+review evidence for the blockout candidate only. They are not product
+screenshots and are not visual sign-off.
 
 The scripted local renderer is:
 
@@ -89,14 +91,19 @@ three_quarter.png
 
 ## CI Policy
 
-Evidence images are optional in CI and should not be required yet. The CI gate
-checks only the JSON visual-audit metadata, render-evidence metadata, and
-script path. Generated PNGs are ignored by Git. Images can be added in a future
-PR once the evidence naming, size limits, determinism, and retention policy are
-settled.
+CI does not run Blender. It checks the JSON visual-audit metadata,
+render-evidence metadata, render script path, and the six committed PNGs by
+path, file size, and SHA256. Generated PNGs outside the approved
+`examples/assets/candidates/render_evidence/galley_1000_candidate/` set remain
+ignored by Git until a future PR explicitly approves them.
+
+If the candidate GLB changes, regenerate all six views and update
+`examples/assets/candidates/galley_1000_candidate_render_evidence.json` with
+the new candidate SHA, image sizes, and image SHA256 values.
 
 ## Current Scope
 
-The current workflow records the visual audit procedure, current findings, and
-a local render-generation script. It does not add production renders, does not
-claim visual sign-off, and does not replace `examples/assets/galley_1000.glb`.
+The current workflow records the visual audit procedure, current findings, a
+local render-generation script, and committed review evidence for the current
+blockout. It does not add production renders, does not claim visual sign-off,
+and does not replace `examples/assets/galley_1000.glb`.

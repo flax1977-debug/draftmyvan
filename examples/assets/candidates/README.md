@@ -29,10 +29,11 @@ the manifest-selected asset at `examples/assets/galley_1000.glb`.
   SHA, and must keep `visual_status: not_production_ready` and
   `promotion_recommendation: do_not_promote` until a future explicit
   promotion PR.
-- Render evidence is local review support. The metadata points to the render
-  script and output directory, but generated PNGs are ignored and not committed
-  yet. The render script orients the GLB contract axes for Blender review and
-  hides `UCX_` collision proxies from visual output.
+- Render evidence is review support. The current blockout has six committed
+  PNG views under `render_evidence/galley_1000_candidate/`, pinned by metadata
+  path, size, and SHA256. These images are not product screenshots, do not
+  claim production art, and do not promote the candidate. Other generated PNG
+  output remains ignored until a future PR explicitly approves it.
 
 ## Lifecycle
 
@@ -49,8 +50,9 @@ golden contract fixture
 
 The current state reaches the render-evidence workflow stage. It records what
 the current candidate proves, what can be seen from local renders, and what is
-still missing before any production claim. Render evidence is procedure-ready
-but does not yet commit PNG output.
+still missing before any production claim. Render evidence now includes a
+committed six-view PNG set for the current blockout only; future candidate
+changes must regenerate the images and update the SHA-pinned metadata.
 
 ## Current candidate
 
@@ -114,5 +116,7 @@ the candidate is not production-ready and should not be promoted.
 
 Use `candidate_review_checklist.md`, `PROMOTION_CRITERIA.md`, and
 `tools/blender/RENDER_CANDIDATE_AUDIT.md` before any future promotion work.
-No render images are committed yet; generated PNGs under `render_evidence/`
-are ignored.
+The six committed render images are review evidence for this exact candidate
+SHA only. They are not product screenshots and do not imply visual sign-off or
+production readiness. Generated PNGs outside the approved
+`render_evidence/galley_1000_candidate/` set remain ignored.

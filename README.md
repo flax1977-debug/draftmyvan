@@ -312,8 +312,11 @@ python tools/assets/validate_candidate_visual_audit.py \
     examples/assets/candidates/galley_1000_candidate_visual_audit.json
 ```
 
-Render evidence is local review support. The Blender script can generate the
-six standard PNG views, but the PNGs are ignored and not committed yet:
+Render evidence is review support. The Blender script generates the six
+standard PNG views, and the current blockout has a committed evidence set
+under `examples/assets/candidates/render_evidence/galley_1000_candidate/`.
+These images are not product screenshots, do not imply production art, and do
+not promote the candidate:
 
 ```bash
 blender --background --python tools/blender/render_candidate_views.py -- \
@@ -333,9 +336,10 @@ Lifecycle:
 3. **Candidate review** — SHA-pinned report and metadata saying what the
    candidate proves and what remains missing.
 4. **Visual audit** — SHA-pinned visual findings and repeatable local render
-   procedure, without committed render-image requirements yet.
+   procedure; still not production sign-off.
 5. **Render evidence** — local Blender script and metadata for repeatable
-   view generation; generated PNGs remain uncommitted for now.
+   view generation; the current blockout has six committed review PNGs pinned
+   by path, size, and SHA.
 6. **Accepted manifest asset** — future PR copies an accepted candidate to
    `examples/assets/galley_1000.glb` and updates acceptance metadata.
 7. **Future real art** — later quality work can improve the accepted asset,
@@ -347,10 +351,12 @@ Lifecycle:
 test suites, the static handoff check, the asset-readiness CLI, the
 asset-acceptance metadata CLI, the candidate-asset metadata CLI, the
 candidate-review metadata CLI, and the candidate-visual-audit metadata CLI on
-every push and pull request. CI also validates render-evidence metadata and the
-local Blender script path. Blender itself is intentionally not installed in CI;
-render images are not required yet and remain ignored local evidence unless a
-future PR explicitly commits a stable image set.
+every push and pull request. CI also validates render-evidence metadata,
+including the six committed PNG paths, sizes, and SHA256 values. Blender itself
+is intentionally not installed in CI; CI validates committed evidence metadata
+and files, not live Blender rendering. Future candidate changes require
+regenerating the PNGs and re-signing render-evidence metadata to the new
+candidate SHA.
 
 ## What's next (not in this slice)
 

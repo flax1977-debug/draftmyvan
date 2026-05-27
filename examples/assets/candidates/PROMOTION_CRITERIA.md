@@ -10,8 +10,9 @@ keeps the candidate SHA-synced, but the current audit state is
 `not_production_ready` with `do_not_promote`.
 
 Render evidence supports human review, but it is not promotion either. The
-current render-evidence state is `procedure_ready`; generated PNGs are ignored
-and not committed yet.
+current render-evidence state is `committed_review_evidence`; six PNGs are
+committed for the current blockout and pinned by path, size, and SHA256. They
+are review evidence only, not product screenshots and not visual sign-off.
 
 The current candidate is a review-worthy blockout, not production art. Visible
 panel seams, countertop separation, and a sink marker improve review value, but
@@ -23,7 +24,8 @@ sign-off, or manufacturability requirements.
 - Candidate review metadata must be current with the exact candidate SHA.
 - Candidate visual audit metadata must be current with the exact candidate SHA.
 - Candidate render-evidence metadata must be current with the exact candidate
-  SHA and point to the local render script/output directory.
+  SHA, point to the local render script/output directory, and pin any
+  committed render PNGs by path, file size, and SHA256.
 - `production_art` must stay `false` until a future explicit promotion PR.
 - `promotion_ready` must stay `false` until a future explicit promotion PR.
 - The current manifest asset at `examples/assets/galley_1000.glb` must not be

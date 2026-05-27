@@ -32,6 +32,14 @@ VISUAL_AUDIT = (
     / "galley_1000_candidate_visual_audit.json"
 )
 RENDER_SCRIPT = REPO_ROOT / "tools" / "blender" / "render_candidate_views.py"
+RENDER_EVIDENCE_DIR = (
+    REPO_ROOT
+    / "examples"
+    / "assets"
+    / "candidates"
+    / "render_evidence"
+    / "galley_1000_candidate"
+)
 
 
 def _load_json(path: Path) -> dict:
@@ -39,13 +47,28 @@ def _load_json(path: Path) -> dict:
         return json.load(f)
 
 
-def _temp_root(*, include_render_script: bool = True, include_visual_audit: bool = True) -> Path:
+def _temp_root(
+    *,
+    include_render_script: bool = True,
+    include_visual_audit: bool = True,
+    include_render_files: bool = True,
+) -> Path:
     root = Path(tempfile.mkdtemp(prefix="dmv_render_evidence_"))
     (root / "examples" / "assets" / "candidates").mkdir(parents=True)
     (root / "tools" / "blender").mkdir(parents=True)
     shutil.copy2(CANDIDATE_GLB, root / "examples" / "assets" / "candidates" / "galley_1000_candidate.glb")
     if include_visual_audit:
         shutil.copy2(VISUAL_AUDIT, root / "examples" / "assets" / "candidates" / "galley_1000_candidate_visual_audit.json")
+    if include_render_files:
+        shutil.copytree(
+            RENDER_EVIDENCE_DIR,
+            root
+            / "examples"
+            / "assets"
+            / "candidates"
+            / "render_evidence"
+            / "galley_1000_candidate",
+        )
     if include_render_script:
         shutil.copy2(RENDER_SCRIPT, root / "tools" / "blender" / "render_candidate_views.py")
     return root
@@ -62,15 +85,20 @@ def _validate_mutation(
     *,
     include_render_script: bool = True,
     include_visual_audit: bool = True,
+    include_render_files: bool = True,
+    after_write=None,
 ) -> tuple[str, str]:
     root = _temp_root(
         include_render_script=include_render_script,
         include_visual_audit=include_visual_audit,
+        include_render_files=include_render_files,
     )
     try:
         data = copy.deepcopy(_load_json(METADATA))
         mutator(data)
         metadata = _write_metadata(root, data)
+        if after_write is not None:
+            after_write(root, data)
         status, lines = r.validate_render_evidence(metadata, root)
         return status, "\n".join(lines)
     finally:
@@ -82,6 +110,7 @@ def test_current_metadata_validates() -> None:
     joined = "\n".join(lines)
     assert status == r.STATUS_VALID, joined
     assert "RESULT: RENDER EVIDENCE VALID" in joined
+    assert "committed render PNGs are present" in joined
 
 
 def test_wrong_candidate_sha_fails() -> None:
@@ -113,12 +142,89 @@ def test_missing_expected_view_fails() -> None:
     assert "three_quarter" in joined
 
 
-def test_committed_renders_true_fails_without_checked_images() -> None:
+def test_missing_png_fails() -> None:
     status, joined = _validate_mutation(
-        lambda d: d.__setitem__("committed_renders", True)
+        lambda d: d,
+        after_write=lambda root, _data: (
+            root
+            / "examples"
+            / "assets"
+            / "candidates"
+            / "render_evidence"
+            / "galley_1000_candidate"
+            / "front.png"
+        ).unlink(),
     )
     assert status == r.STATUS_INVALID
-    assert "render_paths" in joined
+    assert "render for front does not exist" in joined
+
+
+def test_missing_render_file_entry_fails() -> None:
+    def mutate(data: dict) -> None:
+        data["render_files"] = [
+            entry for entry in data["render_files"] if entry["view"] != "front"
+        ]
+
+    status, joined = _validate_mutation(mutate)
+    assert status == r.STATUS_INVALID
+    assert "render_files is missing: front" in joined
+
+
+def test_wrong_png_sha_fails() -> None:
+    def mutate(data: dict) -> None:
+        data["render_files"][0]["sha256"] = "0" * 64
+
+    status, joined = _validate_mutation(mutate)
+    assert status == r.STATUS_INVALID
+    assert "render_files[0].sha256 mismatch" in joined
+
+
+def test_wrong_png_size_fails() -> None:
+    def mutate(data: dict) -> None:
+        data["render_files"][0]["file_size_bytes"] += 1
+
+    status, joined = _validate_mutation(mutate)
+    assert status == r.STATUS_INVALID
+    assert "render_files[0].file_size_bytes mismatch" in joined
+
+
+def test_render_path_outside_allowed_folder_fails() -> None:
+    def mutate(data: dict) -> None:
+        data["render_output_dir"] = "outside"
+        data["render_files"][0]["path"] = "outside/front.png"
+
+    def after_write(root: Path, _data: dict) -> None:
+        outside = root / "outside"
+        outside.mkdir()
+        shutil.copy2(RENDER_EVIDENCE_DIR / "front.png", outside / "front.png")
+
+    status, joined = _validate_mutation(mutate, after_write=after_write)
+    assert status == r.STATUS_INVALID
+    assert "must be under examples/assets/candidates/render_evidence" in joined
+
+
+def test_committed_renders_false_procedure_ready_metadata_still_validates() -> None:
+    def mutate(data: dict) -> None:
+        data["committed_renders"] = False
+        data["evidence_status"] = "procedure_ready"
+        data.pop("render_files")
+        data.pop("render_command")
+        data.pop("render_tool")
+        data.pop("render_note")
+
+    status, joined = _validate_mutation(mutate, include_render_files=False)
+    assert status == r.STATUS_VALID, joined
+    assert "committed_renders is false" in joined
+
+
+def test_committed_renders_false_requires_procedure_ready_status() -> None:
+    def mutate(data: dict) -> None:
+        data["committed_renders"] = False
+        data.pop("render_files")
+
+    status, joined = _validate_mutation(mutate, include_render_files=False)
+    assert status == r.STATUS_INVALID
+    assert 'evidence_status must be "procedure_ready"' in joined
 
 
 def test_promotion_ready_true_fails() -> None:
@@ -152,7 +258,13 @@ def main() -> int:
         test_missing_render_script_fails,
         test_missing_visual_audit_metadata_fails,
         test_missing_expected_view_fails,
-        test_committed_renders_true_fails_without_checked_images,
+        test_missing_png_fails,
+        test_missing_render_file_entry_fails,
+        test_wrong_png_sha_fails,
+        test_wrong_png_size_fails,
+        test_render_path_outside_allowed_folder_fails,
+        test_committed_renders_false_procedure_ready_metadata_still_validates,
+        test_committed_renders_false_requires_procedure_ready_status,
         test_promotion_ready_true_fails,
         test_production_art_true_fails,
         test_cli_default_metadata_returns_0,
