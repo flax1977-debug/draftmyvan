@@ -1,8 +1,9 @@
 # Candidate assets
 
 This directory holds candidate GLBs, candidate acceptance metadata, candidate
-review metadata, visual audit metadata, and render-evidence metadata. These
-files are not production assets and are not referenced by any manifest.
+review metadata, visual audit metadata, render-evidence metadata, and human
+visual review metadata. These files are not production assets and are not
+referenced by any manifest.
 
 Candidates exist to test the real Blender export workflow before replacing
 the manifest-selected asset at `examples/assets/galley_1000.glb`.
@@ -34,6 +35,10 @@ the manifest-selected asset at `examples/assets/galley_1000.glb`.
   path, size, and SHA256. These images are not product screenshots, do not
   claim production art, and do not promote the candidate. Other generated PNG
   output remains ignored until a future PR explicitly approves it.
+- Human visual review records observations against the committed render
+  evidence. It does not equal production approval, manufacturability approval,
+  or promotion readiness, and must keep `production_art: false`,
+  `promotion_ready: false`, and `promotion_recommendation: do_not_promote`.
 
 ## Lifecycle
 
@@ -44,15 +49,18 @@ golden contract fixture
 -> candidate review
 -> visual audit
 -> render evidence
+-> human visual review
 -> accepted production asset
 -> future UE5/Fusion consumers
 ```
 
-The current state reaches the render-evidence workflow stage. It records what
-the current candidate proves, what can be seen from local renders, and what is
+The current state reaches the human visual review stage. It records what the
+current candidate proves, what can be seen from committed renders, and what is
 still missing before any production claim. Render evidence now includes a
-committed six-view PNG set for the current blockout only; future candidate
-changes must regenerate the images and update the SHA-pinned metadata.
+committed six-view PNG set for the current blockout only, and the human visual
+review records view-by-view observations without approving production art.
+Future candidate changes must regenerate the images and update the SHA-pinned
+metadata.
 
 ## Current candidate
 
@@ -98,6 +106,13 @@ python tools/assets/validate_render_evidence.py \
     examples/assets/candidates/galley_1000_candidate_render_evidence.json
 ```
 
+Validate the human visual review metadata with:
+
+```bash
+python tools/assets/validate_human_visual_review.py \
+    examples/assets/candidates/galley_1000_candidate_human_visual_review.json
+```
+
 Generate local render evidence when Blender is available:
 
 ```bash
@@ -113,6 +128,9 @@ promotion-ready.
 The current visual audit is
 `examples/assets/candidates/galley_1000_candidate_visual_audit.md`; it says
 the candidate is not production-ready and should not be promoted.
+The current human visual review is
+`examples/assets/candidates/galley_1000_candidate_human_visual_review.md`; it
+records that the committed PNGs show a useful blockout, not production art.
 
 Use `candidate_review_checklist.md`, `PROMOTION_CRITERIA.md`, and
 `tools/blender/RENDER_CANDIDATE_AUDIT.md` before any future promotion work.
@@ -120,3 +138,7 @@ The six committed render images are review evidence for this exact candidate
 SHA only. They are not product screenshots and do not imply visual sign-off or
 production readiness. Generated PNGs outside the approved
 `render_evidence/galley_1000_candidate/` set remain ignored.
+
+The next recommended action is to improve the candidate again toward
+production visual/manufacturing detail, or begin a separate Fusion proof while
+this visual candidate remains blockout-only.

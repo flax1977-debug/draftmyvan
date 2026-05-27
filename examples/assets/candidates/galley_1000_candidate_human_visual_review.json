@@ -1,0 +1,44 @@
+{
+  "manifest_id": "galley_1000_sink_left_oak",
+  "candidate_asset_path": "examples/assets/candidates/galley_1000_candidate.glb",
+  "candidate_sha256": "0821e06ce68396f413447ec46e16ea5cf179c4d1c5458c59681c77f27e115ee8",
+  "render_evidence_path": "examples/assets/candidates/galley_1000_candidate_render_evidence.json",
+  "visual_audit_path": "examples/assets/candidates/galley_1000_candidate_visual_audit.json",
+  "review_version": "0.1.0",
+  "review_date": "2026-05-27",
+  "reviewer": null,
+  "production_art": false,
+  "promotion_ready": false,
+  "promotion_recommendation": "do_not_promote",
+  "render_evidence_status": "committed_review_evidence",
+  "view_observations": {
+    "front": "Front view shows the cabinet blockout proportions, countertop band, plinth, vertical door split, and right-side drawer seam. It is useful for blockout review but lacks hardware, bevels, finished materials, and production joinery detail.",
+    "rear": "Rear view reads as a simple flat cabinet back with countertop overhang and plinth. It confirms rear massing but does not show finished back construction or manufacturable detail.",
+    "left": "Left view shows side massing, countertop overhang, plinth, and the front face projecting forward. It remains plain blockout geometry with no panel construction detail.",
+    "right": "Right view shows side massing plus front drawer/door seam thickness at the leading edge. It helps confirm the blockout layout but still lacks hardware and material fidelity.",
+    "top": "Top view clearly shows the countertop footprint and simple sink marker on the left side. It does not prove real sink cut-out construction, UVs, or countertop material quality.",
+    "three_quarter": "Three-quarter view gives the best overall evidence: front panel seams, countertop separation, plinth, side massing, and sink marker are visible together. It is review-worthy as a blockout and still not production art."
+  },
+  "strengths": [
+    "Blockout now communicates cabinet front layout instead of reading as a plain cuboid.",
+    "Countertop distinction, plinth, panel seams, and sink marker are visible in committed evidence.",
+    "Collision proxy is hidden from render output while remaining validated in the GLB gates.",
+    "Render evidence is SHA-pinned and tied to the current candidate SHA."
+  ],
+  "weaknesses": [
+    "Materials are placeholder colors only and do not represent production PBR materials.",
+    "UV unwraps, textures, bevels, topology cleanup, and mesh hygiene have not been visually accepted.",
+    "Hardware, joinery detail, real sink construction, and manufacturability relevance are not represented.",
+    "No human production visual sign-off or manufacturing sign-off is recorded."
+  ],
+  "required_before_promotion": [
+    "High-quality PBR materials",
+    "Proper UV unwrapping",
+    "Optimized topology and mesh hygiene",
+    "Joinery and construction detail appropriate to the production claim",
+    "Hardware and real sink/countertop treatment",
+    "Visual sign-off",
+    "Manufacturability review"
+  ],
+  "next_recommended_action": "Improve the candidate blockout toward production visual/manufacturing detail, or begin a separate Fusion proof while keeping this visual candidate blockout-only."
+}

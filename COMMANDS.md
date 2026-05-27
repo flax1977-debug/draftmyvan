@@ -130,6 +130,19 @@ Other generated PNG output under `examples/assets/candidates/render_evidence/`
 remains ignored. Future candidate changes require regenerating the PNGs and
 updating their pinned file sizes and SHA256 values.
 
+## Candidate human visual review metadata
+
+| Command | Purpose | Exit |
+|---|---|---|
+| `python tools/assets/validate_human_visual_review.py examples/assets/candidates/galley_1000_candidate_human_visual_review.json` | Validate human review observations against the committed render evidence, linked visual audit metadata, non-production state, and do-not-promote recommendation. | 0 valid, 1 invalid |
+
+Human visual review records what the committed render evidence actually shows.
+It does not equal production approval, visual sign-off, manufacturability
+approval, or promotion readiness. The current review says the blockout is
+useful for visual review but still not production-ready. The next recommended
+action is either to improve the candidate again or begin a separate Fusion
+proof while the visual candidate remains blockout-only.
+
 ## Runtime consumer (PR #8)
 
 | Command | Purpose | Exit |
@@ -162,6 +175,7 @@ python -m tests.test_create_galley_candidate      # 7 tests — candidate genera
 python -m tests.test_candidate_review             # 13 tests — candidate review guard
 python -m tests.test_candidate_visual_audit       # 11 tests — candidate visual audit guard
 python -m tests.test_render_evidence              # 20 tests — render evidence metadata guard
+python -m tests.test_human_visual_review          # 14 tests — human visual review guard
 python -m tests.test_runtime_consumer             # 18 tests — manifest read as typed runtime data
 python -m tests.test_package_report               # 16 tests — catalog/package readiness
 python -m tests.test_handoff_ready                # 10 tests — extraction readiness helper
@@ -175,6 +189,7 @@ for t in tests.test_validator tests.test_blender_manifest_contract \
          tests.test_asset_acceptance tests.test_candidate_asset \
          tests.test_create_galley_candidate tests.test_candidate_review \
          tests.test_candidate_visual_audit tests.test_render_evidence \
+         tests.test_human_visual_review \
          tests.test_runtime_consumer \
          tests.test_package_report \
          tests.test_handoff_ready ; do

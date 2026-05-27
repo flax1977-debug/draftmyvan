@@ -40,6 +40,10 @@ readiness.
 - [ ] Surfaces, seams, bevels, and proportions are acceptable for review.
 - [ ] Placeholder blocks have been replaced before any production claim.
 - [ ] The asset has been inspected from all normal viewing angles.
+- [ ] Human visual review metadata records observations from the committed
+      render evidence.
+- [ ] Review notes explicitly state that render evidence is not production
+      approval.
 
 ## Topology / Mesh Hygiene
 
@@ -79,4 +83,6 @@ readiness.
 - [ ] Visual reviewer recorded.
 - [ ] Manufacturing reviewer recorded when relevant.
 - [ ] Candidate review JSON updated with the current candidate SHA.
+- [ ] Human visual review JSON updated with the current candidate SHA and
+      committed render evidence status.
 - [ ] Promotion decision happens in a future explicit promotion PR.
