@@ -5,6 +5,25 @@ This module is intentionally importable in normal Python without Fusion 360 or
 Autodesk `adsk` modules installed. It validates and summarizes the deterministic
 dry-run payload only; it does not create geometry, drawings, cut lists, DXF, or
 CNC output.
+
+Expected payload shape:
+
+    {
+      "template": "galley_v1",
+      "manifest_id": "galley_1000_sink_left_oak",
+      "parameters": {
+        "Width": 1000,
+        "Depth": 520,
+        "Height": 900,
+        "PlyThickness": 18
+      },
+      "hardware": ["hinges_4x", "runners_2x"]
+    }
+
+This skeleton enforces positive integer millimetre values for required
+parameters. Template-specific reasonable upper/lower cabinet bounds are deferred
+until the future Fusion geometry/carcass proof; they are not silently assumed
+here.
 """
 
 from __future__ import annotations

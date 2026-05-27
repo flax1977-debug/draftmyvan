@@ -49,6 +49,9 @@ def _validation_error(payload: dict) -> str:
 def test_skeleton_module_imports_without_adsk_installed() -> None:
     assert skeleton.EXPECTED_TEMPLATE == "galley_v1"
     assert "adsk" not in sys.modules
+    assert skeleton.__doc__ is not None
+    assert "Expected payload shape" in skeleton.__doc__
+    assert "reasonable upper/lower cabinet bounds are deferred" in skeleton.__doc__
 
 
 def test_expected_payload_validates() -> None:
