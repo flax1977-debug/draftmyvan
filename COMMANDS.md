@@ -154,6 +154,7 @@ proof while the visual candidate remains blockout-only.
 | `python tools/fusion/check_fusion_geometry_plan.py tests/fixtures/galley_1000_panels.expected.json` | Validate the deterministic planned-not-executed Fusion component/body plan from the panel payload. | 0 valid, 1 invalid |
 | `python tools/fusion/check_fusion_geometry_plan.py --verbose tests/fixtures/galley_1000_panels.expected.json` | Print each planned panel sketch plane, extrude axis, extrude distance, and placement origin. | 0 valid, 1 invalid |
 | `python tools/fusion/fusion_create_galley_v1.py --dry-run tests/fixtures/galley_1000_panels.expected.json` | Validate the panel payload and summarize the manual Fusion body-creation path without Fusion installed. | 0 valid, 1 invalid |
+| `python tools/fusion/check_fusion_local_availability.py` | Local advisory check for common macOS Fusion 360 app paths before manual verification. This is not a CI requirement for Fusion execution. | 0 found, 1 not found |
 
 Fusion execution is local/manual only. The scripts guard Autodesk `adsk`
 imports so normal Python CI can import and test them without Fusion installed.
@@ -183,6 +184,11 @@ Manual run docs:
 
 - `tools/fusion/RUN_FUSION_GEOMETRY_MANUAL.md`
 - `tools/fusion/MANUAL_FUSION_GEOMETRY_CHECKLIST.md`
+- `tools/fusion/MANUAL_FUSION_GEOMETRY_BLOCKER.md`
+
+Current local status: dry-run is green, but manual Fusion execution is blocked
+because Fusion 360 is not installed or discoverable locally. No Fusion geometry
+has been created or verified.
 
 ## Runtime consumer (PR #8)
 
@@ -222,6 +228,7 @@ python -m tests.test_fusion_skeleton              # 10 tests — Fusion skeleton
 python -m tests.test_fusion_panel_math            # 11 tests — Fusion panel math guard
 python -m tests.test_fusion_geometry_plan         # 17 tests — Fusion geometry plan guard
 python -m tests.test_fusion_geometry_execution_skeleton # 11 tests — guarded Fusion execution skeleton
+python -m tests.test_fusion_local_availability    # 6 tests — local Fusion availability path helper
 python -m tests.test_runtime_consumer             # 18 tests — manifest read as typed runtime data
 python -m tests.test_package_report               # 16 tests — catalog/package readiness
 python -m tests.test_handoff_ready                # 10 tests — extraction readiness helper
@@ -241,6 +248,7 @@ for t in tests.test_validator tests.test_blender_manifest_contract \
          tests.test_fusion_panel_math \
          tests.test_fusion_geometry_plan \
          tests.test_fusion_geometry_execution_skeleton \
+         tests.test_fusion_local_availability \
          tests.test_runtime_consumer \
          tests.test_package_report \
          tests.test_handoff_ready ; do

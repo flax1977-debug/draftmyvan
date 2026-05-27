@@ -12,6 +12,14 @@ approval.
 - Fusion version:
 - Script commit:
 
+## Status
+
+- [ ] Blocked: Fusion not installed.
+- [ ] Blocked: Fusion launch failed.
+- [ ] Blocked: script execution failed.
+- [ ] Verified for workflow proof only.
+- [ ] Not verified.
+
 ## Checklist
 
 - [ ] Script ran inside Fusion 360.

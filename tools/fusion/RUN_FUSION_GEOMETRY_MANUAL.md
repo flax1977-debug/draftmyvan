@@ -10,6 +10,34 @@ import Autodesk APIs, and does not create geometry.
 - A validated `galley_v1` parameter payload and panel payload.
 - No expectation of manufacturing-ready output.
 
+## Confirm Fusion 360 Is Installed
+
+Before generating verification evidence, confirm Fusion can be found and
+launched locally:
+
+```bash
+python tools/fusion/check_fusion_local_availability.py
+```
+
+Expected local app names on macOS include:
+
+- `Autodesk Fusion`
+- `Fusion 360`
+- `Autodesk Fusion 360`
+
+You can also try:
+
+```bash
+open -a "Autodesk Fusion"
+open -a "Fusion 360"
+open -a "Autodesk Fusion 360"
+```
+
+If every `open -a` command fails, do not proceed to manual geometry
+verification. Record the attempt as blocked by local Fusion availability
+instead. The current blocked attempt is documented in
+`MANUAL_FUSION_GEOMETRY_BLOCKER.md`.
+
 ## Generate the parameter payload
 
 ```bash

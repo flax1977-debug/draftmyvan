@@ -93,6 +93,13 @@ Manual execution and verification are documented in:
 - `RUN_FUSION_GEOMETRY_MANUAL.md`
 - `MANUAL_FUSION_GEOMETRY_CHECKLIST.md`
 
+Current local verification status: the dry-run is green, but manual Fusion
+execution is blocked on this machine because Fusion 360 is not installed or
+discoverable. The blocked attempt is recorded in
+`MANUAL_FUSION_GEOMETRY_BLOCKER.md`; no Fusion geometry was created or
+verified. `check_fusion_local_availability.py` is an advisory helper for
+checking common local macOS app paths and is not a CI requirement for Fusion.
+
 Current five-panel carcass diagram:
 
 ```text
@@ -113,9 +120,11 @@ default, which is ignored by Git.
 
 ## Still Deferred
 
-- Manual Fusion verification evidence.
+- Manual Fusion verification evidence after Fusion 360 is installed or run on
+  a machine where Fusion is available.
 - Real cut lists, drawings, DXF, CNC, and post processors.
 - Manufacturing-ready output or sign-off.
 
-The next Fusion proof should run the manual checklist and record evidence for
-the simple five-panel carcass, still without CNC or production claims.
+The next Fusion proof should install or otherwise access Fusion 360, rerun the
+manual checklist, and record evidence for the simple five-panel carcass, still
+without CNC or production claims.

@@ -1,14 +1,15 @@
 # DraftMyVan — Handoff
 
 > **Status:** the DraftMyVan foundation now lives in its own repository.
-> It has nineteen CI-gated pure-Python suites, a permanent generated GLB
+> It has twenty CI-gated pure-Python suites, a permanent generated GLB
 > contract fixture, current-asset acceptance metadata, candidate acceptance,
 > review, visual-audit, render-evidence, and human-visual-review metadata, two
 > GLB validators (one for CI, one for human use in Blender), material-slot and
 > collision-proxy enforcement, a runtime reference consumer + package report,
 > a pure-Python Fusion parameter-map dry-run, script skeleton, panel math,
-> geometry plan, guarded manual body-creation path, and documented Blender
-> export plus local visual-audit/render procedures.
+> geometry plan, guarded manual body-creation path, a documented local Fusion
+> availability blocker, and documented Blender export plus local
+> visual-audit/render procedures.
 
 This document is the briefing for whoever picks the project up next —
 whether that's the same author moving the code to a new repository,
@@ -85,8 +86,10 @@ tools/
     export_galley_v1_panels.py        # Deterministic panel-math exporter
     fusion_create_galley_v1.py        # Dry-run + guarded manual body-creation path
     check_fusion_geometry_plan.py     # CI-safe geometry-plan checker
+    check_fusion_local_availability.py # Local advisory Fusion app-path checker
     RUN_FUSION_GEOMETRY_MANUAL.md     # Manual Fusion run procedure
     MANUAL_FUSION_GEOMETRY_CHECKLIST.md # Manual verification template
+    MANUAL_FUSION_GEOMETRY_BLOCKER.md # Current local availability blocker
   handoff/
     check_handoff_ready.py       # Extraction-readiness gate
 tests/                           # Pure-Python; no Blender required
@@ -112,6 +115,7 @@ tests/                           # Pure-Python; no Blender required
   test_fusion_panel_math.py       # 11 tests
   test_fusion_geometry_plan.py    # 17 tests
   test_fusion_geometry_execution_skeleton.py # 11 tests
+  test_fusion_local_availability.py # 6 tests
   test_runtime_consumer.py       # 18 tests
   test_package_report.py         # 16 tests
   test_handoff_ready.py          # 10 tests
@@ -164,7 +168,8 @@ Left behind during PaperAI incubation, then redone in this repository:
 | Fusion script skeleton PR | merged | Adds a Fusion 360 Python script/add-in skeleton that consumes the dry-run payload through pure-Python helpers, keeps `adsk` imports guarded, and only logs/summarizes parameters. It creates no geometry, drawings, cut lists, DXF/CNC, or manufacturing-ready output. |
 | Fusion panel math PR | merged | Adds pure-Python `galley_v1` carcass panel math from the validated Fusion parameter payload, a deterministic expected fixture, CLI exporter, and tests. It is not a real cut list, drawing, DXF/CNC output, or manufacturing-ready claim. |
 | Fusion geometry plan PR | merged | Adds a pure-Python planned-not-executed Fusion geometry plan from the deterministic panel payload. It names future components/bodies, sketch planes, extrude axes, provisional placement origins, and precise Fusion API TODOs without executing Fusion or claiming manufacturing readiness. |
-| Fusion manual body path PR | this slice | Adds the guarded manual Fusion path for creating the five rectangular panel bodies when run inside Fusion with a valid panel payload, plus a pure-Python `--dry-run`, manual run docs, and a verification checklist. CI still imports no Autodesk modules and creates no geometry. |
+| Fusion manual body path PR | merged | Adds the guarded manual Fusion path for creating the five rectangular panel bodies when run inside Fusion with a valid panel payload, plus a pure-Python `--dry-run`, manual run docs, and a verification checklist. CI still imports no Autodesk modules and creates no geometry. |
+| Fusion local availability blocker PR | this slice | Documents that the first manual Fusion geometry run is blocked locally because Fusion 360 is not installed or discoverable. The `/tmp` payloads and dry-run are valid, but no Fusion geometry was created or verified. |
 
 ## Current command suite
 
@@ -238,6 +243,9 @@ python tools/fusion/check_fusion_geometry_plan.py --verbose \
 python tools/fusion/fusion_create_galley_v1.py --dry-run \
     tests/fixtures/galley_1000_panels.expected.json
 
+# Advisory local-only Fusion availability check
+python tools/fusion/check_fusion_local_availability.py
+
 # Generate local render evidence when Blender is available
 blender --background --python tools/blender/render_candidate_views.py -- \
     --candidate examples/assets/candidates/galley_1000_candidate.glb \
@@ -277,6 +285,7 @@ python -m tests.test_fusion_skeleton              # 10 tests
 python -m tests.test_fusion_panel_math            # 11 tests
 python -m tests.test_fusion_geometry_plan         # 17 tests
 python -m tests.test_fusion_geometry_execution_skeleton # 11 tests
+python -m tests.test_fusion_local_availability    # 6 tests
 python -m tests.test_runtime_consumer             # 18 tests
 python -m tests.test_package_report               # 16 tests
 python -m tests.test_handoff_ready                # 10 tests
@@ -339,7 +348,12 @@ python -m tests.test_handoff_ready                # 10 tests
   distances, and deterministic but provisional placement origins. CI exercises
   only pure-Python validation and `--dry-run`; it does not create geometry, call
   Fusion APIs, create drawings, emit DXF/CNC, create real cut lists, or claim
-  manufacturing-ready output. Manual Fusion output must be verified with
+  manufacturing-ready output. A manual attempt from main SHA
+  `932dc9551126631ba6f36833df7c7ae1060d86f0` generated valid `/tmp` payloads
+  and returned `RESULT: FUSION GEOMETRY DRY RUN VALID`, but Fusion 360 was not
+  installed or discoverable locally. That blocker is recorded in
+  `tools/fusion/MANUAL_FUSION_GEOMETRY_BLOCKER.md`; no Fusion geometry was
+  created or verified. Manual Fusion output must still be verified with
   `tools/fusion/MANUAL_FUSION_GEOMETRY_CHECKLIST.md`.
 
 Current Fusion sequence:
@@ -376,16 +390,18 @@ manufacturing tool. Before that handoff, in priority order:
 2. **Add anchor support beyond `floor_back_left`** as the catalog
    grows. The enforcement table is in
    `tools/blender/_anchor_contract.py:expected_corners_mm`.
-3. **Manually verify the Fusion body-creation path before trusting geometry.**
+3. **Install or access Fusion 360, then manually verify the Fusion
+   body-creation path before trusting geometry.**
    `tools/fusion/` now proves that
    `examples/galley_1000.json` can produce deterministic `galley_v1` parameters
    (`Width`, `Depth`, `Height`, `PlyThickness`), that a Fusion script skeleton
    can validate and summarize the payload without Fusion in CI, and that simple
    carcass panel math, a geometry plan, and a guarded manual body-creation path
    can be derived deterministically from the payload. The next explicit PR
-   should run the Fusion checklist and record evidence. Real cut lists,
-   drawings, CNC/DXF, manufacturing sign-off, and production-ready claims still
-   need later explicit work.
+   should resolve the local Fusion availability blocker, run the Fusion
+   checklist, and record evidence. Real cut lists, drawings, CNC/DXF,
+   manufacturing sign-off, and production-ready claims still need later
+   explicit work.
 4. **Decide axis-convention conversion** at the UE5 / Fusion boundary,
    not by mutating the source GLB. The contract is documented in
    `tools/blender/README.md` and `_anchor_contract.py`.
