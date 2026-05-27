@@ -6,7 +6,8 @@ asset-factory, and manufacturing tooling will read from.
 
 Nothing else. No UE5, no Fusion 360 automation, no UI, no CNC post processors
 yet. Blender appears only as optional/local asset-export tooling and candidate
-GLB authoring. Fusion work is currently pure-Python mapping/dry-run only.
+GLB authoring. Fusion work is currently pure-Python mapping, payload checking,
+and script-skeleton dry-run only.
 
 ## Layout
 
@@ -20,7 +21,7 @@ tools/
   validate_manifest.py     # CLI validator
   assets/                  # Fixture generator + asset/candidate acceptance validators
   blender/                 # GLB validators and export procedure
-  fusion/                  # Pure-Python Fusion parameter mapping dry-run
+  fusion/                  # Pure-Python Fusion parameter mapping + script skeleton
   handoff/                 # Extraction-readiness helper
 tests/                     # Pure-Python suites; no Blender required
   fixtures/                # Permanent golden contract fixtures
@@ -73,6 +74,7 @@ python -m tests.test_candidate_visual_audit       # candidate visual audit metad
 python -m tests.test_render_evidence              # local render evidence metadata
 python -m tests.test_human_visual_review          # human visual review metadata
 python -m tests.test_fusion_parameter_map         # Fusion parameter map dry-run
+python -m tests.test_fusion_skeleton              # Fusion skeleton payload guard
 python -m tests.test_runtime_consumer             # manifest read as typed runtime data
 python -m tests.test_package_report               # catalog/package readiness
 python -m tests.test_handoff_ready                # extraction-readiness helper
@@ -360,11 +362,12 @@ Lifecycle:
 8. **Future real art** — later quality work can improve the accepted asset,
    still behind the same gates.
 
-## Fusion parameter dry-run
+## Fusion parameter dry-run and skeleton
 
 The first Fusion-side proof is pure Python and lives under `tools/fusion/`.
 It proves that manufacturing-side parameter consumption can start from the same
-manifest that drives validation and visual review:
+manifest that drives validation and visual review, and that a future Fusion
+script can consume the resulting payload without making CI depend on Fusion:
 
 ```bash
 python tools/fusion/validate_fusion_parameter_map.py \
@@ -373,13 +376,19 @@ python tools/fusion/validate_fusion_parameter_map.py \
 python tools/fusion/export_galley_v1_parameters.py \
     --manifest examples/galley_1000.json \
     --out build/fusion/galley_1000_fusion_parameters.json
+
+python tools/fusion/check_fusion_payload.py \
+    tests/fixtures/galley_1000_fusion_parameters.expected.json
 ```
 
 The dry-run output contains `galley_v1` parameters (`Width`, `Depth`,
 `Height`, `PlyThickness`), hardware, and the explicitly ignored/deferred fields.
-It does not call Fusion 360, does not generate drawings, does not emit DXF/CNC
-files, and does not claim manufacturing readiness. `build/` output is ignored
-by Git.
+`tools/fusion/fusion_galley_v1_skeleton.py` can be imported in normal Python
+because Autodesk `adsk` imports are guarded inside Fusion-only functions. It
+validates and summarizes the payload for a later Fusion run, but it does not
+create geometry yet. It does not call Fusion 360 in CI, does not generate
+drawings, does not emit DXF/CNC files, and does not claim manufacturing
+readiness. `build/` output is ignored by Git.
 
 ## CI
 
@@ -392,10 +401,10 @@ including the six committed PNG paths, sizes, SHA256 values, 1024 x 1024
 resolution, Workbench render engine, and local lighting setup. CI also validates
 the human visual review metadata. Blender itself is intentionally not installed
 in CI; CI validates committed evidence metadata and files, not live Blender
-rendering. CI also validates the pure-Python Fusion parameter map without
-installing Fusion 360 or Autodesk dependencies. Future candidate changes require
-regenerating the PNGs and re-signing render-evidence metadata to the new
-candidate SHA.
+rendering. CI also validates the pure-Python Fusion parameter map and skeleton
+payload checker without installing Fusion 360 or Autodesk dependencies. Future
+candidate changes require regenerating the PNGs and re-signing render-evidence
+metadata to the new candidate SHA.
 
 ## What's next (not in this slice)
 
@@ -403,8 +412,9 @@ candidate SHA.
    accepted through the metadata gate without deleting the golden contract
    fixture. This requires a future explicit promotion PR with human visual
    and manufacturability sign-off.
-2. Improve this visual candidate again, or build the next Fusion proof while
-   keeping this visual candidate blockout-only and non-production.
+2. Improve this visual candidate again, or create the next Fusion proof: a
+   simple parametric box/carcass inside Fusion from the validated payload,
+   still without CNC, drawings, cut lists, or manufacturing-ready claims.
 3. UE5 Data Asset / importer that consumes the manifest at editor time.
 4. Fusion 360 add-in that regenerates a parametric template from the same entry.
 5. Anchor enforcement for the remaining schema-valid anchor values
