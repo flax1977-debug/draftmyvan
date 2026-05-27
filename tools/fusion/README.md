@@ -71,6 +71,28 @@ python tools/fusion/check_fusion_geometry_plan.py --verbose \
     tests/fixtures/galley_1000_panels.expected.json
 ```
 
+`fusion_create_galley_v1.py --dry-run <panel-payload>` validates the same
+payload and summarizes the manual body-creation path without importing
+Autodesk:
+
+```bash
+python tools/fusion/fusion_create_galley_v1.py \
+    --dry-run tests/fixtures/galley_1000_panels.expected.json
+```
+
+When run manually inside Fusion 360 with a valid panel payload, the guarded
+`run(context)` path can create the five rectangular panel bodies/components.
+Outside Fusion, Fusion-only functions fail clearly with:
+
+```text
+Fusion 360 API unavailable; run this inside Fusion 360 or use --dry-run
+```
+
+Manual execution and verification are documented in:
+
+- `RUN_FUSION_GEOMETRY_MANUAL.md`
+- `MANUAL_FUSION_GEOMETRY_CHECKLIST.md`
+
 Current five-panel carcass diagram:
 
 ```text
@@ -83,7 +105,7 @@ Current five-panel carcass diagram:
 Current sequence:
 
 ```text
-manifest -> parameter payload -> panel math -> geometry plan -> future Fusion geometry
+manifest -> parameter payload -> panel math -> geometry plan -> manual Fusion geometry
 ```
 
 The generated dry-run output is for review only and lives under `build/` by
@@ -91,9 +113,9 @@ default, which is ignored by Git.
 
 ## Still Deferred
 
-- Fusion geometry creation and manual Fusion verification.
+- Manual Fusion verification evidence.
 - Real cut lists, drawings, DXF, CNC, and post processors.
 - Manufacturing-ready output or sign-off.
 
-The next Fusion proof should create a simple parametric box/carcass inside
-Fusion from the validated geometry plan, still without CNC or production claims.
+The next Fusion proof should run the manual checklist and record evidence for
+the simple five-panel carcass, still without CNC or production claims.

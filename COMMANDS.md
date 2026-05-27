@@ -143,7 +143,7 @@ useful for visual review but still not production-ready. The next recommended
 action is either to improve the candidate again or begin a separate Fusion
 proof while the visual candidate remains blockout-only.
 
-## Fusion parameter map, panel math, and geometry plan
+## Fusion parameter map, panel math, and manual geometry path
 
 | Command | Purpose | Exit |
 |---|---|---|
@@ -153,15 +153,18 @@ proof while the visual candidate remains blockout-only.
 | `python tools/fusion/export_galley_v1_panels.py --payload tests/fixtures/galley_1000_fusion_parameters.expected.json --out build/fusion/galley_1000_panels.json` | Export deterministic simple carcass panel math and documented assumptions. This is not a real cut list. | 0 exported, 1 invalid |
 | `python tools/fusion/check_fusion_geometry_plan.py tests/fixtures/galley_1000_panels.expected.json` | Validate the deterministic planned-not-executed Fusion component/body plan from the panel payload. | 0 valid, 1 invalid |
 | `python tools/fusion/check_fusion_geometry_plan.py --verbose tests/fixtures/galley_1000_panels.expected.json` | Print each planned panel sketch plane, extrude axis, extrude distance, and placement origin. | 0 valid, 1 invalid |
+| `python tools/fusion/fusion_create_galley_v1.py --dry-run tests/fixtures/galley_1000_panels.expected.json` | Validate the panel payload and summarize the manual Fusion body-creation path without Fusion installed. | 0 valid, 1 invalid |
 
-This is not Fusion 360 automation. The script skeleton guards Autodesk `adsk`
-imports so normal Python CI can import and test it without Fusion installed.
+Fusion execution is local/manual only. The scripts guard Autodesk `adsk`
+imports so normal Python CI can import and test them without Fusion installed.
 Panel math is simple carcass explanation only: no kerf, rabbets/dados, edging,
 door/drawer fronts, sink cut-out, or hardware drilling. The geometry plan maps
 those five panels to future Fusion component/body names, sketch planes, extrude
-axes, extrusion distances, and provisional placement origins. It remains
-`planned_not_executed`; it does not generate Fusion bodies, drawings, real cut
-lists, or DXF/CNC files, and does not claim manufacturing-ready output.
+axes, extrusion distances, and provisional placement origins. The manual Fusion
+path can create the five rectangular panel bodies only when run inside Fusion
+with a valid payload. CI exercises `--dry-run` only; it does not generate Fusion
+bodies, drawings, real cut lists, or DXF/CNC files, and does not claim
+manufacturing-ready output.
 
 ```text
 +---------------- top_panel ----------------+
@@ -173,8 +176,13 @@ lists, or DXF/CNC files, and does not claim manufacturing-ready output.
 Sequence:
 
 ```text
-payload -> panel math -> geometry plan -> future Fusion geometry
+payload -> panel math -> geometry plan -> manual Fusion geometry
 ```
+
+Manual run docs:
+
+- `tools/fusion/RUN_FUSION_GEOMETRY_MANUAL.md`
+- `tools/fusion/MANUAL_FUSION_GEOMETRY_CHECKLIST.md`
 
 ## Runtime consumer (PR #8)
 
@@ -213,6 +221,7 @@ python -m tests.test_fusion_parameter_map         # 10 tests — Fusion dry-run 
 python -m tests.test_fusion_skeleton              # 10 tests — Fusion skeleton payload guard
 python -m tests.test_fusion_panel_math            # 11 tests — Fusion panel math guard
 python -m tests.test_fusion_geometry_plan         # 17 tests — Fusion geometry plan guard
+python -m tests.test_fusion_geometry_execution_skeleton # 11 tests — guarded Fusion execution skeleton
 python -m tests.test_runtime_consumer             # 18 tests — manifest read as typed runtime data
 python -m tests.test_package_report               # 16 tests — catalog/package readiness
 python -m tests.test_handoff_ready                # 10 tests — extraction readiness helper
@@ -231,6 +240,7 @@ for t in tests.test_validator tests.test_blender_manifest_contract \
          tests.test_fusion_skeleton \
          tests.test_fusion_panel_math \
          tests.test_fusion_geometry_plan \
+         tests.test_fusion_geometry_execution_skeleton \
          tests.test_runtime_consumer \
          tests.test_package_report \
          tests.test_handoff_ready ; do

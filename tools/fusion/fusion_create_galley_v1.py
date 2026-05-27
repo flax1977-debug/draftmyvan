@@ -9,8 +9,10 @@ CNC output.
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -19,6 +21,7 @@ import compute_galley_panels as panel_math
 
 EXPECTED_TEMPLATE = "galley_v1"
 EXPECTED_STATUS = "planned_not_executed"
+FUSION_UNAVAILABLE = "Fusion 360 API unavailable; run this inside Fusion 360 or use --dry-run"
 REQUIRED_PLAN_PANEL_FIELDS = (
     "name",
     "component_name",
@@ -105,6 +108,7 @@ def validate_panel_payload(payload: dict[str, Any]) -> dict[str, Any]:
         raise FusionGeometryPlanError("payload.totals.panel_count must match panel quantities")
     if totals.get("unique_panel_types") != len({panel["name"] for panel in panels}):
         raise FusionGeometryPlanError("payload.totals.unique_panel_types must match panel names")
+    _validate_five_panel_carcass(panels)
     return payload
 
 
@@ -127,6 +131,45 @@ def _overall_dimensions(panels: list[dict[str, Any]]) -> dict[str, int]:
         "Height": left["length_mm"],
         "PlyThickness": thickness,
     }
+
+
+def _validate_five_panel_carcass(panels: list[dict[str, Any]]) -> None:
+    """Cross-check the current 5-panel carcass assumptions.
+
+    The panel payload does not carry raw manifest dimensions. We infer outer
+    Width/Depth/Height/PlyThickness from the known 5-panel shape and validate
+    the relationships that are explicit in `compute_galley_panels.py`.
+    """
+    expected_order = ["left_side", "right_side", "bottom_panel", "top_panel", "back_panel"]
+    names = [panel["name"] for panel in panels]
+    if names != expected_order:
+        raise FusionGeometryPlanError(
+            "panel payload must contain exactly the 5 galley_v1 panels in order: "
+            + ", ".join(expected_order)
+        )
+
+    by_name = {panel["name"]: panel for panel in panels}
+    left = by_name["left_side"]
+    right = by_name["right_side"]
+    bottom = by_name["bottom_panel"]
+    top = by_name["top_panel"]
+    back = by_name["back_panel"]
+
+    thickness = left["thickness_mm"]
+    if any(panel["thickness_mm"] != thickness for panel in panels):
+        raise FusionGeometryPlanError("all galley_v1 panels must share one thickness")
+    if right["length_mm"] != left["length_mm"] or right["width_mm"] != left["width_mm"]:
+        raise FusionGeometryPlanError("right_side dimensions must match left_side dimensions")
+    if top["length_mm"] != bottom["length_mm"] or top["width_mm"] != bottom["width_mm"]:
+        raise FusionGeometryPlanError("top_panel dimensions must match bottom_panel dimensions")
+    if bottom["width_mm"] != left["width_mm"]:
+        raise FusionGeometryPlanError("top/bottom panel depth must match side panel depth")
+    if back["length_mm"] != bottom["length_mm"]:
+        raise FusionGeometryPlanError("back_panel length must match top/bottom panel length")
+    if back["width_mm"] != left["length_mm"] - 2 * thickness:
+        raise FusionGeometryPlanError(
+            "back_panel width must equal side panel height minus 2 * thickness"
+        )
 
 
 def _component_name(panel_name: str) -> str:
@@ -315,38 +358,230 @@ def _fusion_message_box(message: str) -> None:
         ui.messageBox(message)
 
 
-def ensure_component(root: Any, component_name: str) -> Any:
-    """Future Fusion helper placeholder for component lookup/creation."""
-    # TODO(Fusion): use adsk.fusion.Design.cast(app.activeProduct), then search
-    # root.occurrences and create a new occurrence/component when needed.
-    raise NotImplementedError("Fusion component creation is deferred")
+def is_running_in_fusion() -> bool:
+    """Return True only when Autodesk Fusion APIs are importable and active."""
+    try:
+        import adsk.core  # type: ignore[import-not-found]
+        import adsk.fusion  # type: ignore[import-not-found]
+    except Exception:
+        return False
+    app = adsk.core.Application.get()
+    if app is None or app.activeProduct is None:
+        return False
+    return adsk.fusion.Design.cast(app.activeProduct) is not None
 
 
-def set_user_parameter(design: Any, name: str, value_mm: int) -> None:
-    """Future Fusion helper placeholder for user-parameter creation."""
-    # TODO(Fusion): use design.userParameters.add(...) with adsk.core.ValueInput
-    # so panel dimensions remain editable in Fusion.
-    raise NotImplementedError("Fusion user-parameter creation is deferred")
+def require_fusion_modules() -> tuple[Any, Any, Any, Any]:
+    """Load Fusion API modules and return `(core, fusion, app, design)`.
+
+    This is the only supported entry for Fusion API execution. Normal Python CI
+    should use `--dry-run`, which stops before this function.
+    """
+    try:
+        import adsk.core  # type: ignore[import-not-found]
+        import adsk.fusion  # type: ignore[import-not-found]
+    except Exception as e:
+        raise FusionGeometryPlanError(FUSION_UNAVAILABLE) from e
+
+    app = adsk.core.Application.get()
+    if app is None or app.activeProduct is None:
+        raise FusionGeometryPlanError(FUSION_UNAVAILABLE)
+    design = adsk.fusion.Design.cast(app.activeProduct)
+    if design is None:
+        raise FusionGeometryPlanError(FUSION_UNAVAILABLE)
+    return adsk.core, adsk.fusion, app, design
 
 
-def create_panel_body(component: Any, panel_plan: dict[str, Any]) -> Any:
-    """Future Fusion helper placeholder for sketch/extrude body creation."""
-    # TODO(Fusion): use root.sketches.add(...) on the planned sketch plane.
-    # TODO(Fusion): use sketch.sketchCurves.sketchLines.addTwoPointRectangle(...)
-    # for the rectangular panel profile.
-    # TODO(Fusion): use extrudes = root.features.extrudeFeatures.
-    # TODO(Fusion): use extrudeInput = extrudes.createInput(...).
-    # TODO(Fusion): use extrudes.add(extrudeInput) and name the resulting body.
-    raise NotImplementedError("Fusion panel body creation is deferred")
+def _mm_to_cm(value_mm: int | float) -> float:
+    """Convert millimetres to Fusion's database length unit, centimetres."""
+    return float(value_mm) / 10.0
 
 
-def create_galley_carcass_from_panels(design: Any, plan: dict[str, Any]) -> None:
-    """Future Fusion helper placeholder for executing a full carcass plan."""
-    # TODO(Fusion): start from adsk.core.Application.get(), then
-    # adsk.fusion.Design.cast(app.activeProduct), set user parameters, ensure
-    # components, create each panel body, and apply transforms from
-    # placement_origin_mm after manual verification in Fusion.
-    raise NotImplementedError("Fusion geometry execution is deferred")
+def _translation_matrix(core: Any, origin_mm: list[int | float]) -> Any:
+    matrix = core.Matrix3D.create()
+    matrix.translation = core.Vector3D.create(
+        _mm_to_cm(origin_mm[0]),
+        _mm_to_cm(origin_mm[1]),
+        _mm_to_cm(origin_mm[2]),
+    )
+    return matrix
+
+
+def ensure_component(
+    root: Any,
+    component_name: str,
+    *,
+    placement_origin_mm: list[int | float] | None = None,
+) -> dict[str, Any]:
+    """Create or find a Fusion component for one planned panel.
+
+    The first-pass placement strategy uses the geometry plan's
+    `placement_origin_mm` as the occurrence translation. Existing components are
+    reused by component name and are not moved; manual verification must confirm
+    placement in Fusion before trusting the output.
+    """
+    core, _fusion, _app, _design = require_fusion_modules()
+    origin = placement_origin_mm or [0, 0, 0]
+
+    for index in range(root.occurrences.count):
+        occurrence = root.occurrences.item(index)
+        component = occurrence.component
+        if component and component.name == component_name:
+            return {
+                "component": component,
+                "occurrence": occurrence,
+                "created": False,
+                "component_name": component_name,
+            }
+
+    occurrence = root.occurrences.addNewComponent(_translation_matrix(core, origin))
+    component = occurrence.component
+    component.name = component_name
+    return {
+        "component": component,
+        "occurrence": occurrence,
+        "created": True,
+        "component_name": component_name,
+    }
+
+
+def set_user_parameter(design: Any, name: str, value_mm: int) -> dict[str, Any]:
+    """Create or update one Fusion user parameter in millimetres."""
+    core, _fusion, _app, _design = require_fusion_modules()
+    expression = f"{value_mm} mm"
+    existing = design.userParameters.itemByName(name)
+    if existing:
+        existing.expression = expression
+        return {"name": name, "expression": expression, "created": False}
+
+    value_input = core.ValueInput.createByString(expression)
+    parameter = design.userParameters.add(name, value_input, "mm", "DraftMyVan galley_v1")
+    return {"name": parameter.name, "expression": expression, "created": True}
+
+
+def _sketch_plane(component: Any, sketch_plane: str) -> Any:
+    if sketch_plane == "XY":
+        return component.xYConstructionPlane
+    if sketch_plane == "XZ":
+        return component.xZConstructionPlane
+    if sketch_plane == "YZ":
+        return component.yZConstructionPlane
+    raise FusionGeometryPlanError(f"unsupported sketch plane: {sketch_plane}")
+
+
+def create_panel_body(
+    panel_plan: dict[str, Any],
+    *,
+    design: Any | None = None,
+    root_component: Any | None = None,
+) -> dict[str, Any]:
+    """Create one rectangular planned panel body inside Fusion 360.
+
+    Input is one panel dict from `fusion_geometry_plan(payload)["panels"]`.
+    Output is a structured result containing the component/body names and the
+    Fusion body reference. This function is manual/Fusion-only and fails clearly
+    in normal Python.
+    """
+    validate_geometry_plan(
+        {
+            "template": EXPECTED_TEMPLATE,
+            "manifest_id": "single_panel_validation",
+            "units": "mm",
+            "source": "panel_payload",
+            "geometry_status": EXPECTED_STATUS,
+            "panels": [panel_plan],
+            "deferred": DEFERRED,
+        }
+    )
+    core, fusion, _app, active_design = require_fusion_modules()
+    design = design or active_design
+    root = root_component or design.rootComponent
+    component_result = ensure_component(
+        root,
+        panel_plan["component_name"],
+        placement_origin_mm=panel_plan["placement_origin_mm"],
+    )
+    component = component_result["component"]
+
+    sketch = component.sketches.add(_sketch_plane(component, panel_plan["sketch_plane"]))
+    sketch.name = f"{panel_plan['name']}_profile"
+    lines = sketch.sketchCurves.sketchLines
+    corner_a = core.Point3D.create(0, 0, 0)
+    corner_b = core.Point3D.create(
+        _mm_to_cm(panel_plan["length_mm"]),
+        _mm_to_cm(panel_plan["width_mm"]),
+        0,
+    )
+    lines.addTwoPointRectangle(corner_a, corner_b)
+
+    profile = sketch.profiles.item(0)
+    distance = core.ValueInput.createByString(f"{panel_plan['extrude_distance_mm']} mm")
+    extrudes = component.features.extrudeFeatures
+    feature = extrudes.addSimple(
+        profile,
+        distance,
+        fusion.FeatureOperations.NewBodyFeatureOperation,
+    )
+    body = feature.bodies.item(0)
+    body.name = panel_plan["body_name"]
+    return {
+        "component_name": panel_plan["component_name"],
+        "body_name": panel_plan["body_name"],
+        "component": component,
+        "body": body,
+        "placement_origin_mm": panel_plan["placement_origin_mm"],
+        "created": True,
+    }
+
+
+def create_galley_carcass_from_panels(plan: dict[str, Any]) -> dict[str, Any]:
+    """Create all planned galley_v1 panel bodies inside Fusion 360.
+
+    The placement strategy is deterministic and first-pass only:
+    bottom at base, side panels at width edges, top at overall height, and back
+    at the rear/back plane using each panel's `placement_origin_mm`. Manual
+    Fusion verification is required before trusting the geometry.
+    """
+    validate_geometry_plan(plan)
+    _core, _fusion, _app, design = require_fusion_modules()
+    root = design.rootComponent
+
+    # These values are inferred from the geometry plan, not hidden manifest
+    # state. They are user parameters for inspection/editing in Fusion.
+    dims = _overall_dimensions(plan["panels"])
+    for name, value in dims.items():
+        set_user_parameter(design, name, value)
+
+    created_panels = [
+        create_panel_body(panel, design=design, root_component=root)
+        for panel in plan["panels"]
+    ]
+    return {
+        "status": "created_in_fusion_requires_manual_verification",
+        "manifest_id": plan["manifest_id"],
+        "panel_count": len(created_panels),
+        "components": [panel["component_name"] for panel in created_panels],
+        "bodies": [panel["body_name"] for panel in created_panels],
+    }
+
+
+def dry_run(payload_path: str | Path) -> tuple[str, list[str]]:
+    """Validate a panel payload and summarize the planned Fusion geometry."""
+    lines: list[str] = []
+    try:
+        payload = load_panel_payload(payload_path)
+        plan = fusion_geometry_plan(payload)
+        lines.append(f"[OK] panel payload readable: {payload_path}")
+        lines.append(f"template: {payload['template']}")
+        lines.append(f"manifest_id: {payload['manifest_id']}")
+        lines.append(f"panel_count: {payload['totals']['panel_count']}")
+        lines.append(geometry_plan_summary(plan))
+        lines.append("RESULT: FUSION GEOMETRY DRY RUN VALID")
+        return "FUSION GEOMETRY DRY RUN VALID", lines
+    except FusionGeometryPlanError as e:
+        lines.append(f"[FAIL] {e}")
+        lines.append("RESULT: FUSION GEOMETRY DRY RUN INVALID")
+        return "FUSION GEOMETRY DRY RUN INVALID", lines
 
 
 def run(context: Any) -> None:
@@ -354,10 +589,13 @@ def run(context: Any) -> None:
 
     CI never calls this entry point. When run inside Fusion later, pass a panel
     payload path as `context` or through `DRAFTMYVAN_FUSION_PANEL_PAYLOAD`.
-    This version validates and summarizes the deterministic geometry plan only;
-    real geometry creation remains deferred until manually verified in Fusion.
+    This guarded path creates the five rectangular panel bodies for manual
+    verification only. It does not create drawings, cut lists, DXF/CNC output,
+    or manufacturing-ready artifacts.
     """
     payload_path = str(context or os.environ.get("DRAFTMYVAN_FUSION_PANEL_PAYLOAD", "")).strip()
+    if not is_running_in_fusion():
+        raise FusionGeometryPlanError(FUSION_UNAVAILABLE)
     if not payload_path:
         _fusion_message_box(
             "DraftMyVan galley_v1 geometry skeleton loaded. "
@@ -367,9 +605,34 @@ def run(context: Any) -> None:
 
     payload = load_panel_payload(payload_path)
     plan = fusion_geometry_plan(payload)
+    result = create_galley_carcass_from_panels(plan)
     _fusion_message_box(
-        "DraftMyVan galley_v1 geometry plan accepted.\n"
+        "DraftMyVan galley_v1 geometry created for manual verification.\n"
         f"{geometry_plan_summary(plan)}\n"
-        "Geometry creation deferred; no Fusion bodies, drawings, cut lists, "
-        "DXF, or CNC output were created."
+        f"created_panel_count: {result['panel_count']}\n"
+        "No drawings, cut lists, DXF, CNC output, or manufacturing-ready "
+        "artifacts were created."
     )
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="Dry-run or manually execute galley_v1 Fusion geometry creation.",
+    )
+    parser.add_argument(
+        "--dry-run",
+        metavar="PANEL_PAYLOAD",
+        help="Validate a panel payload and summarize the planned Fusion geometry without Fusion.",
+    )
+    args = parser.parse_args(argv)
+
+    if not args.dry_run:
+        parser.error("use --dry-run in normal Python; run(context) is the Fusion 360 entry point")
+
+    status, lines = dry_run(args.dry_run)
+    print(os.linesep.join(lines))
+    return 0 if status == "FUSION GEOMETRY DRY RUN VALID" else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

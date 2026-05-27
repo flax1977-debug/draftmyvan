@@ -80,6 +80,8 @@ def test_required_files_pass_on_current_repo() -> None:
         "tools/fusion/export_galley_v1_panels.py",
         "tools/fusion/fusion_create_galley_v1.py",
         "tools/fusion/check_fusion_geometry_plan.py",
+        "tools/fusion/RUN_FUSION_GEOMETRY_MANUAL.md",
+        "tools/fusion/MANUAL_FUSION_GEOMETRY_CHECKLIST.md",
         "tools/blender/check_asset_ready.py",
         "tests/test_check_asset_ready.py",
         "HANDOFF.md",
@@ -276,6 +278,8 @@ def test_required_files_list_includes_all_critical_categories() -> None:
         "tools/fusion/export_galley_v1_panels.py",
         "tools/fusion/fusion_create_galley_v1.py",
         "tools/fusion/check_fusion_geometry_plan.py",
+        "tools/fusion/RUN_FUSION_GEOMETRY_MANUAL.md",
+        "tools/fusion/MANUAL_FUSION_GEOMETRY_CHECKLIST.md",
         "tests/test_check_asset_ready.py",
         "tests/test_asset_acceptance.py",
         "tests/test_candidate_asset.py",
@@ -288,6 +292,7 @@ def test_required_files_list_includes_all_critical_categories() -> None:
         "tests/test_fusion_skeleton.py",
         "tests/test_fusion_panel_math.py",
         "tests/test_fusion_geometry_plan.py",
+        "tests/test_fusion_geometry_execution_skeleton.py",
         "tests/fixtures/galley_1000_fusion_parameters.expected.json",
         "tests/fixtures/galley_1000_panels.expected.json",
         "tests/fixtures/galley_1000_fusion_geometry_plan.expected.json",
@@ -305,6 +310,7 @@ def test_required_files_list_includes_all_critical_categories() -> None:
     assert "tests.test_fusion_skeleton" in h.DYNAMIC_TEST_MODULES
     assert "tests.test_fusion_panel_math" in h.DYNAMIC_TEST_MODULES
     assert "tests.test_fusion_geometry_plan" in h.DYNAMIC_TEST_MODULES
+    assert "tests.test_fusion_geometry_execution_skeleton" in h.DYNAMIC_TEST_MODULES
     # Handoff docs must be listed as required (this PR's whole point).
     for doc in ("HANDOFF.md", "EXTRACT_TO_REAL_REPO.md", "COMMANDS.md"):
         assert doc in rels, f"required-files list dropped {doc}"
