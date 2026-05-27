@@ -2,8 +2,23 @@
 
 This local procedure explains how to inspect or render
 `examples/assets/candidates/galley_1000_candidate.glb` in Blender. It records a
-repeatable audit path only; this PR does not commit production renders and does
-not promote the candidate.
+repeatable audit path only; it does not commit production renders and does not
+promote the candidate.
+
+The scripted local renderer is:
+
+```bash
+blender --background --python tools/blender/render_candidate_views.py -- \
+  --candidate examples/assets/candidates/galley_1000_candidate.glb \
+  --out examples/assets/candidates/render_evidence/galley_1000_candidate/
+```
+
+Validate the metadata/procedure without Blender:
+
+```bash
+python tools/assets/validate_render_evidence.py \
+  examples/assets/candidates/galley_1000_candidate_render_evidence.json
+```
 
 ## Open the Candidate
 
@@ -38,13 +53,14 @@ visible in one frame.
 
 ## Capturing Evidence Locally
 
-Screenshots are acceptable for early audit passes. Blender still renders are
-preferred once material and lighting quality matter.
+The script writes one PNG per standard view. Manual screenshots are acceptable
+for exploratory audit passes, but script output is preferred for repeatable
+evidence.
 
-Suggested local-only evidence path for future work:
+Current local-only output path:
 
 ```text
-examples/assets/candidates/audit_evidence/galley_1000_candidate/<candidate_sha>/
+examples/assets/candidates/render_evidence/galley_1000_candidate/
 ```
 
 Use filenames that include the view name, for example:
@@ -61,12 +77,13 @@ three_quarter.png
 ## CI Policy
 
 Evidence images are optional in CI and should not be required yet. The CI gate
-checks only the JSON visual-audit metadata and SHA synchronization. Images can
-be added in a future PR once the evidence naming, size limits, and retention
-policy are settled.
+checks only the JSON visual-audit metadata, render-evidence metadata, and
+script path. Generated PNGs are ignored by Git. Images can be added in a future
+PR once the evidence naming, size limits, determinism, and retention policy are
+settled.
 
 ## Current Scope
 
-This PR records the visual audit procedure and current findings. It does not
-add production renders, does not claim visual sign-off, and does not replace
-`examples/assets/galley_1000.glb`.
+The current workflow records the visual audit procedure, current findings, and
+a local render-generation script. It does not add production renders, does not
+claim visual sign-off, and does not replace `examples/assets/galley_1000.glb`.
