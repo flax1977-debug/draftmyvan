@@ -7,3 +7,8 @@ are not package assets and are not shipped as the manifest-selected GLBs.
 `examples/galley_1000.json`. It stays here even after
 `examples/assets/galley_1000.glb` is replaced by future real art, so the
 validator suite always has a byte-for-byte deterministic reference.
+
+The Fusion JSON fixtures are deterministic dry-run references only. They pin
+the parameter payload, simple panel math, and planned-not-executed geometry
+plan; they are not drawings, cut lists, DXF/CNC output, or manufacturing-ready
+artifacts.

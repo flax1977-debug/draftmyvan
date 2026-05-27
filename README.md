@@ -21,7 +21,7 @@ tools/
   validate_manifest.py     # CLI validator
   assets/                  # Fixture generator + asset/candidate acceptance validators
   blender/                 # GLB validators and export procedure
-  fusion/                  # Pure-Python Fusion parameter mapping, panels, skeleton
+  fusion/                  # Pure-Python Fusion parameter mapping, panels, geometry plan
   handoff/                 # Extraction-readiness helper
 tests/                     # Pure-Python suites; no Blender required
   fixtures/                # Permanent golden contract fixtures
@@ -76,6 +76,7 @@ python -m tests.test_human_visual_review          # human visual review metadata
 python -m tests.test_fusion_parameter_map         # Fusion parameter map dry-run
 python -m tests.test_fusion_skeleton              # Fusion skeleton payload guard
 python -m tests.test_fusion_panel_math            # Fusion panel math guard
+python -m tests.test_fusion_geometry_plan         # Fusion geometry plan guard
 python -m tests.test_runtime_consumer             # manifest read as typed runtime data
 python -m tests.test_package_report               # catalog/package readiness
 python -m tests.test_handoff_ready                # extraction-readiness helper
@@ -363,7 +364,7 @@ Lifecycle:
 8. **Future real art** — later quality work can improve the accepted asset,
    still behind the same gates.
 
-## Fusion parameter dry-run, panel math, and skeleton
+## Fusion parameter dry-run, panel math, and geometry plan
 
 The first Fusion-side proof is pure Python and lives under `tools/fusion/`.
 It proves that manufacturing-side parameter consumption can start from the same
@@ -384,6 +385,9 @@ python tools/fusion/check_fusion_payload.py \
 python tools/fusion/export_galley_v1_panels.py \
     --payload tests/fixtures/galley_1000_fusion_parameters.expected.json \
     --out build/fusion/galley_1000_panels.json
+
+python tools/fusion/check_fusion_geometry_plan.py \
+    tests/fixtures/galley_1000_panels.expected.json
 ```
 
 The dry-run output contains `galley_v1` parameters (`Width`, `Depth`,
@@ -393,12 +397,32 @@ using documented assumptions: side panels are `Height x Depth`, top/bottom fit
 between side panels, the back fits inside the side/top/bottom frame, and there
 is no kerf, rabbets/dados, edging, door/drawer fronts, sink cut-out, or hardware
 drilling. The panel JSON is not a real cut list.
+`tools/fusion/fusion_create_galley_v1.py` then turns that panel payload into a
+deterministic Fusion geometry plan. The plan names the future component/body for
+each panel, sketch plane, extrude axis, extrusion distance, and provisional
+placement origin. It is still `planned_not_executed`: CI validates the plan but
+does not run Fusion, import Autodesk modules, or create bodies.
 `tools/fusion/fusion_galley_v1_skeleton.py` can be imported in normal Python
 because Autodesk `adsk` imports are guarded inside Fusion-only functions. It
 validates and summarizes the payload and panel math for a later Fusion run, but
 it does not create geometry yet. It does not call Fusion 360 in CI, does not
 generate drawings, does not emit DXF/CNC files, and does not claim
 manufacturing readiness. `build/` output is ignored by Git.
+
+Current five-panel carcass diagram:
+
+```text
++---------------- top_panel ----------------+
+| left_side      back_panel      right_side |
+|                                          |
++-------------- bottom_panel --------------+
+```
+
+Current sequence:
+
+```text
+manifest -> Fusion parameter payload -> panel math -> geometry plan -> future Fusion geometry
+```
 
 ## CI
 
@@ -412,9 +436,9 @@ resolution, Workbench render engine, and local lighting setup. CI also validates
 the human visual review metadata. Blender itself is intentionally not installed
 in CI; CI validates committed evidence metadata and files, not live Blender
 rendering. CI also validates the pure-Python Fusion parameter map, skeleton
-payload checker, and panel math without installing Fusion 360 or Autodesk
-dependencies. Future candidate changes require regenerating the PNGs and
-re-signing render-evidence metadata to the new candidate SHA.
+payload checker, panel math, and geometry plan without installing Fusion 360 or
+Autodesk dependencies. Future candidate changes require regenerating the PNGs
+and re-signing render-evidence metadata to the new candidate SHA.
 
 ## What's next (not in this slice)
 
@@ -423,7 +447,7 @@ re-signing render-evidence metadata to the new candidate SHA.
    fixture. This requires a future explicit promotion PR with human visual
    and manufacturability sign-off.
 2. Improve this visual candidate again, or create the next Fusion proof: a
-   simple parametric box/carcass inside Fusion from the validated panel math,
+   simple parametric box/carcass inside Fusion from the validated geometry plan,
    still without CNC, drawings, real cut lists, or manufacturing-ready claims.
 3. UE5 Data Asset / importer that consumes the manifest at editor time.
 4. Fusion 360 add-in that regenerates a parametric template from the same entry.
