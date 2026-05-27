@@ -9,16 +9,20 @@ Run inside Blender:
 
 The generated PNGs are local visual-review evidence. They are intentionally
 not required by CI and are ignored unless a future PR decides to commit them.
+The script orients the imported GLB contract axes for Blender review and hides
+`UCX_` collision proxy meshes from the rendered views.
 """
 
 from __future__ import annotations
 
 import argparse
+import math
 import sys
 from pathlib import Path
 
 try:
     import bpy
+    from mathutils import Matrix
     from mathutils import Vector
 except ImportError as e:  # pragma: no cover - this script is run inside Blender.
     raise SystemExit("render_candidate_views.py must be run inside Blender") from e
@@ -75,6 +79,22 @@ def _world_bbox(objects: list[bpy.types.Object]) -> tuple[Vector, Vector]:
     min_v = Vector((min(p.x for p in points), min(p.y for p in points), min(p.z for p in points)))
     max_v = Vector((max(p.x for p in points), max(p.y for p in points), max(p.z for p in points)))
     return min_v, max_v
+
+
+def _orient_contract_axes_for_review(objects: list[bpy.types.Object]) -> None:
+    """Display glTF contract axes as Blender Z-up for visual review only."""
+    rotation = Matrix.Rotation(-math.pi / 2.0, 4, "X")
+    for obj in objects:
+        obj.matrix_world = rotation @ obj.matrix_world
+    bpy.context.view_layer.update()
+
+
+def _hide_collision_proxies(objects: list[bpy.types.Object]) -> None:
+    for obj in objects:
+        data_name = getattr(getattr(obj, "data", None), "name", "")
+        if obj.name.startswith("UCX_") or data_name.startswith("UCX_"):
+            obj.hide_render = True
+            obj.hide_set(True)
 
 
 def _look_at(camera: bpy.types.Object, target: Vector) -> None:
@@ -149,7 +169,9 @@ def main() -> int:
 
     _clear_scene()
     objects = _import_glb(candidate)
+    _orient_contract_axes_for_review(objects)
     min_v, max_v = _world_bbox(objects)
+    _hide_collision_proxies(objects)
     center = (min_v + max_v) / 2.0
     size = max_v - min_v
     camera = _setup_camera_and_light(center, size, args.resolution)

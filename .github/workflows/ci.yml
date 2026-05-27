@@ -45,6 +45,9 @@ jobs:
       - name: Run candidate-asset suite (candidate workflow)
         run: python -m tests.test_candidate_asset
 
+      - name: Run candidate-generator suite (strict manifest parsing)
+        run: python -m tests.test_create_galley_candidate
+
       - name: Run candidate-review suite (candidate review metadata)
         run: python -m tests.test_candidate_review
 

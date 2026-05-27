@@ -31,7 +31,8 @@ the manifest-selected asset at `examples/assets/galley_1000.glb`.
   promotion PR.
 - Render evidence is local review support. The metadata points to the render
   script and output directory, but generated PNGs are ignored and not committed
-  yet.
+  yet. The render script orients the GLB contract axes for Blender review and
+  hides `UCX_` collision proxies from visual output.
 
 ## Lifecycle
 
@@ -46,17 +47,26 @@ golden contract fixture
 -> future UE5/Fusion consumers
 ```
 
-The current state reaches the visual audit stage. It records what the current
-candidate proves, what can be seen from the current candidate, and what is
+The current state reaches the render-evidence workflow stage. It records what
+the current candidate proves, what can be seen from local renders, and what is
 still missing before any production claim. Render evidence is procedure-ready
 but does not yet commit PNG output.
 
 ## Current candidate
 
-`galley_1000_candidate.glb` is a simple Blender 5.1.2 export. It is a process
-test, not polished cabinet art: a full-size body box, an unpolished metal sink
-marker, and a `UCX_galley_1000` collision proxy, all authored inside the
-manifest bounding box.
+`galley_1000_candidate.glb` is a script-generated Blender 5.1.2 cabinet
+blockout. It is a process test, not polished cabinet art: a full-size carcass,
+front door/drawer seam markers, plinth, countertop separation, an unpolished
+metal sink marker, and a `UCX_galley_1000` collision proxy, all authored inside
+the manifest bounding box.
+
+Regenerate it with:
+
+```bash
+blender --background --python tools/blender/create_galley_candidate.py -- \
+    --manifest examples/galley_1000.json \
+    --out examples/assets/candidates/galley_1000_candidate.glb
+```
 
 Validate it with:
 
@@ -96,7 +106,8 @@ blender --background --python tools/blender/render_candidate_views.py -- \
 
 The current review report is
 `examples/assets/candidates/galley_1000_candidate_review.md`. It says the
-candidate is contract-valid but not production art and not promotion-ready.
+candidate is a contract-valid blockout but not production art and not
+promotion-ready.
 The current visual audit is
 `examples/assets/candidates/galley_1000_candidate_visual_audit.md`; it says
 the candidate is not production-ready and should not be promoted.

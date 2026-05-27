@@ -72,6 +72,7 @@ reference.
 
 | Command | Purpose | Exit |
 |---|---|---|
+| `blender --background --python tools/blender/create_galley_candidate.py -- --manifest examples/galley_1000.json --out examples/assets/candidates/galley_1000_candidate.glb` | Regenerate the script-generated Blender cabinet blockout candidate. Local only; does not replace the manifest asset. | Blender exit code |
 | `python tools/assets/validate_candidate_asset.py examples/assets/candidates/galley_1000_candidate.asset_acceptance.json` | Validate candidate metadata and, when the candidate GLB exists, run the same GLB gates with manifest path mismatch explicitly allowed for candidate storage. | 0 ready or plan-only, 1 invalid |
 
 Candidate states:
@@ -82,8 +83,12 @@ Candidate states:
 | `CANDIDATE PLAN ONLY` | Metadata explicitly documents a candidate plan but does not claim a GLB exists yet. |
 | `CANDIDATE INVALID` | Metadata is malformed, claims production/promotion too early, references missing required files, or the candidate GLB fails a gate. |
 
-The current `galley_1000_candidate.glb` is a simple Blender-exported process
-test. It does not replace `examples/assets/galley_1000.glb`.
+The current `galley_1000_candidate.glb` is a script-generated Blender cabinet
+blockout. The generator strictly requires integer manifest dimensions and
+rejects strings, floats, booleans, missing fields, and non-positive values
+before any geometry is authored. The candidate has visible panel seams, a
+countertop break, plinth, and sink marker, but it is still not production art
+and does not replace `examples/assets/galley_1000.glb`.
 
 ## Candidate review metadata
 
@@ -112,7 +117,7 @@ local procedure is `tools/blender/RENDER_CANDIDATE_AUDIT.md`.
 | Command | Purpose | Exit |
 |---|---|---|
 | `python tools/assets/validate_render_evidence.py examples/assets/candidates/galley_1000_candidate_render_evidence.json` | Validate render-evidence metadata: candidate SHA, visual-audit reference, render script path, expected views, local-only render state, and non-promotion flags. | 0 valid, 1 invalid |
-| `blender --background --python tools/blender/render_candidate_views.py -- --candidate examples/assets/candidates/galley_1000_candidate.glb --out examples/assets/candidates/render_evidence/galley_1000_candidate/` | Generate local PNG evidence views when Blender is available. | Blender exit code |
+| `blender --background --python tools/blender/render_candidate_views.py -- --candidate examples/assets/candidates/galley_1000_candidate.glb --out examples/assets/candidates/render_evidence/galley_1000_candidate/` | Generate local PNG evidence views when Blender is available. The renderer orients the GLB contract axes for Blender review and hides `UCX_` collision proxies from the visual output. | Blender exit code |
 
 Render evidence supports human review only. Generated PNGs under
 `examples/assets/candidates/render_evidence/` are ignored by Git for now, and
@@ -146,6 +151,7 @@ python -m tests.test_check_asset_ready            # 12 tests — real-asset read
 python -m tests.test_galley_fixture               # 15 tests — golden fixture + current manifest asset
 python -m tests.test_asset_acceptance             # 12 tests — fixture-swap metadata guard
 python -m tests.test_candidate_asset              # 13 tests — candidate workflow guard
+python -m tests.test_create_galley_candidate      # 7 tests — candidate generator manifest guard
 python -m tests.test_candidate_review             # 13 tests — candidate review guard
 python -m tests.test_candidate_visual_audit       # 11 tests — candidate visual audit guard
 python -m tests.test_render_evidence              # 9 tests — render evidence metadata guard
@@ -160,8 +166,9 @@ Run them all:
 for t in tests.test_validator tests.test_blender_manifest_contract \
          tests.test_check_asset_ready tests.test_galley_fixture \
          tests.test_asset_acceptance tests.test_candidate_asset \
-         tests.test_candidate_review tests.test_candidate_visual_audit \
-         tests.test_render_evidence tests.test_runtime_consumer \
+         tests.test_create_galley_candidate tests.test_candidate_review \
+         tests.test_candidate_visual_audit tests.test_render_evidence \
+         tests.test_runtime_consumer \
          tests.test_package_report \
          tests.test_handoff_ready ; do
     echo "=== $t" ; python -m $t || break
