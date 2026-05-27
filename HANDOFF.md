@@ -1,12 +1,12 @@
 # DraftMyVan — Handoff
 
 > **Status:** the DraftMyVan foundation now lives in its own repository.
-> It has thirteen CI-gated pure-Python suites, a permanent generated GLB
+> It has fourteen CI-gated pure-Python suites, a permanent generated GLB
 > contract fixture, current-asset acceptance metadata, candidate acceptance,
-> review, visual-audit, and render-evidence metadata, two GLB validators (one
-> for CI, one for human use in Blender), material-slot and collision-proxy
-> enforcement, a runtime reference consumer + package report, and documented
-> Blender export and local visual-audit/render procedures.
+> review, visual-audit, render-evidence, and human-visual-review metadata, two
+> GLB validators (one for CI, one for human use in Blender), material-slot and
+> collision-proxy enforcement, a runtime reference consumer + package report,
+> and documented Blender export and local visual-audit/render procedures.
 
 This document is the briefing for whoever picks the project up next —
 whether that's the same author moving the code to a new repository,
@@ -33,6 +33,8 @@ examples/
       galley_1000_candidate_visual_audit.json
       galley_1000_candidate_visual_audit.md
       galley_1000_candidate_render_evidence.json
+      galley_1000_candidate_human_visual_review.json
+      galley_1000_candidate_human_visual_review.md
       render_evidence/
         README.md                # Render evidence policy
         galley_1000_candidate/
@@ -57,6 +59,7 @@ tools/
     validate_candidate_review.py    # Candidate review metadata + SHA gate
     validate_candidate_visual_audit.py  # Visual audit metadata + SHA gate
     validate_render_evidence.py     # Render evidence metadata gate
+    validate_human_visual_review.py # Human visual review metadata gate
   blender/
     validate_glb_against_manifest.py  # Pure-Python GLB-vs-manifest gate (PR #4)
     validate_in_blender.py            # Authoritative bpy variant (PR #4)
@@ -83,7 +86,8 @@ tests/                           # Pure-Python; no Blender required
   test_create_galley_candidate.py # 7 tests
   test_candidate_review.py       # 13 tests
   test_candidate_visual_audit.py # 11 tests
-  test_render_evidence.py        # 9 tests
+  test_render_evidence.py        # 20 tests
+  test_human_visual_review.py    # 14 tests
   test_runtime_consumer.py       # 18 tests
   test_package_report.py         # 16 tests
   test_handoff_ready.py          # 10 tests
@@ -130,7 +134,8 @@ Left behind during PaperAI incubation, then redone in this repository:
 | Candidate visual audit PR | merged | Adds SHA-pinned visual audit metadata and a local Blender render/audit procedure. It records findings without committing render images or promoting the candidate. |
 | Candidate render evidence PR | merged | Adds a local Blender view-render script, ignored render output area, render-evidence metadata, and a pure-Python metadata validator. It does not commit PNG renders or promote the candidate. |
 | Candidate blockout improvement PR | merged | Regenerates the candidate as a script-generated Blender cabinet blockout with visible panel seams, countertop separation, plinth, and sink marker. It also updates SHA-pinned metadata and keeps the candidate non-production and non-promotable. |
-| Candidate render evidence PNG PR | this slice | Commits the six small review PNGs for the current blockout, pins their paths, sizes, and SHA256 values in metadata, and keeps other render output ignored. These are not product screenshots and do not promote the candidate. |
+| Candidate render evidence PNG PR | merged | Commits the six small review PNGs for the current blockout, pins their paths, sizes, and SHA256 values in metadata, and keeps other render output ignored. These are not product screenshots and do not promote the candidate. |
+| Candidate human visual review PR | this slice | Adds human observations against the six committed render views, plus metadata and validation that keep the candidate non-production and do-not-promote. |
 
 ## Current command suite
 
@@ -171,6 +176,10 @@ python tools/assets/validate_candidate_visual_audit.py \
 python tools/assets/validate_render_evidence.py \
     examples/assets/candidates/galley_1000_candidate_render_evidence.json
 
+# Validate candidate human visual review metadata
+python tools/assets/validate_human_visual_review.py \
+    examples/assets/candidates/galley_1000_candidate_human_visual_review.json
+
 # Generate local render evidence when Blender is available
 blender --background --python tools/blender/render_candidate_views.py -- \
     --candidate examples/assets/candidates/galley_1000_candidate.glb \
@@ -204,6 +213,7 @@ python -m tests.test_create_galley_candidate      # 7 tests
 python -m tests.test_candidate_review             # 13 tests
 python -m tests.test_candidate_visual_audit       # 11 tests
 python -m tests.test_render_evidence              # 20 tests
+python -m tests.test_human_visual_review          # 14 tests
 python -m tests.test_runtime_consumer             # 18 tests
 python -m tests.test_package_report               # 16 tests
 python -m tests.test_handoff_ready                # 10 tests
@@ -245,8 +255,10 @@ python -m tests.test_handoff_ready                # 10 tests
   `not_production_ready` / `do_not_promote`. Six PNGs are committed as review
   evidence for the current blockout and pinned by path, size, SHA256,
   resolution, render engine, and lighting setup; they are not product
-  screenshots, visual sign-off, or promotion. Future candidate changes must
-  regenerate those images and re-sign render-evidence metadata.
+  screenshots, visual sign-off, or promotion. Human visual review metadata now
+  records view-by-view observations from those PNGs while keeping the candidate
+  non-production and do-not-promote. Future candidate changes must regenerate
+  those images and re-sign render-evidence metadata and review records.
 - **Catalog of one.** `examples/galley_1000.json` is the only module.
 - **No UE5, Fusion 360, or CNC integration.** Every PR deferred them
   deliberately.
@@ -261,10 +273,12 @@ manufacturing tool. Before that handoff, in priority order:
    material-slot, and collision-proxy validation; its review metadata must
    match the exact candidate SHA; its visual audit metadata must match the
    exact candidate SHA and record current findings; render evidence must be
-   generated or reviewed according to the current render-evidence policy;
-   human visual/manufacturing sign-off must be recorded; promotion replaces only
-   `examples/assets/galley_1000.glb`; and the golden generated fixture under
-   `tests/fixtures/` stays as the byte-for-byte regression reference.
+   generated or reviewed according to the current render-evidence policy; human
+   visual review metadata must record observations from the current render
+   evidence; human visual/manufacturing sign-off must be recorded; promotion
+   replaces only `examples/assets/galley_1000.glb`; and the golden generated
+   fixture under `tests/fixtures/` stays as the byte-for-byte regression
+   reference.
 2. **Add anchor support beyond `floor_back_left`** as the catalog
    grows. The enforcement table is in
    `tools/blender/_anchor_contract.py:expected_corners_mm`.

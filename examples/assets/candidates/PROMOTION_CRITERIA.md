@@ -14,6 +14,11 @@ current render-evidence state is `committed_review_evidence`; six PNGs are
 committed for the current blockout and pinned by path, size, and SHA256. They
 are review evidence only, not product screenshots and not visual sign-off.
 
+Human visual review records observations from those committed PNGs, but it is
+still not production approval. The current human review keeps
+`production_art: false`, `promotion_ready: false`, and
+`promotion_recommendation: do_not_promote`.
+
 The current candidate is a review-worthy blockout, not production art. Visible
 panel seams, countertop separation, and a sink marker improve review value, but
 they do not satisfy UV, PBR material, topology, joinery, hardware, visual
@@ -26,6 +31,9 @@ sign-off, or manufacturability requirements.
 - Candidate render-evidence metadata must be current with the exact candidate
   SHA, point to the local render script/output directory, and pin any
   committed render PNGs by path, file size, and SHA256.
+- Candidate human visual review metadata must be current with the exact
+  candidate SHA, reference committed render evidence, and keep the candidate
+  non-production and non-promotable.
 - `production_art` must stay `false` until a future explicit promotion PR.
 - `promotion_ready` must stay `false` until a future explicit promotion PR.
 - The current manifest asset at `examples/assets/galley_1000.glb` must not be
@@ -44,6 +52,8 @@ all of the following are true:
   current visual findings.
 - Render evidence is generated, reviewed, or explicitly deferred according to
   the current render-evidence metadata.
+- Human visual review records view-by-view observations from the current
+  render evidence.
 - Human visual sign-off is recorded.
 - Human manufacturing or buildability sign-off is recorded.
 - UVs, real PBR materials, topology cleanup, joinery detail, and appropriate
@@ -52,3 +62,5 @@ all of the following are true:
 - The golden contract fixture remains as the regression reference.
 
 Until then, the candidate remains a candidate and is not product-facing.
+The next useful branch is either another candidate-improvement pass or a
+separate Fusion proof while this visual candidate remains blockout-only.

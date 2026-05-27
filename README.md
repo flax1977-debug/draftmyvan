@@ -69,6 +69,7 @@ python -m tests.test_create_galley_candidate      # candidate generator manifest
 python -m tests.test_candidate_review             # candidate review metadata
 python -m tests.test_candidate_visual_audit       # candidate visual audit metadata
 python -m tests.test_render_evidence              # local render evidence metadata
+python -m tests.test_human_visual_review          # human visual review metadata
 python -m tests.test_runtime_consumer             # manifest read as typed runtime data
 python -m tests.test_package_report               # catalog/package readiness
 python -m tests.test_handoff_ready                # extraction-readiness helper
@@ -327,6 +328,15 @@ python tools/assets/validate_render_evidence.py \
     examples/assets/candidates/galley_1000_candidate_render_evidence.json
 ```
 
+The committed render evidence now has a human visual review record. That
+review documents what is visible in each standard view and what remains missing,
+but it is not production approval and still recommends `do_not_promote`:
+
+```bash
+python tools/assets/validate_human_visual_review.py \
+    examples/assets/candidates/galley_1000_candidate_human_visual_review.json
+```
+
 Lifecycle:
 
 1. **Golden fixture** — permanent byte-for-byte regression reference under
@@ -340,9 +350,11 @@ Lifecycle:
 5. **Render evidence** — local Blender script and metadata for repeatable
    view generation; the current blockout has six committed review PNGs pinned
    by path, size, and SHA.
-6. **Accepted manifest asset** — future PR copies an accepted candidate to
+6. **Human visual review** — view-by-view observations from the committed PNGs;
+   still not production approval and still do-not-promote.
+7. **Accepted manifest asset** — future PR copies an accepted candidate to
    `examples/assets/galley_1000.glb` and updates acceptance metadata.
-7. **Future real art** — later quality work can improve the accepted asset,
+8. **Future real art** — later quality work can improve the accepted asset,
    still behind the same gates.
 
 ## CI
@@ -353,9 +365,10 @@ asset-acceptance metadata CLI, the candidate-asset metadata CLI, the
 candidate-review metadata CLI, and the candidate-visual-audit metadata CLI on
 every push and pull request. CI also validates render-evidence metadata,
 including the six committed PNG paths, sizes, SHA256 values, 1024 x 1024
-resolution, Workbench render engine, and local lighting setup. Blender itself
-is intentionally not installed in CI; CI validates committed evidence metadata
-and files, not live Blender rendering. Future candidate changes require
+resolution, Workbench render engine, and local lighting setup. CI also validates
+the human visual review metadata. Blender itself is intentionally not installed
+in CI; CI validates committed evidence metadata and files, not live Blender
+rendering. Future candidate changes require
 regenerating the PNGs and re-signing render-evidence metadata to the new
 candidate SHA.
 
@@ -365,7 +378,9 @@ candidate SHA.
    accepted through the metadata gate without deleting the golden contract
    fixture. This requires a future explicit promotion PR with human visual
    and manufacturability sign-off.
-2. UE5 Data Asset / importer that consumes the manifest at editor time.
-3. Fusion 360 add-in that regenerates a parametric template from the same entry.
-4. Anchor enforcement for the remaining schema-valid anchor values
+2. Improve this visual candidate again, or start a separate Fusion proof while
+   keeping this candidate blockout-only and non-production.
+3. UE5 Data Asset / importer that consumes the manifest at editor time.
+4. Fusion 360 add-in that regenerates a parametric template from the same entry.
+5. Anchor enforcement for the remaining schema-valid anchor values
    (currently only `floor_back_left` is enforced; the rest fail loudly).

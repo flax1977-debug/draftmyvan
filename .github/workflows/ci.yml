@@ -57,6 +57,9 @@ jobs:
       - name: Run render-evidence suite (local render procedure metadata)
         run: python -m tests.test_render_evidence
 
+      - name: Run human-visual-review suite (review observations metadata)
+        run: python -m tests.test_human_visual_review
+
       - name: Run runtime-consumer suite (manifest read as typed data)
         run: python -m tests.test_runtime_consumer
 
@@ -86,3 +89,6 @@ jobs:
 
       - name: Run render-evidence metadata CLI
         run: python tools/assets/validate_render_evidence.py
+
+      - name: Run human-visual-review metadata CLI
+        run: python tools/assets/validate_human_visual_review.py

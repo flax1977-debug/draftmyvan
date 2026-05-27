@@ -46,6 +46,8 @@ def test_required_files_pass_on_current_repo() -> None:
         "examples/assets/candidates/galley_1000_candidate_visual_audit.json",
         "examples/assets/candidates/galley_1000_candidate_visual_audit.md",
         "examples/assets/candidates/galley_1000_candidate_render_evidence.json",
+        "examples/assets/candidates/galley_1000_candidate_human_visual_review.json",
+        "examples/assets/candidates/galley_1000_candidate_human_visual_review.md",
         "examples/assets/candidates/render_evidence/README.md",
         "examples/assets/candidates/render_evidence/galley_1000_candidate/front.png",
         "examples/assets/candidates/render_evidence/galley_1000_candidate/rear.png",
@@ -61,6 +63,7 @@ def test_required_files_pass_on_current_repo() -> None:
         "tools/assets/validate_candidate_review.py",
         "tools/assets/validate_candidate_visual_audit.py",
         "tools/assets/validate_render_evidence.py",
+        "tools/assets/validate_human_visual_review.py",
         "tools/blender/_anchor_contract.py",
         "tools/blender/EXPORT_REAL_ASSET.md",
         "tools/blender/RENDER_CANDIDATE_AUDIT.md",
@@ -227,6 +230,8 @@ def test_required_files_list_includes_all_critical_categories() -> None:
     assert "examples/assets/candidates/galley_1000_candidate_visual_audit.json" in rels
     assert "examples/assets/candidates/galley_1000_candidate_visual_audit.md" in rels
     assert "examples/assets/candidates/galley_1000_candidate_render_evidence.json" in rels
+    assert "examples/assets/candidates/galley_1000_candidate_human_visual_review.json" in rels
+    assert "examples/assets/candidates/galley_1000_candidate_human_visual_review.md" in rels
     assert "examples/assets/candidates/render_evidence/README.md" in rels
     for view in ("front", "rear", "left", "right", "top", "three_quarter"):
         assert (
@@ -248,6 +253,7 @@ def test_required_files_list_includes_all_critical_categories() -> None:
         "tools/assets/validate_candidate_review.py",
         "tools/assets/validate_candidate_visual_audit.py",
         "tools/assets/validate_render_evidence.py",
+        "tools/assets/validate_human_visual_review.py",
         "tests/test_check_asset_ready.py",
         "tests/test_asset_acceptance.py",
         "tests/test_candidate_asset.py",
@@ -255,6 +261,7 @@ def test_required_files_list_includes_all_critical_categories() -> None:
         "tests/test_candidate_review.py",
         "tests/test_candidate_visual_audit.py",
         "tests/test_render_evidence.py",
+        "tests/test_human_visual_review.py",
     ):
         assert rel in rels, f"required-files list dropped {rel}"
     assert "tests.test_check_asset_ready" in h.DYNAMIC_TEST_MODULES
@@ -264,6 +271,7 @@ def test_required_files_list_includes_all_critical_categories() -> None:
     assert "tests.test_candidate_review" in h.DYNAMIC_TEST_MODULES
     assert "tests.test_candidate_visual_audit" in h.DYNAMIC_TEST_MODULES
     assert "tests.test_render_evidence" in h.DYNAMIC_TEST_MODULES
+    assert "tests.test_human_visual_review" in h.DYNAMIC_TEST_MODULES
     # Handoff docs must be listed as required (this PR's whole point).
     for doc in ("HANDOFF.md", "EXTRACT_TO_REAL_REPO.md", "COMMANDS.md"):
         assert doc in rels, f"required-files list dropped {doc}"
