@@ -1,26 +1,29 @@
 # Blender validation tools
 
-This directory holds the scale-and-origin defence for DraftMyVan visual
-assets.
+This directory holds the GLB contract defence for DraftMyVan visual
+assets: scale, origin, material slots, and collision proxy.
 
 ## Why this exists
 
 A GLB that looks correct in UE5 but disagrees with `dimensions_mm` in the
-manifest — *or* sits at the wrong corner of world space — silently
-invalidates every downstream output: cut lists, clearance checks, placement
-snapping, and Fusion cabinet regeneration. Both failure modes are listed as
-fatal risks in the architecture doc.
+manifest, sits at the wrong corner of world space, omits manifest material
+slots, or lacks the declared collision proxy silently invalidates downstream
+outputs: cut lists, clearance checks, placement snapping, importer material
+binding, and collision setup.
 
 Size-only validation is **insufficient**. A cabinet authored 100 mm to the
 right of the origin will still be 1000 mm wide and pass a naive bbox-size
 check, but every snap point and clearance computed downstream will be off
 by 100 mm. Origin/anchor enforcement is what closes that gap.
 
-These scripts answer two questions, at different levels of authority:
+These scripts answer four questions, at different levels of authority:
 
   1. Does the GLB's bounding box **size** match the manifest within tolerance?
   2. Are the GLB's bounding box **corners** placed where the manifest's
      declared anchor requires?
+  3. Does the GLB declare every name in `visual.material_slots`?
+  4. Does the GLB contain a node or mesh named exactly
+     `visual.collision_proxy`?
 
 ## Authoring coordinate contract
 
@@ -66,6 +69,35 @@ left-handed; glTF is Y-up; Fusion 360 lives in its own document space.
 Each importer is responsible for converting from the contract above into
 its own conventions. The source GLB and its manifest entry are never
 mutated to suit a viewer.
+
+## Material slots and collision proxy
+
+The manifest's `visual.material_slots` entries are enforced against the
+GLB JSON chunk's `materials[].name` values. Every expected name must be
+present:
+
+```
+[OK] material slot 'oak_body'
+[OK] material slot 'sink_metal'
+```
+
+A missing name fails the validator:
+
+```
+[FAIL] missing material slot 'sink_metal'
+```
+
+The manifest's `visual.collision_proxy` is enforced against both GLB node
+names and mesh names. The expected collision proxy must appear exactly,
+for example:
+
+```
+[OK] collision proxy 'UCX_galley_1000'
+```
+
+The deterministic fixture uses placeholder material definitions and a
+placeholder `UCX_galley_1000` box mesh only to prove the contract. It is
+still not production art or a production collision hull.
 
 ### Supported anchors (V1)
 
@@ -127,17 +159,14 @@ script.
 
 ## Pass / fail semantics
 
-* **PASS** — every axis is within `tolerance-mm`. Safe to commit the GLB.
-* **FAIL** — at least one axis exceeds tolerance. Do not commit; fix the
+* **PASS** — every axis is within `tolerance-mm`, every material slot is
+  declared, and the collision proxy exists. Safe to commit the GLB.
+* **FAIL** — at least one contract check fails. Do not commit; fix the
   exporter or the manifest, not both at once.
 * **ERROR** (exit 2) — manifest malformed or GLB unreadable. The asset
   pipeline itself is broken.
 
 ## What is *not* validated here yet
 
-* **Collision proxy presence.** `visual.collision_proxy` is expected to be a
-  `UCX_…` mesh inside the GLB; verifying that is the next slice after this
-  one.
-* **Material slot names.** Likewise deferred until UE5 import is wired up.
 * **Anchors other than `floor_back_left`.** Schema-valid but explicitly
   unsupported by the enforcer — see "Supported anchors (V1)" above.

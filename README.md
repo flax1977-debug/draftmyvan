@@ -155,15 +155,17 @@ UE5 / Fusion / CNC integration.
 ## Blender asset validation gate
 
 This is the defence against the architecture doc's #1 fatal risk: visual
-asset scale drift, **and** the closely related risk of origin drift (right
-size, wrong position). See `tools/blender/README.md` for the full
-description; the short version is below.
+asset scale drift, **and** the closely related risks of origin drift,
+missing material slots, and missing collision proxy. See
+`tools/blender/README.md` for the full description; the short version is
+below.
 
 **Why it exists.** A GLB that looks correct in UE5 but whose bounding box
-disagrees with `dimensions_mm` — or whose declared anchor corner is not
-where the contract requires it — silently invalidates every cut list,
-clearance check, and placement rule downstream. We refuse to commit any
-GLB until it has passed this gate.
+disagrees with `dimensions_mm`, whose declared anchor corner is not where
+the contract requires it, or whose material/proxy names do not match the
+manifest silently invalidates every cut list, clearance check, placement
+rule, and importer assumption downstream. We refuse to commit any GLB
+until it has passed this gate.
 
 **Authoring coordinate contract.** Blender is the source of truth.
 `+X` = width across the van, `+Y` = module depth (back is `+Y`),
@@ -195,8 +197,10 @@ conversion is downstream's job and must not mutate the source GLB.
   ```
 
 **Pass / fail.** Exit 0 = every axis within tolerance (`--tolerance-mm`,
-default 1 mm). Exit 1 = drift. Exit 2 = malformed manifest or unreadable
-GLB. The asset is not committable until the exit code is 0.
+default 1 mm), every manifest material slot exists in the GLB, and the
+declared collision proxy node/mesh exists in the GLB. Exit 1 = contract
+mismatch. Exit 2 = malformed manifest or unreadable GLB. The asset is not
+committable until the exit code is 0.
 
 ## Real-asset export procedure
 
@@ -207,8 +211,8 @@ introducing it now live in `tools/blender/`:
   `floor_back_left` origin rule, transform application, export settings,
   and validator sweep.
 - `asset_export_checklist.md` is the per-asset sign-off sheet.
-- `check_asset_ready.py` wraps the schema, path, dimension, and anchor
-  checks into one pure-Python command:
+- `check_asset_ready.py` wraps the schema, path, dimension, anchor,
+  material-slot, and collision-proxy checks into one pure-Python command:
 
   ```bash
   python tools/blender/check_asset_ready.py \
@@ -217,8 +221,10 @@ introducing it now live in `tools/blender/`:
   ```
 
 The committed `examples/assets/galley_1000.glb` remains the deterministic
-fixture. Replacing it with real art is a separate future PR that must also
-update the fixture test and add sign-off metadata.
+fixture. It uses placeholder box geometry, placeholder material names, and
+a placeholder collision proxy only to prove the contract. Replacing it with
+real art is a separate future PR that must also update the fixture test and
+add sign-off metadata.
 
 ## CI
 
@@ -231,6 +237,5 @@ the Blender mode is a local-only authoritative gate.
 
 1. UE5 Data Asset / importer that consumes the manifest at editor time.
 2. Fusion 360 add-in that regenerates a parametric template from the same entry.
-3. Collision-proxy and material-slot enforcement in the GLB validator.
-4. Anchor enforcement for the remaining schema-valid anchor values
+3. Anchor enforcement for the remaining schema-valid anchor values
    (currently only `floor_back_left` is enforced; the rest fail loudly).

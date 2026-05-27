@@ -53,7 +53,8 @@ Expected: `1/1 valid`. If the manifest is broken, fix the manifest
 first — every later step depends on it.
 
 Note the manifest's `dimensions_mm`, `anchor`, and `visual.glb_path`.
-You'll need them.
+Also note `visual.material_slots` and `visual.collision_proxy`; the GLB
+must declare those exact names before it is committable.
 
 ### 2. Set up the Blender scene
 
@@ -123,6 +124,8 @@ If it fails:
 | `origin/anchor alignment violates contract` | transforms not applied; cabinet not authored with back-left-bottom at origin |
 | `POSITION accessor … missing min/max` | exporter wrote no accessor extents — re-export, the Blender glTF add-on normally writes them |
 | `basename … != manifest` | exported filename does not match `visual.glb_path` — rename and rerun |
+| `missing material slot …` | Blender material name does not match `visual.material_slots` exactly |
+| `missing collision proxy …` | no node/mesh is named exactly as `visual.collision_proxy` |
 
 ### 7. (Optional) Run the bpy validator
 
@@ -172,8 +175,6 @@ it with real art means:
 * Adding a per-asset "the committed binary is real art, signed off
   on <date> by <author>" marker.
 * Ensuring the bpy validator agrees with the pure-Python one.
-* Adding collision-proxy and material-slot enforcement to the
-  validator (currently deferred).
 
 None of this lands in PR #2. PR #2 only documents the procedure and
 provides a single helper command (`check_asset_ready.py`) that runs

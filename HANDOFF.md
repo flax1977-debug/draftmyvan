@@ -2,9 +2,10 @@
 
 > **Status:** the DraftMyVan foundation now lives in its own repository.
 > It has seven CI-gated pure-Python suites, a generated GLB fixture, two
-> validators (one for CI, one for human use in Blender), a runtime
-> reference consumer + package report, and the documented Blender export
-> procedure that was left behind in PaperAI PR #7.
+> validators (one for CI, one for human use in Blender), material-slot and
+> collision-proxy enforcement, a runtime reference consumer + package
+> report, and the documented Blender export procedure that was left behind
+> in PaperAI PR #7.
 
 This document is the briefing for whoever picks the project up next —
 whether that's the same author moving the code to a new repository,
@@ -17,7 +18,7 @@ manifest.schema.json             # JSON Schema (Draft 2020-12), millimetres
 examples/
   galley_1000.json               # First module manifest
   assets/
-    galley_1000.glb              # Deterministic 1000×520×900 mm fixture box
+    galley_1000.glb              # Deterministic fixture box + material/proxy markers
     galley_1000.glb.md           # Per-fixture explainer
     README.md                    # Asset directory rules
 runtime/                         # Reference consumer (PR #8, #9)
@@ -41,9 +42,9 @@ tools/
     check_handoff_ready.py       # Extraction-readiness gate
 tests/                           # Pure-Python; no Blender required
   test_validator.py              # 10 tests
-  test_blender_manifest_contract.py  # 30 tests
-  test_check_asset_ready.py      # 10 tests
-  test_galley_fixture.py         # 8 tests
+  test_blender_manifest_contract.py  # 38 tests
+  test_check_asset_ready.py      # 12 tests
+  test_galley_fixture.py         # 11 tests
   test_runtime_consumer.py       # 18 tests
   test_package_report.py         # 16 tests
   test_handoff_ready.py          # 10 tests
@@ -83,6 +84,7 @@ Left behind during PaperAI incubation, then redone in this repository:
 | PR | Status | Why it matters |
 |---|---|---|
 | PaperAI **#7** | redone as draftmyvan PR #2 | Adds `tools/blender/EXPORT_REAL_ASSET.md` (the documented Blender export procedure for real cabinet art), `tools/blender/asset_export_checklist.md` (printable per-asset sign-off), `tools/blender/check_asset_ready.py` (one-command readiness wrapper), and `tests/test_check_asset_ready.py` (10 tests). It is the prerequisite for ever replacing the generated fixture with human-authored art. |
+| draftmyvan **#3** | this PR | Extends the GLB validators and deterministic fixture so `visual.material_slots` and `visual.collision_proxy` are enforced before any real art can land. |
 
 ## Current command suite
 
@@ -118,9 +120,9 @@ Test suites (all pure Python):
 
 ```bash
 python -m tests.test_validator                    # 10 tests
-python -m tests.test_blender_manifest_contract    # 30 tests
-python -m tests.test_check_asset_ready            # 10 tests
-python -m tests.test_galley_fixture               # 8 tests
+python -m tests.test_blender_manifest_contract    # 38 tests
+python -m tests.test_check_asset_ready            # 12 tests
+python -m tests.test_galley_fixture               # 11 tests
 python -m tests.test_runtime_consumer             # 18 tests
 python -m tests.test_package_report               # 16 tests
 python -m tests.test_handoff_ready                # 10 tests
@@ -147,9 +149,6 @@ python -m tests.test_handoff_ready                # 10 tests
 - **The pure-Python GLB parser assumes identity transforms.** It reads
   POSITION-accessor `min`/`max`. For hierarchies, use the bpy variant
   (locally).
-- **No collision-proxy (`UCX_…`) enforcement.** Schema requires the
-  field; the validator does not yet check it inside the GLB.
-- **No material-slot enforcement.** Same — declared, not yet enforced.
 - **No real cabinet art.** The committed `galley_1000.glb` is the
   deterministic generated box. The export procedure now exists; the
   fixture-swap mechanism and real asset sign-off are still separate work.
@@ -167,12 +166,9 @@ manufacturing tool. Before that handoff, in priority order:
    it conditional on a "real art committed" marker) and add per-asset
    sign-off metadata. See step 9 of `tools/blender/EXPORT_REAL_ASSET.md`
    before any real GLB replaces the generated fixture.
-2. **Add collision-proxy and material-slot enforcement** to
-   `tools/blender/validate_glb_against_manifest.py`. These are the
-   next things the UE5 import side will need to trust.
-3. **Add anchor support beyond `floor_back_left`** as the catalog
+2. **Add anchor support beyond `floor_back_left`** as the catalog
    grows. The enforcement table is in
    `tools/blender/_anchor_contract.py:expected_corners_mm`.
-4. **Decide axis-convention conversion** at the UE5 / Fusion boundary,
+3. **Decide axis-convention conversion** at the UE5 / Fusion boundary,
    not by mutating the source GLB. The contract is documented in
    `tools/blender/README.md` and `_anchor_contract.py`.

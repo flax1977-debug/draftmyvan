@@ -10,8 +10,8 @@ imported scene graph, not just the glTF accessor extents. Use this when:
 Invoke from a shell (Blender must be on PATH):
 
     blender --background --python \\
-        draftmyvan/tools/blender/validate_in_blender.py -- \\
-        --manifest draftmyvan/examples/galley_1000.json \\
+        tools/blender/validate_in_blender.py -- \\
+        --manifest examples/galley_1000.json \\
         --glb path/to/galley_1000.glb \\
         [--tolerance-mm 1.0]
 
@@ -29,9 +29,10 @@ import sys
 from pathlib import Path
 
 # Allow `import _anchor_contract` when invoked as
-#   blender --background --python draftmyvan/tools/blender/validate_in_blender.py
+#   blender --background --python tools/blender/validate_in_blender.py
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _anchor_contract import check_origin_anchor  # noqa: E402
+import validate_glb_against_manifest as pure  # noqa: E402
 
 
 def _split_argv() -> list[str]:
@@ -74,6 +75,24 @@ def _world_bbox_mm():
     return [v * 1000.0 for v in bbox_min], [v * 1000.0 for v in bbox_max]
 
 
+def _material_names() -> set[str]:
+    import bpy  # type: ignore  # available only inside Blender
+
+    return {m.name for m in bpy.data.materials}
+
+
+def _object_mesh_names() -> set[str]:
+    import bpy  # type: ignore  # available only inside Blender
+
+    names: set[str] = set()
+    for obj in bpy.context.scene.objects:
+        names.add(obj.name)
+        data = getattr(obj, "data", None)
+        if data is not None:
+            names.add(data.name)
+    return names
+
+
 def main() -> int:
     import argparse
 
@@ -92,6 +111,11 @@ def main() -> int:
     anchor = manifest.get("anchor")
     if not isinstance(anchor, str):
         raise SystemExit("ERROR (manifest): missing required field 'anchor'")
+    try:
+        material_slots = pure.extract_manifest_material_slots(manifest)
+        collision_proxy = pure.extract_manifest_collision_proxy(manifest)
+    except pure.ManifestError as e:
+        raise SystemExit(f"ERROR (manifest): {e}") from e
 
     import bpy  # type: ignore
 
@@ -127,7 +151,21 @@ def main() -> int:
     for line in anchor_lines:
         print(line)
 
-    ok = size_ok and anchor_ok
+    print("Material slot check:")
+    material_ok, material_lines = pure.check_material_slots(
+        _material_names(), material_slots
+    )
+    for line in material_lines:
+        print(line)
+
+    print("Collision proxy check:")
+    collision_ok, collision_lines = pure.check_collision_proxy(
+        _object_mesh_names(), collision_proxy
+    )
+    for line in collision_lines:
+        print(line)
+
+    ok = size_ok and anchor_ok and material_ok and collision_ok
     print("RESULT:", "PASS" if ok else "FAIL")
     return 0 if ok else 1
 

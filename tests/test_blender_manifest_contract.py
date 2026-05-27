@@ -43,7 +43,9 @@ def _build_glb(min_xyz: tuple[float, float, float],
                omit_min_max: bool = False,
                bad_magic: bool = False,
                wrong_version: bool = False,
-               no_position: bool = False) -> bytes:
+               no_position: bool = False,
+               material_names: tuple[str, ...] = ("oak_body", "sink_metal"),
+               collision_proxy: str | None = "UCX_galley_1000") -> bytes:
     """Hand-build a minimal valid GLB 2.0 file for parser testing."""
     accessor: dict = {
         "bufferView": 0,
@@ -56,12 +58,24 @@ def _build_glb(min_xyz: tuple[float, float, float],
         accessor["max"] = list(max_xyz)
 
     primitive_attrs = {} if no_position else {"POSITION": 0}
+    module_primitives = [
+        {"attributes": primitive_attrs, "material": i}
+        for i, _ in enumerate(material_names)
+    ]
+    if not module_primitives:
+        module_primitives = [{"attributes": primitive_attrs}]
+    nodes = [{"mesh": 0, "name": "galley_1000_sink_left_oak"}]
+    meshes = [{"name": "galley_1000_sink_left_oak", "primitives": module_primitives}]
+    if collision_proxy is not None:
+        nodes.append({"mesh": 1, "name": collision_proxy})
+        meshes.append({"name": collision_proxy, "primitives": [{"attributes": primitive_attrs}]})
     gltf = {
         "asset": {"version": "2.0"},
         "scene": 0,
-        "scenes": [{"nodes": [0]}],
-        "nodes": [{"mesh": 0}],
-        "meshes": [{"primitives": [{"attributes": primitive_attrs}]}],
+        "scenes": [{"nodes": list(range(len(nodes)))}],
+        "nodes": nodes,
+        "meshes": meshes,
+        "materials": [{"name": name} for name in material_names],
         "accessors": [accessor],
         "bufferViews": [{"buffer": 0, "byteLength": 12, "byteOffset": 0}],
         "buffers": [{"byteLength": 12}],
@@ -131,6 +145,16 @@ def test_extract_glb_path_from_real_sample() -> None:
     assert v.extract_manifest_glb_path(manifest) == "assets/galley_1000.glb"
 
 
+def test_extract_material_slots_from_real_sample() -> None:
+    manifest = v.load_manifest(SAMPLE_MANIFEST)
+    assert v.extract_manifest_material_slots(manifest) == ("oak_body", "sink_metal")
+
+
+def test_extract_collision_proxy_from_real_sample() -> None:
+    manifest = v.load_manifest(SAMPLE_MANIFEST)
+    assert v.extract_manifest_collision_proxy(manifest) == "UCX_galley_1000"
+
+
 def test_missing_dimensions_field_gives_clear_error() -> None:
     manifest = v.load_manifest(SAMPLE_MANIFEST)
     broken = copy.deepcopy(manifest)
@@ -177,6 +201,30 @@ def test_non_glb_extension_rejected_at_extraction() -> None:
         assert ".glb" in str(e)
         return
     raise AssertionError(".fbx visual.glb_path should raise ManifestError")
+
+
+def test_missing_material_slots_field_gives_clear_error() -> None:
+    manifest = v.load_manifest(SAMPLE_MANIFEST)
+    broken = copy.deepcopy(manifest)
+    del broken["visual"]["material_slots"]
+    try:
+        v.extract_manifest_material_slots(broken)
+    except v.ManifestError as e:
+        assert "material_slots" in str(e)
+        return
+    raise AssertionError("missing visual.material_slots should raise ManifestError")
+
+
+def test_missing_collision_proxy_field_gives_clear_error() -> None:
+    manifest = v.load_manifest(SAMPLE_MANIFEST)
+    broken = copy.deepcopy(manifest)
+    del broken["visual"]["collision_proxy"]
+    try:
+        v.extract_manifest_collision_proxy(broken)
+    except v.ManifestError as e:
+        assert "collision_proxy" in str(e)
+        return
+    raise AssertionError("missing visual.collision_proxy should raise ManifestError")
 
 
 def test_load_manifest_missing_file_raises() -> None:
@@ -246,6 +294,18 @@ def test_load_glb_bbox_missing_file_raises() -> None:
         assert "not found" in str(e)
         return
     raise AssertionError("missing GLB file should raise GlbParseError")
+
+
+def test_glb_material_names_reads_material_names() -> None:
+    blob = _build_glb((0, 0, 0), (1, 1, 1))
+    gltf = v.parse_glb_json(blob)
+    assert v.glb_material_names(gltf) == {"oak_body", "sink_metal"}
+
+
+def test_glb_node_mesh_names_reads_collision_proxy_names() -> None:
+    blob = _build_glb((0, 0, 0), (1, 1, 1))
+    gltf = v.parse_glb_json(blob)
+    assert "UCX_galley_1000" in v.glb_node_mesh_names(gltf)
 
 
 # ---------------------------------------------------------------------------
@@ -334,6 +394,49 @@ def test_validate_full_path_allows_basename_override() -> None:
             ignore_path_mismatch=True,
         )
         assert report.ok is True
+
+
+def test_validate_full_path_fails_when_material_slot_missing() -> None:
+    blob = _build_glb(
+        (0.0, 0.0, 0.0),
+        (1.0, 0.52, 0.9),
+        material_names=("oak_body",),
+    )
+    with tempfile.TemporaryDirectory() as td:
+        glb_path = Path(td) / "galley_1000.glb"
+        glb_path.write_bytes(blob)
+        report = v.validate(
+            manifest_path=SAMPLE_MANIFEST,
+            glb_path=glb_path,
+            tolerance_mm=1.0,
+            glb_units="meters",
+        )
+        assert report.ok is False
+        joined = "\n".join(report.messages)
+        assert "[OK] material slot 'oak_body'" in joined
+        assert "[FAIL] missing material slot 'sink_metal'" in joined
+        assert "material slot contract is incomplete" in joined
+
+
+def test_validate_full_path_fails_when_collision_proxy_missing() -> None:
+    blob = _build_glb(
+        (0.0, 0.0, 0.0),
+        (1.0, 0.52, 0.9),
+        collision_proxy=None,
+    )
+    with tempfile.TemporaryDirectory() as td:
+        glb_path = Path(td) / "galley_1000.glb"
+        glb_path.write_bytes(blob)
+        report = v.validate(
+            manifest_path=SAMPLE_MANIFEST,
+            glb_path=glb_path,
+            tolerance_mm=1.0,
+            glb_units="meters",
+        )
+        assert report.ok is False
+        joined = "\n".join(report.messages)
+        assert "[FAIL] missing collision proxy 'UCX_galley_1000'" in joined
+        assert "collision proxy contract is incomplete" in joined
 
 
 # ---------------------------------------------------------------------------
@@ -473,10 +576,14 @@ def main() -> int:
         test_argparse_rejects_unknown_units,
         test_extract_dimensions_from_real_sample,
         test_extract_glb_path_from_real_sample,
+        test_extract_material_slots_from_real_sample,
+        test_extract_collision_proxy_from_real_sample,
         test_missing_dimensions_field_gives_clear_error,
         test_missing_single_dimension_key_names_the_key,
         test_missing_glb_path_field_gives_clear_error,
         test_non_glb_extension_rejected_at_extraction,
+        test_missing_material_slots_field_gives_clear_error,
+        test_missing_collision_proxy_field_gives_clear_error,
         test_load_manifest_missing_file_raises,
         test_parse_glb_bbox_returns_accessor_extents,
         test_parse_glb_bbox_rejects_bad_magic,
@@ -484,6 +591,8 @@ def main() -> int:
         test_parse_glb_bbox_rejects_missing_position_accessor,
         test_parse_glb_bbox_rejects_accessor_without_min_max,
         test_load_glb_bbox_missing_file_raises,
+        test_glb_material_names_reads_material_names,
+        test_glb_node_mesh_names_reads_collision_proxy_names,
         test_compare_within_tolerance_passes,
         test_compare_outside_tolerance_fails,
         test_compare_reports_each_axis,
@@ -491,6 +600,8 @@ def main() -> int:
         test_validate_full_path_fails_for_drift_outside_tolerance,
         test_validate_full_path_fails_on_basename_mismatch,
         test_validate_full_path_allows_basename_override,
+        test_validate_full_path_fails_when_material_slot_missing,
+        test_validate_full_path_fails_when_collision_proxy_missing,
         test_anchor_floor_back_left_passes_when_bbox_min_at_origin,
         test_anchor_floor_back_left_fails_when_bbox_shifted_in_positive_x,
         test_anchor_floor_back_left_fails_when_bbox_min_is_negative,

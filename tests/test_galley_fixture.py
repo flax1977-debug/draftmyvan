@@ -7,7 +7,8 @@ These are the regression / determinism gates for the test-fixture asset:
     If someone hand-edits the binary, or changes the generator, this
     test fails immediately.
   * The committed fixture passes the full Blender-side validator
-    (manifest, dimension, anchor/origin gates) end-to-end.
+    (manifest, dimension, anchor/origin, material, and collision gates)
+    end-to-end.
   * The generator refuses anchors it does not support.
 
 No Blender required.
@@ -71,6 +72,13 @@ def test_committed_fixture_bbox_matches_manifest_exactly() -> None:
     assert (round(bbox.min_x, 6), round(bbox.min_y, 6), round(bbox.min_z, 6)) == (0.0, 0.0, 0.0)
 
 
+def test_committed_fixture_declares_material_slots_and_collision_proxy() -> None:
+    gltf = v.load_glb_json(FIXTURE_GLB)
+    manifest = _load_manifest()
+    assert v.glb_material_names(gltf) == set(manifest["visual"]["material_slots"])
+    assert manifest["visual"]["collision_proxy"] in v.glb_node_mesh_names(gltf)
+
+
 def test_generator_refuses_unsupported_anchor() -> None:
     manifest = _load_manifest()
     manifest["anchor"] = "wall_left_back"
@@ -91,6 +99,28 @@ def test_generator_refuses_missing_dimensions() -> None:
         assert "dimensions_mm" in str(e)
         return
     raise AssertionError("generator should refuse manifest without dimensions_mm")
+
+
+def test_generator_refuses_missing_material_slots() -> None:
+    manifest = _load_manifest()
+    del manifest["visual"]["material_slots"]
+    try:
+        gen.make_box_glb_from_manifest(manifest)
+    except ValueError as e:
+        assert "material_slots" in str(e)
+        return
+    raise AssertionError("generator should refuse manifest without material slots")
+
+
+def test_generator_refuses_missing_collision_proxy() -> None:
+    manifest = _load_manifest()
+    del manifest["visual"]["collision_proxy"]
+    try:
+        gen.make_box_glb_from_manifest(manifest)
+    except ValueError as e:
+        assert "collision_proxy" in str(e)
+        return
+    raise AssertionError("generator should refuse manifest without collision proxy")
 
 
 def test_generator_is_deterministic_across_repeated_calls() -> None:
@@ -127,8 +157,11 @@ def main() -> int:
         test_committed_fixture_matches_generator_byte_for_byte,
         test_committed_fixture_passes_full_validator,
         test_committed_fixture_bbox_matches_manifest_exactly,
+        test_committed_fixture_declares_material_slots_and_collision_proxy,
         test_generator_refuses_unsupported_anchor,
         test_generator_refuses_missing_dimensions,
+        test_generator_refuses_missing_material_slots,
+        test_generator_refuses_missing_collision_proxy,
         test_generator_is_deterministic_across_repeated_calls,
         test_generated_glb_for_different_dims_still_passes_anchor_check,
     ]
