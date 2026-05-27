@@ -33,6 +33,13 @@ def _temp_manifest(mutator) -> Path:
     return Path(tmp_path)
 
 
+def _write_generated_glb(manifest: dict, glb_path: Path) -> None:
+    sys.path.insert(0, str(REPO_ROOT / "tools" / "assets"))
+    import generate_galley_fixture_glb as gen  # noqa: E402
+
+    glb_path.write_bytes(gen.make_box_glb_from_manifest(manifest))
+
+
 # ---------------------------------------------------------------------------
 # Happy path
 # ---------------------------------------------------------------------------
@@ -72,20 +79,43 @@ def test_missing_glb_file_reports_not_ready_with_hint() -> None:
 
 def test_wrong_size_glb_reports_not_ready() -> None:
     # Build a synthetic GLB that is 5 mm too wide.
-    sys.path.insert(0, str(REPO_ROOT / "tools" / "assets"))
-    import generate_galley_fixture_glb as gen  # noqa: E402
     manifest = _load(SAMPLE_MANIFEST)
     manifest["dimensions_mm"] = {"width": 1005, "depth": 520, "height": 900}
-    blob = gen.make_box_glb_from_manifest(manifest)
     # But validate against the *real* manifest (width=1000) → 5 mm drift.
     with tempfile.TemporaryDirectory() as td:
         glb_path = Path(td) / "galley_1000.glb"
-        glb_path.write_bytes(blob)
+        _write_generated_glb(manifest, glb_path)
         code, lines = car.check(SAMPLE_MANIFEST, glb_path)
         joined = "\n".join(lines)
         assert code == 1, joined
         assert "RESULT: NOT READY" in joined
         assert "FAIL" in joined and "width" in joined
+
+
+def test_missing_material_slot_reports_not_ready() -> None:
+    manifest = _load(SAMPLE_MANIFEST)
+    manifest["visual"]["material_slots"] = ["oak_body"]
+    with tempfile.TemporaryDirectory() as td:
+        glb_path = Path(td) / "galley_1000.glb"
+        _write_generated_glb(manifest, glb_path)
+        code, lines = car.check(SAMPLE_MANIFEST, glb_path)
+        joined = "\n".join(lines)
+        assert code == 1, joined
+        assert "RESULT: NOT READY" in joined
+        assert "missing material slot 'sink_metal'" in joined
+
+
+def test_missing_collision_proxy_reports_not_ready() -> None:
+    manifest = _load(SAMPLE_MANIFEST)
+    manifest["visual"]["collision_proxy"] = "UCX_wrong_proxy"
+    with tempfile.TemporaryDirectory() as td:
+        glb_path = Path(td) / "galley_1000.glb"
+        _write_generated_glb(manifest, glb_path)
+        code, lines = car.check(SAMPLE_MANIFEST, glb_path)
+        joined = "\n".join(lines)
+        assert code == 1, joined
+        assert "RESULT: NOT READY" in joined
+        assert "missing collision proxy 'UCX_galley_1000'" in joined
 
 
 def test_manifest_schema_failure_reports_not_ready() -> None:
@@ -163,6 +193,8 @@ def main() -> int:
         test_default_glb_path_derived_from_manifest,
         test_missing_glb_file_reports_not_ready_with_hint,
         test_wrong_size_glb_reports_not_ready,
+        test_missing_material_slot_reports_not_ready,
+        test_missing_collision_proxy_reports_not_ready,
         test_manifest_schema_failure_reports_not_ready,
         test_unreadable_manifest_returns_error_exit_2,
         test_missing_jsonschema_returns_error_exit_2,

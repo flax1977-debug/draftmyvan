@@ -1,7 +1,7 @@
 # galley_1000.glb — fixture, not art
 
-The committed `galley_1000.glb` in this directory is a **geometric contract
-fixture**. It is not visual production art.
+The committed `galley_1000.glb` in this directory is a **contract fixture**.
+It is not visual production art.
 
 ## What it is
 
@@ -15,10 +15,11 @@ A closed axis-aligned box, generated deterministically from
 | depth  | 520 mm |
 | height | 900 mm |
 | anchor | `floor_back_left` (bbox-min at world origin) |
-| materials | none |
+| materials | placeholder slots: `oak_body`, `sink_metal` |
+| collision proxy | placeholder node/mesh: `UCX_galley_1000` |
 | normals / UVs / textures | none |
 | vertices / triangles | 8 / 12 |
-| file size | ~800 bytes |
+| file size | ~1.1 KB |
 
 ## What it is *for*
 
@@ -26,11 +27,11 @@ To prove the pipeline can **reject** wrong size and wrong origin **before**
 any polished cabinet art exists. Specifically:
 
 1. It satisfies every gate today — manifest validator, dimension check,
-   anchor/origin check.
+   anchor/origin check, material-slot check, and collision-proxy check.
 2. It pins the generator output via a byte-for-byte determinism test.
 3. It gives every later GLB (real, polished art) a working comparison
-   target: "did your polished asset match the same bounding box and
-   corner that this fixture does?"
+   target: "did your polished asset match the same bounding box, corner,
+   material-slot names, and collision-proxy name that this fixture does?"
 
 ## What it is **not** for
 
@@ -38,13 +39,15 @@ any polished cabinet art exists. Specifically:
 - It will not appear in any product screenshot.
 - It does not represent the look, joinery, or interior detailing of a
   galley cabinet.
+- Its material definitions and collision proxy are placeholders that exist
+  only to prove the manifest contract.
 - It must not be hand-edited. If you want to change its geometry, change
   the generator (or the manifest) and regenerate.
 
 ## Regenerate
 
 ```bash
-cd draftmyvan
+cd /path/to/draftmyvan
 python tools/assets/generate_galley_fixture_glb.py
 # (equivalent to: --manifest examples/galley_1000.json --out examples/assets/galley_1000.glb)
 ```

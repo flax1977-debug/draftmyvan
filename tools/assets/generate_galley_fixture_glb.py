@@ -8,7 +8,7 @@ art exists.
 
 Default invocation (no flags) regenerates the canonical fixture in place:
 
-    cd draftmyvan
+    cd /path/to/draftmyvan
     python tools/assets/generate_galley_fixture_glb.py
     # reads  examples/galley_1000.json
     # writes examples/assets/galley_1000.glb
@@ -20,6 +20,11 @@ Both inputs can be overridden:
 The generated GLB:
     * Has exactly the bounding box implied by the manifest's
       `dimensions_mm` and `anchor`.
+    * Declares every `visual.material_slots[]` name as a placeholder
+      material.
+    * Contains a placeholder collision proxy node/mesh named exactly
+      `visual.collision_proxy`; it reuses the box geometry because this
+      fixture proves contract wiring, not production collision art.
     * Uses metres in object data (glTF convention).
     * Is deterministic — `sort_keys=True` JSON, fixed vertex order,
       fixed index layout — so the committed fixture can be regenerated
@@ -31,8 +36,8 @@ Limits (V1, deliberate):
     * Only `anchor = "floor_back_left"` is supported. Other anchors
       raise — silent acceptance is not an option here either.
     * Geometry is a closed axis-aligned box (8 vertices, 12 triangles).
-      No materials, no normals, no UVs, no PBR. Adding those is art
-      work, not contract work.
+      Materials and collision proxy are placeholder contract markers only:
+      no normals, no UVs, no PBR, no production collision hull.
 """
 
 from __future__ import annotations
@@ -57,7 +62,7 @@ COMP_UNSIGNED_SHORT = 5123
 TARGET_ARRAY_BUFFER = 34962          # vertex attrs
 TARGET_ELEMENT_ARRAY_BUFFER = 34963  # indices
 
-GENERATOR_TAG = "DraftMyVan box generator v1"
+GENERATOR_TAG = "DraftMyVan box generator v2"
 
 # 12 triangles, outward-facing.
 # Vertex layout matches `_vertices_floor_back_left` below.
@@ -104,6 +109,25 @@ def _pad4(blob: bytes, pad_byte: bytes) -> bytes:
     return blob + pad_byte * rem
 
 
+def _manifest_material_slots(manifest: dict) -> tuple[str, ...]:
+    visual = manifest.get("visual") or {}
+    slots = visual.get("material_slots")
+    if not isinstance(slots, list) or not slots:
+        raise ValueError("manifest.visual.material_slots must be a non-empty list")
+    bad = [slot for slot in slots if not isinstance(slot, str) or not slot]
+    if bad:
+        raise ValueError("manifest.visual.material_slots entries must be non-empty strings")
+    return tuple(slots)
+
+
+def _manifest_collision_proxy(manifest: dict) -> str:
+    visual = manifest.get("visual") or {}
+    proxy = visual.get("collision_proxy")
+    if not isinstance(proxy, str) or not proxy:
+        raise ValueError("manifest.visual.collision_proxy must be a non-empty string")
+    return proxy
+
+
 def make_box_glb_from_manifest(manifest: dict) -> bytes:
     """Return GLB bytes for the box implied by `manifest`. Deterministic."""
     dims = manifest.get("dimensions_mm") or {}
@@ -120,6 +144,8 @@ def make_box_glb_from_manifest(manifest: dict) -> bytes:
         raise ValueError(
             f"generator supports only anchor 'floor_back_left'; got {anchor!r}"
         )
+    material_slots = _manifest_material_slots(manifest)
+    collision_proxy = _manifest_collision_proxy(manifest)
 
     W, D, H = width_mm / 1000.0, depth_mm / 1000.0, height_mm / 1000.0
     verts = _vertices_floor_back_left(W, D, H)
@@ -127,6 +153,11 @@ def make_box_glb_from_manifest(manifest: dict) -> bytes:
     pos_bytes = _pad4(_pack_positions(verts), b"\x00")           # 8*12 = 96 bytes, already aligned
     idx_bytes = _pad4(_pack_indices(BOX_INDICES), b"\x00")        # 36*2 = 72 bytes, already aligned
     bin_payload = pos_bytes + idx_bytes
+
+    module_primitives = [
+        {"attributes": {"POSITION": 0}, "indices": 1, "material": i}
+        for i, _ in enumerate(material_slots)
+    ]
 
     gltf: dict = {
         "accessors": [
@@ -163,12 +194,23 @@ def make_box_glb_from_manifest(manifest: dict) -> bytes:
             },
         ],
         "buffers": [{"byteLength": len(bin_payload)}],
+        "materials": [{"name": slot} for slot in material_slots],
         "meshes": [
-            {"primitives": [{"attributes": {"POSITION": 0}, "indices": 1}]}
+            {
+                "name": manifest.get("id", "module"),
+                "primitives": module_primitives,
+            },
+            {
+                "name": collision_proxy,
+                "primitives": [{"attributes": {"POSITION": 0}, "indices": 1}],
+            },
         ],
-        "nodes": [{"mesh": 0, "name": manifest.get("id", "module")}],
+        "nodes": [
+            {"mesh": 0, "name": manifest.get("id", "module")},
+            {"mesh": 1, "name": collision_proxy},
+        ],
         "scene": 0,
-        "scenes": [{"nodes": [0]}],
+        "scenes": [{"nodes": [0, 1]}],
     }
 
     json_bytes = _pad4(
@@ -184,7 +226,7 @@ def make_box_glb_from_manifest(manifest: dict) -> bytes:
     return header + json_chunk + bin_chunk
 
 
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent  # draftmyvan/
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent  # repository root
 DEFAULT_MANIFEST = REPO_ROOT / "examples" / "galley_1000.json"
 DEFAULT_OUT = REPO_ROOT / "examples" / "assets" / "galley_1000.glb"
 

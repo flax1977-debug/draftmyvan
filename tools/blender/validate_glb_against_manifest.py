@@ -19,7 +19,7 @@ Two execution modes:
 
 Usage:
     python validate_glb_against_manifest.py \\
-        --manifest draftmyvan/examples/galley_1000.json \\
+        --manifest examples/galley_1000.json \\
         --glb path/to/galley_1000.glb \\
         [--tolerance-mm 1.0] \\
         [--glb-units meters|millimeters] \\
@@ -36,6 +36,10 @@ Assumptions (documented; will be revisited when real assets exist):
       For hierarchies, use the Blender variant.
     * glTF positions are in metres (the spec's default convention).
       Override with --glb-units millimeters if your exporter writes mm.
+    * Material slots and collision proxy names are enforced from the
+      GLB JSON chunk. A candidate must declare every
+      `visual.material_slots[]` name and a node or mesh named exactly
+      `visual.collision_proxy`.
     * Origin / anchor enforcement is implemented only for the anchors
       listed in `_anchor_contract.SUPPORTED_ANCHORS`. Any other anchor
       value declared in the schema fails loudly here rather than being
@@ -159,16 +163,35 @@ def extract_manifest_glb_path(manifest: dict) -> str:
     return glb_path
 
 
+def extract_manifest_material_slots(manifest: dict) -> tuple[str, ...]:
+    visual = manifest.get("visual")
+    if not isinstance(visual, dict) or "material_slots" not in visual:
+        raise ManifestError("manifest missing required field 'visual.material_slots'")
+    slots = visual["material_slots"]
+    if not isinstance(slots, list) or not slots:
+        raise ManifestError("visual.material_slots must be a non-empty array")
+    bad = [slot for slot in slots if not isinstance(slot, str) or not slot]
+    if bad:
+        raise ManifestError("visual.material_slots entries must be non-empty strings")
+    return tuple(slots)
+
+
+def extract_manifest_collision_proxy(manifest: dict) -> str:
+    visual = manifest.get("visual")
+    if not isinstance(visual, dict) or "collision_proxy" not in visual:
+        raise ManifestError("manifest missing required field 'visual.collision_proxy'")
+    proxy = visual["collision_proxy"]
+    if not isinstance(proxy, str) or not proxy:
+        raise ManifestError("visual.collision_proxy must be a non-empty string")
+    return proxy
+
+
 # ---------------------------------------------------------------------------
 # GLB parsing
 # ---------------------------------------------------------------------------
 
-def parse_glb_bbox(glb_bytes: bytes) -> BBox:
-    """Compute the union bounding box of every POSITION accessor.
-
-    Operates on the JSON chunk only — no need to read the binary buffer
-    because glTF 2.0 mandates `min`/`max` on POSITION accessors.
-    """
+def parse_glb_json(glb_bytes: bytes) -> dict:
+    """Return the decoded GLB JSON chunk."""
     if len(glb_bytes) < 12:
         raise GlbParseError("file too short to be a GLB")
     magic, version, total_length = struct.unpack_from("<4sII", glb_bytes, 0)
@@ -200,10 +223,17 @@ def parse_glb_bbox(glb_bytes: bytes) -> BBox:
         raise GlbParseError("GLB has no JSON chunk")
 
     try:
-        gltf = json.loads(json_payload.decode("utf-8").rstrip("\x00 "))
+        return json.loads(json_payload.decode("utf-8").rstrip("\x00 "))
     except (UnicodeDecodeError, json.JSONDecodeError) as e:
         raise GlbParseError(f"GLB JSON chunk unreadable: {e}") from e
 
+
+def bbox_from_gltf(gltf: dict) -> BBox:
+    """Compute the union bounding box of every POSITION accessor.
+
+    Operates on the JSON chunk only — no need to read the binary buffer
+    because glTF 2.0 mandates `min`/`max` on POSITION accessors.
+    """
     accessors = gltf.get("accessors") or []
     meshes = gltf.get("meshes") or []
     position_accessor_ids: set[int] = set()
@@ -235,10 +265,61 @@ def parse_glb_bbox(glb_bytes: bytes) -> BBox:
     return BBox(*bbox_min, *bbox_max)
 
 
+def parse_glb_bbox(glb_bytes: bytes) -> BBox:
+    return bbox_from_gltf(parse_glb_json(glb_bytes))
+
+
+def load_glb_json(glb_path: Path) -> dict:
+    if not glb_path.exists():
+        raise GlbParseError(f"GLB file not found: {glb_path}")
+    return parse_glb_json(glb_path.read_bytes())
+
+
 def load_glb_bbox(glb_path: Path) -> BBox:
     if not glb_path.exists():
         raise GlbParseError(f"GLB file not found: {glb_path}")
     return parse_glb_bbox(glb_path.read_bytes())
+
+
+def glb_material_names(gltf: dict) -> set[str]:
+    names: set[str] = set()
+    for material in gltf.get("materials") or []:
+        if isinstance(material, dict) and isinstance(material.get("name"), str):
+            names.add(material["name"])
+    return names
+
+
+def glb_node_mesh_names(gltf: dict) -> set[str]:
+    names: set[str] = set()
+    for collection in (gltf.get("nodes") or [], gltf.get("meshes") or []):
+        for item in collection:
+            if isinstance(item, dict) and isinstance(item.get("name"), str):
+                names.add(item["name"])
+    return names
+
+
+def check_material_slots(
+    material_names: set[str],
+    expected_slots: Iterable[str],
+) -> tuple[bool, list[str]]:
+    lines: list[str] = []
+    ok = True
+    for slot in expected_slots:
+        if slot in material_names:
+            lines.append(f"  [OK] material slot '{slot}'")
+        else:
+            lines.append(f"  [FAIL] missing material slot '{slot}'")
+            ok = False
+    return ok, lines
+
+
+def check_collision_proxy(
+    node_mesh_names: set[str],
+    expected_proxy: str,
+) -> tuple[bool, list[str]]:
+    if expected_proxy in node_mesh_names:
+        return True, [f"  [OK] collision proxy '{expected_proxy}'"]
+    return False, [f"  [FAIL] missing collision proxy '{expected_proxy}'"]
 
 
 # ---------------------------------------------------------------------------
@@ -296,10 +377,14 @@ def validate(
     manifest = load_manifest(manifest_path)
     dims_mm = extract_manifest_dimensions_mm(manifest)
     manifest_glb_rel = extract_manifest_glb_path(manifest)
+    material_slots = extract_manifest_material_slots(manifest)
+    collision_proxy = extract_manifest_collision_proxy(manifest)
     messages.append(f"Manifest:        {manifest_path}")
     messages.append(f"Manifest id:     {manifest['id']}")
     messages.append(f"Manifest dims:   width={dims_mm[0]} depth={dims_mm[1]} height={dims_mm[2]} (mm)")
     messages.append(f"Manifest glb:    {manifest_glb_rel}")
+    messages.append(f"Material slots:  {', '.join(material_slots)}")
+    messages.append(f"Collision proxy: {collision_proxy}")
     messages.append(f"Supplied glb:    {glb_path}")
 
     # Path-match check (basename only — manifest paths are repo-relative,
@@ -320,7 +405,8 @@ def validate(
             )
             return ValidationReport(False, messages)
 
-    bbox_native = load_glb_bbox(glb_path)
+    gltf = load_glb_json(glb_path)
+    bbox_native = bbox_from_gltf(gltf)
     bbox_mm = to_mm(bbox_native, glb_units)
     w, d, h = bbox_mm.size_xyz
     messages.append(
@@ -345,15 +431,32 @@ def validate(
     )
     messages.extend(anchor_lines)
 
-    ok = size_ok and anchor_ok
+    messages.append("Material slot check:")
+    material_ok, material_lines = check_material_slots(
+        glb_material_names(gltf), material_slots
+    )
+    messages.extend(material_lines)
+
+    messages.append("Collision proxy check:")
+    collision_ok, collision_lines = check_collision_proxy(
+        glb_node_mesh_names(gltf), collision_proxy
+    )
+    messages.extend(collision_lines)
+
+    ok = size_ok and anchor_ok and material_ok and collision_ok
     if ok:
         messages.append("RESULT: PASS")
-    elif not size_ok and not anchor_ok:
-        messages.append("RESULT: FAIL — bbox size and origin/anchor both off")
-    elif not size_ok:
-        messages.append("RESULT: FAIL — bounding box exceeds tolerance")
     else:
-        messages.append("RESULT: FAIL — origin/anchor alignment violates contract")
+        failures: list[str] = []
+        if not size_ok:
+            failures.append("bounding box exceeds tolerance")
+        if not anchor_ok:
+            failures.append("origin/anchor alignment violates contract")
+        if not material_ok:
+            failures.append("material slot contract is incomplete")
+        if not collision_ok:
+            failures.append("collision proxy contract is incomplete")
+        messages.append(f"RESULT: FAIL — {'; '.join(failures)}")
     return ValidationReport(ok, messages)
 
 
