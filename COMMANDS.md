@@ -189,9 +189,11 @@ Manual run docs:
 | Command | Purpose | Exit |
 |---|---|---|
 | `python tools/mcp/fusion_bridge_server.py` | Start the local stdio MCP bridge process. It is not globally enabled by repo code. | MCP stdio process |
+| `python tools/mcp/smoke_fusion_bridge.py` | Start the bridge as a controlled child process, smoke-test `tools/list`, smoke-test `dry_run_geometry`, and verify an unknown tool is rejected. | 0 smoke pass, 1 smoke fail |
 | `python tools/fusion/fusion_command_bridge.py --validate-command /tmp/draftmyvan_fusion_command.json` | Validate the narrow Fusion file-command bridge request shape outside Fusion. | 0 valid, 1 invalid |
 | `python -m tests.test_fusion_local_availability` | Verify Fusion absence is reported clearly and report-only status does not create output. | 0 pass, 1 fail |
 | `python -m tests.test_fusion_mcp_bridge` | Verify the MCP bridge allowlist and report-only command validation. | 0 pass, 1 fail |
+| `python -m tests.test_fusion_mcp_opt_in_docs` | Verify opt-in config docs and the bridge smoke helper. | 0 pass, 1 fail |
 
 The bridge exposes only four allowlisted tools:
 
@@ -206,6 +208,8 @@ reporting. It does not wire global Codex/Claude MCP config, does not start a
 localhost server, does not execute arbitrary shell or Fusion Python, and does
 not generate drawings, cut lists, DXF, CNC, or manufacturing-ready output.
 Manual config wiring requires explicit user approval later.
+Opt-in config examples are documented in `docs/FUSION_MCP_OPT_IN_CONFIG.md`;
+they are examples only and are not applied automatically.
 
 ## Runtime consumer (PR #8)
 
@@ -247,6 +251,7 @@ python -m tests.test_fusion_geometry_plan         # 17 tests — Fusion geometry
 python -m tests.test_fusion_geometry_execution_skeleton # 11 tests — guarded Fusion execution skeleton
 python -m tests.test_fusion_local_availability    # 4 tests — local Fusion availability boundary
 python -m tests.test_fusion_mcp_bridge            # 12 tests — allowlisted Fusion MCP bridge
+python -m tests.test_fusion_mcp_opt_in_docs       # 6 tests — opt-in MCP docs and smoke helper
 python -m tests.test_runtime_consumer             # 18 tests — manifest read as typed runtime data
 python -m tests.test_package_report               # 16 tests — catalog/package readiness
 python -m tests.test_handoff_ready                # 10 tests — extraction readiness helper
@@ -268,6 +273,7 @@ for t in tests.test_validator tests.test_blender_manifest_contract \
          tests.test_fusion_geometry_execution_skeleton \
          tests.test_fusion_local_availability \
          tests.test_fusion_mcp_bridge \
+         tests.test_fusion_mcp_opt_in_docs \
          tests.test_runtime_consumer \
          tests.test_package_report \
          tests.test_handoff_ready ; do

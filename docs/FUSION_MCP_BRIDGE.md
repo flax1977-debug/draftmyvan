@@ -86,6 +86,16 @@ This repository intentionally does not edit `~/.codex`, `~/.claude`, or any
 other global MCP config. Wiring this command into an assistant requires
 explicit user approval in a later step.
 
+Opt-in configuration examples are documented in
+`docs/FUSION_MCP_OPT_IN_CONFIG.md`. They are examples only and are not applied
+automatically by this repository.
+
+Run a local stdio smoke test with:
+
+```bash
+python3 tools/mcp/smoke_fusion_bridge.py
+```
+
 ## Manual Fusion Status Flow
 
 To ask Fusion for manual verification status without opening a localhost server:

@@ -443,6 +443,14 @@ execute arbitrary shell commands or arbitrary Fusion Python, does not generate
 CNC/DXF/drawings/cut lists, and does not claim manufacturing-ready output.
 Manual MCP config wiring requires explicit user approval later.
 
+Opt-in configuration examples live in `docs/FUSION_MCP_OPT_IN_CONFIG.md`.
+Those examples are documentation only; this repo does not apply them. A local
+stdio smoke test is available:
+
+```bash
+python tools/mcp/smoke_fusion_bridge.py
+```
+
 Current five-panel carcass diagram:
 
 ```text

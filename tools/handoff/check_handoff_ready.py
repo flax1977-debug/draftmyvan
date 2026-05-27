@@ -104,6 +104,7 @@ REQUIRED_FILES: tuple[str, ...] = (
     "tools/fusion/MANUAL_FUSION_GEOMETRY_CHECKLIST.md",
     "tools/fusion/fusion_command_bridge.py",
     "tools/mcp/fusion_bridge_server.py",
+    "tools/mcp/smoke_fusion_bridge.py",
     "tools/handoff/check_handoff_ready.py",
     # Tests
     "tests/test_validator.py",
@@ -124,6 +125,7 @@ REQUIRED_FILES: tuple[str, ...] = (
     "tests/test_fusion_geometry_execution_skeleton.py",
     "tests/test_fusion_local_availability.py",
     "tests/test_fusion_mcp_bridge.py",
+    "tests/test_fusion_mcp_opt_in_docs.py",
     "tests/fixtures/README.md",
     "tests/fixtures/galley_1000_contract_box.glb",
     "tests/fixtures/galley_1000_fusion_parameters.expected.json",
@@ -138,6 +140,7 @@ REQUIRED_FILES: tuple[str, ...] = (
     "EXTRACT_TO_REAL_REPO.md",
     "COMMANDS.md",
     "docs/FUSION_MCP_BRIDGE.md",
+    "docs/FUSION_MCP_OPT_IN_CONFIG.md",
 )
 
 # Substrings that must not appear in DraftMyVan Python files.
@@ -170,6 +173,7 @@ DYNAMIC_TEST_MODULES: tuple[str, ...] = (
     "tests.test_fusion_geometry_execution_skeleton",
     "tests.test_fusion_local_availability",
     "tests.test_fusion_mcp_bridge",
+    "tests.test_fusion_mcp_opt_in_docs",
     "tests.test_runtime_consumer",
     "tests.test_package_report",
     "tests.test_handoff_ready",
