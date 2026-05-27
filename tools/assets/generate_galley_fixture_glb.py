@@ -1,21 +1,27 @@
 #!/usr/bin/env python3
-"""Generate the deterministic galley_1000 GLB test fixture.
+"""Generate the deterministic galley_1000 GLB contract fixture.
 
 This is a **test-fixture generator**, not an art tool. Its job is to
 produce a geometrically-correct stand-in so the manifest → validator →
 asset pipeline can be exercised end-to-end before any polished cabinet
 art exists.
 
-Default invocation (no flags) regenerates the canonical fixture in place:
+Default invocation (no flags) regenerates the permanent golden contract
+fixture in place:
 
     cd /path/to/draftmyvan
     python tools/assets/generate_galley_fixture_glb.py
     # reads  examples/galley_1000.json
-    # writes examples/assets/galley_1000.glb
+    # writes tests/fixtures/galley_1000_contract_box.glb
 
 Both inputs can be overridden:
     --manifest <path>   Override the manifest source.
     --out <path>        Override the GLB output path.
+
+`examples/assets/galley_1000.glb` is the current manifest asset. It is
+also generated today, but it is deliberately no longer the byte-pinned
+golden fixture. A future real asset may replace it while this generated
+box remains under `tests/fixtures/` as the regression reference.
 
 The generated GLB:
     * Has exactly the bounding box implied by the manifest's
@@ -228,7 +234,7 @@ def make_box_glb_from_manifest(manifest: dict) -> bytes:
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent  # repository root
 DEFAULT_MANIFEST = REPO_ROOT / "examples" / "galley_1000.json"
-DEFAULT_OUT = REPO_ROOT / "examples" / "assets" / "galley_1000.glb"
+DEFAULT_OUT = REPO_ROOT / "tests" / "fixtures" / "galley_1000_contract_box.glb"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -241,7 +247,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--out", type=Path, default=DEFAULT_OUT,
-        help=f"Output GLB path (default: examples/assets/galley_1000.glb).",
+        help="Output GLB path (default: tests/fixtures/galley_1000_contract_box.glb).",
     )
     args = parser.parse_args(argv)
 

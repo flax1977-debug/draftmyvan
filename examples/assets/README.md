@@ -1,14 +1,37 @@
 # Asset directory
 
-This directory holds **test-fixture GLBs**, not production art.
+This directory holds **manifest-selected assets** and per-asset acceptance
+metadata. It does not hold the permanent golden test fixture anymore.
 
 Today's contents:
 
 | file | what it is | how it is made |
 |---|---|---|
-| `galley_1000.glb` | Contract fixture for `galley_1000_sink_left_oak`: a plain 1000×520×900 mm box anchored at the floor back-left corner, with placeholder material slots and a placeholder collision proxy. See `galley_1000.glb.md`. | Generated deterministically by `tools/assets/generate_galley_fixture_glb.py` from `examples/galley_1000.json`. Pinned to that output by `tests/test_galley_fixture.py`. |
+| `galley_1000.glb` | Current manifest asset for `galley_1000_sink_left_oak`: still a plain 1000x520x900 mm generated box today, anchored at the floor back-left corner, with placeholder material slots and a placeholder collision proxy. See `galley_1000.glb.md`. | Currently byte-identical to `tests/fixtures/galley_1000_contract_box.glb`. It validates as the manifest asset, but is no longer the byte-pinned golden fixture. |
+| `galley_1000.asset_acceptance.json` | Acceptance metadata for the current manifest asset. | Validated by `tools/assets/validate_asset_acceptance.py`. |
 
-## Why fixtures live here
+## Where the golden fixture lives
+
+The permanent generated regression fixture is:
+
+```text
+tests/fixtures/galley_1000_contract_box.glb
+```
+
+That file is generated deterministically by
+`tools/assets/generate_galley_fixture_glb.py` from
+`examples/galley_1000.json` and pinned byte-for-byte by
+`tests/test_galley_fixture.py`. It stays in `tests/fixtures/` after real
+art replaces `galley_1000.glb`.
+
+This split is deliberate:
+
+- `tests/fixtures/galley_1000_contract_box.glb` is the forever regression
+  reference.
+- `examples/assets/galley_1000.glb` is the asset referenced by the
+  manifest and may become real art later.
+
+## Why real art cannot land casually
 
 Real, polished GLBs cannot land before:
 
@@ -19,6 +42,8 @@ Real, polished GLBs cannot land before:
    against a known-good geometric contract (PR #6).
 5. Material-slot and collision-proxy names are enforced by the GLB
    validator (PR #3).
+6. Acceptance metadata records whether the manifest asset is still the
+   generated fixture or has become signed-off production art (PR #4).
 
 ## Adding a new fixture
 
@@ -28,13 +53,15 @@ Real, polished GLBs cannot land before:
    stay stdlib-only and deterministic.
 3. Commit the manifest and generated GLB together.
 4. Add a regression test analogous to
-   `test_committed_fixture_matches_generator_byte_for_byte`.
+   `test_golden_contract_fixture_matches_generator_byte_for_byte`.
 
-## Replacing a fixture with real art (future)
+## Replacing the manifest asset with real art (future)
 
-Not yet supported. Real art requires:
+Real art is not present in this PR. A future real-art swap must:
 
-- A documented Blender export procedure.
-- Per-PR sign-off that the polished GLB still passes every gate.
-- Fixture-swap metadata that records the committed binary is real art,
-  signed off by a human, and no longer the deterministic placeholder box.
+- Keep `tests/fixtures/galley_1000_contract_box.glb`.
+- Replace only `examples/assets/galley_1000.glb`.
+- Pass `python tools/blender/check_asset_ready.py --manifest examples/galley_1000.json`.
+- Update `galley_1000.asset_acceptance.json` from
+  `generated_contract_fixture` to a real-art sign-off state.
+- Pass `python tools/assets/validate_asset_acceptance.py`.
