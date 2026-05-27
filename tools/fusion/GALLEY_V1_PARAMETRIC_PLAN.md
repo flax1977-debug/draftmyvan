@@ -127,21 +127,43 @@ Current five-panel carcass diagram:
 Current sequence:
 
 ```text
-manifest -> parameter payload -> panel math -> geometry plan -> future Fusion geometry
+manifest -> parameter payload -> panel math -> geometry plan -> manual Fusion geometry
 ```
 
 Placement origins are deterministic but provisional. They preserve the
 `floor_back_left` carcass convention from the asset contract, but final
 manufacturing placement still needs manual verification inside Fusion.
 
-The Fusion-only skeleton functions are explicit TODOs for later:
+The Fusion-only functions are guarded behind local Fusion execution:
 
 - `ensure_component(...)`
 - `set_user_parameter(...)`
 - `create_panel_body(...)`
 - `create_galley_carcass_from_panels(...)`
 
-Those TODOs name the intended Fusion API concepts, but they intentionally do not
-guess unverified working API code. Geometry creation, joints, kerf, rabbets,
-dados, edging, door/drawer fronts, sink cut-out, hardware drilling, drawings,
-DXF/CNC, and manufacturing sign-off remain deferred.
+Normal Python uses `--dry-run` and never imports Autodesk modules. Outside
+Fusion, Fusion-only calls fail with:
+
+```text
+Fusion 360 API unavailable; run this inside Fusion 360 or use --dry-run
+```
+
+The manual body-creation path creates/gets one component per panel, creates a
+rectangular sketch, extrudes a new body named from the geometry plan, and uses
+`placement_origin_mm` as a first-pass component translation. It also sets or
+updates user parameters inferred from the plan: `Width`, `Depth`, `Height`, and
+`PlyThickness`.
+
+Current intended placement:
+
+- `bottom_panel` at the base.
+- `left_side` and `right_side` at width edges.
+- `top_panel` at the top.
+- `back_panel` at the rear/back plane.
+
+Those placements are deterministic but provisional. They require manual Fusion
+verification before the geometry can be trusted.
+
+Joints, kerf, rabbets, dados, edging, door/drawer fronts, sink cut-out,
+hardware drilling, drawings, DXF/CNC, real cut lists, and manufacturing sign-off
+remain deferred.

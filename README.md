@@ -364,7 +364,7 @@ Lifecycle:
 8. **Future real art** — later quality work can improve the accepted asset,
    still behind the same gates.
 
-## Fusion parameter dry-run, panel math, and geometry plan
+## Fusion parameter dry-run, panel math, and manual geometry path
 
 The first Fusion-side proof is pure Python and lives under `tools/fusion/`.
 It proves that manufacturing-side parameter consumption can start from the same
@@ -388,6 +388,9 @@ python tools/fusion/export_galley_v1_panels.py \
 
 python tools/fusion/check_fusion_geometry_plan.py \
     tests/fixtures/galley_1000_panels.expected.json
+
+python tools/fusion/fusion_create_galley_v1.py \
+    --dry-run tests/fixtures/galley_1000_panels.expected.json
 ```
 
 The dry-run output contains `galley_v1` parameters (`Width`, `Depth`,
@@ -400,14 +403,21 @@ drilling. The panel JSON is not a real cut list.
 `tools/fusion/fusion_create_galley_v1.py` then turns that panel payload into a
 deterministic Fusion geometry plan. The plan names the future component/body for
 each panel, sketch plane, extrude axis, extrusion distance, and provisional
-placement origin. It is still `planned_not_executed`: CI validates the plan but
-does not run Fusion, import Autodesk modules, or create bodies.
+placement origin. CI validates the plan and the `--dry-run` path but does not
+run Fusion, import Autodesk modules, or create bodies.
 `tools/fusion/fusion_galley_v1_skeleton.py` can be imported in normal Python
 because Autodesk `adsk` imports are guarded inside Fusion-only functions. It
-validates and summarizes the payload and panel math for a later Fusion run, but
-it does not create geometry yet. It does not call Fusion 360 in CI, does not
-generate drawings, does not emit DXF/CNC files, and does not claim
-manufacturing readiness. `build/` output is ignored by Git.
+validates and summarizes the payload and panel math for a later Fusion run.
+`tools/fusion/fusion_create_galley_v1.py` now also contains the guarded manual
+Fusion 360 path for creating the five rectangular panel bodies when run inside
+Fusion with a valid panel payload. Outside Fusion it fails clearly and tells the
+caller to use `--dry-run`. It does not call Fusion 360 in CI, does not generate
+drawings, does not emit DXF/CNC files, does not create real cut lists, and does
+not claim manufacturing readiness. `build/` output is ignored by Git.
+
+Manual Fusion execution is documented in
+`tools/fusion/RUN_FUSION_GEOMETRY_MANUAL.md`, with a verification template at
+`tools/fusion/MANUAL_FUSION_GEOMETRY_CHECKLIST.md`.
 
 Current five-panel carcass diagram:
 
@@ -421,7 +431,7 @@ Current five-panel carcass diagram:
 Current sequence:
 
 ```text
-manifest -> Fusion parameter payload -> panel math -> geometry plan -> future Fusion geometry
+manifest -> Fusion parameter payload -> panel math -> geometry plan -> manual Fusion geometry
 ```
 
 ## CI
@@ -436,9 +446,10 @@ resolution, Workbench render engine, and local lighting setup. CI also validates
 the human visual review metadata. Blender itself is intentionally not installed
 in CI; CI validates committed evidence metadata and files, not live Blender
 rendering. CI also validates the pure-Python Fusion parameter map, skeleton
-payload checker, panel math, and geometry plan without installing Fusion 360 or
-Autodesk dependencies. Future candidate changes require regenerating the PNGs
-and re-signing render-evidence metadata to the new candidate SHA.
+payload checker, panel math, geometry plan, and geometry dry-run without
+installing Fusion 360 or Autodesk dependencies. Future candidate changes require
+regenerating the PNGs and re-signing render-evidence metadata to the new
+candidate SHA.
 
 ## What's next (not in this slice)
 
@@ -446,9 +457,9 @@ and re-signing render-evidence metadata to the new candidate SHA.
    accepted through the metadata gate without deleting the golden contract
    fixture. This requires a future explicit promotion PR with human visual
    and manufacturability sign-off.
-2. Improve this visual candidate again, or create the next Fusion proof: a
-   simple parametric box/carcass inside Fusion from the validated geometry plan,
-   still without CNC, drawings, real cut lists, or manufacturing-ready claims.
+2. Manually run and record the Fusion geometry checklist for the five-panel
+   carcass, still without CNC, drawings, real cut lists, or manufacturing-ready
+   claims.
 3. UE5 Data Asset / importer that consumes the manifest at editor time.
 4. Fusion 360 add-in that regenerates a parametric template from the same entry.
 5. Anchor enforcement for the remaining schema-valid anchor values

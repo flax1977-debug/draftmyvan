@@ -72,6 +72,9 @@ jobs:
       - name: Run Fusion geometry-plan suite (pure Python only)
         run: python -m tests.test_fusion_geometry_plan
 
+      - name: Run Fusion geometry-execution skeleton suite (pure Python only)
+        run: python -m tests.test_fusion_geometry_execution_skeleton
+
       - name: Run runtime-consumer suite (manifest read as typed data)
         run: python -m tests.test_runtime_consumer
 
@@ -116,3 +119,6 @@ jobs:
 
       - name: Run Fusion geometry-plan CLI
         run: python tools/fusion/check_fusion_geometry_plan.py tests/fixtures/galley_1000_panels.expected.json
+
+      - name: Run Fusion geometry dry-run CLI
+        run: python tools/fusion/fusion_create_galley_v1.py --dry-run tests/fixtures/galley_1000_panels.expected.json
