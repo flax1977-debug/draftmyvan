@@ -45,6 +45,9 @@ jobs:
       - name: Run candidate-asset suite (candidate workflow)
         run: python -m tests.test_candidate_asset
 
+      - name: Run candidate-review suite (candidate review metadata)
+        run: python -m tests.test_candidate_review
+
       - name: Run runtime-consumer suite (manifest read as typed data)
         run: python -m tests.test_runtime_consumer
 
@@ -65,3 +68,6 @@ jobs:
 
       - name: Run candidate-asset metadata CLI
         run: python tools/assets/validate_candidate_asset.py
+
+      - name: Run candidate-review metadata CLI
+        run: python tools/assets/validate_candidate_review.py

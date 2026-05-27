@@ -85,6 +85,17 @@ Candidate states:
 The current `galley_1000_candidate.glb` is a simple Blender-exported process
 test. It does not replace `examples/assets/galley_1000.glb`.
 
+## Candidate review metadata
+
+| Command | Purpose | Exit |
+|---|---|---|
+| `python tools/assets/validate_candidate_review.py examples/assets/candidates/galley_1000_candidate_review.json` | Validate candidate review metadata, candidate/golden SHA pins, linked candidate acceptance metadata, non-production state, and non-promotion state. | 0 valid, 1 invalid |
+
+Candidate validation means the GLB passes the contract gate. It does not mean
+visual quality, topology quality, UV/material quality, manufacturability, or
+promotion readiness has been accepted. Candidate review metadata must stay in
+sync with the exact candidate SHA, and promotion requires a future explicit PR.
+
 ## Runtime consumer (PR #8)
 
 | Command | Purpose | Exit |
@@ -113,6 +124,7 @@ python -m tests.test_check_asset_ready            # 12 tests — real-asset read
 python -m tests.test_galley_fixture               # 15 tests — golden fixture + current manifest asset
 python -m tests.test_asset_acceptance             # 12 tests — fixture-swap metadata guard
 python -m tests.test_candidate_asset              # 13 tests — candidate workflow guard
+python -m tests.test_candidate_review             # 13 tests — candidate review guard
 python -m tests.test_runtime_consumer             # 18 tests — manifest read as typed runtime data
 python -m tests.test_package_report               # 16 tests — catalog/package readiness
 python -m tests.test_handoff_ready                # 10 tests — extraction readiness helper
@@ -124,7 +136,7 @@ Run them all:
 for t in tests.test_validator tests.test_blender_manifest_contract \
          tests.test_check_asset_ready tests.test_galley_fixture \
          tests.test_asset_acceptance tests.test_candidate_asset \
-         tests.test_runtime_consumer \
+         tests.test_candidate_review tests.test_runtime_consumer \
          tests.test_package_report \
          tests.test_handoff_ready ; do
     echo "=== $t" ; python -m $t || break

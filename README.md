@@ -65,6 +65,7 @@ python -m tests.test_check_asset_ready            # real-asset readiness wrapper
 python -m tests.test_galley_fixture               # golden fixture + manifest asset
 python -m tests.test_asset_acceptance             # fixture-swap acceptance metadata
 python -m tests.test_candidate_asset              # candidate export workflow
+python -m tests.test_candidate_review             # candidate review metadata
 python -m tests.test_runtime_consumer             # manifest read as typed runtime data
 python -m tests.test_package_report               # catalog/package readiness
 python -m tests.test_handoff_ready                # extraction-readiness helper
@@ -272,30 +273,44 @@ python tools/assets/validate_candidate_asset.py \
     examples/assets/candidates/galley_1000_candidate.asset_acceptance.json
 ```
 
+Candidate validation is contract compliance only. It does not accept visual
+quality, topology quality, UV/material quality, manufacturability, or runtime
+performance. The candidate review metadata pins the exact candidate SHA and
+keeps the review non-production:
+
+```bash
+python tools/assets/validate_candidate_review.py \
+    examples/assets/candidates/galley_1000_candidate_review.json
+```
+
 Lifecycle:
 
 1. **Golden fixture** — permanent byte-for-byte regression reference under
    `tests/fixtures/`.
 2. **Candidate asset** — Blender-exported candidate under
    `examples/assets/candidates/`, never referenced by the manifest.
-3. **Accepted manifest asset** — future PR copies an accepted candidate to
+3. **Candidate review** — SHA-pinned report and metadata saying what the
+   candidate proves and what remains missing.
+4. **Accepted manifest asset** — future PR copies an accepted candidate to
    `examples/assets/galley_1000.glb` and updates acceptance metadata.
-4. **Future real art** — later quality work can improve the accepted asset,
+5. **Future real art** — later quality work can improve the accepted asset,
    still behind the same gates.
 
 ## CI
 
 `.github/workflows/ci.yml` runs the manifest validator, the pure-Python
 test suites, the static handoff check, the asset-readiness CLI, the
-asset-acceptance metadata CLI, and the candidate-asset metadata CLI on every
-push and pull request. Blender itself is intentionally not installed in CI;
-the Blender mode is a local-only authoritative gate.
+asset-acceptance metadata CLI, the candidate-asset metadata CLI, and the
+candidate-review metadata CLI on every push and pull request. Blender itself
+is intentionally not installed in CI; the Blender mode is a local-only
+authoritative gate.
 
 ## What's next (not in this slice)
 
 1. Promotion of a reviewed candidate into `examples/assets/galley_1000.glb`,
    accepted through the metadata gate without deleting the golden contract
-   fixture.
+   fixture. This requires a future explicit promotion PR with human visual
+   and manufacturability sign-off.
 2. UE5 Data Asset / importer that consumes the manifest at editor time.
 3. Fusion 360 add-in that regenerates a parametric template from the same entry.
 4. Anchor enforcement for the remaining schema-valid anchor values
