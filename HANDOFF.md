@@ -1,12 +1,13 @@
 # DraftMyVan — Handoff
 
 > **Status:** the DraftMyVan foundation now lives in its own repository.
-> It has fourteen CI-gated pure-Python suites, a permanent generated GLB
+> It has fifteen CI-gated pure-Python suites, a permanent generated GLB
 > contract fixture, current-asset acceptance metadata, candidate acceptance,
 > review, visual-audit, render-evidence, and human-visual-review metadata, two
 > GLB validators (one for CI, one for human use in Blender), material-slot and
 > collision-proxy enforcement, a runtime reference consumer + package report,
-> and documented Blender export and local visual-audit/render procedures.
+> a pure-Python Fusion parameter-map dry-run, and documented Blender export and
+> local visual-audit/render procedures.
 
 This document is the briefing for whoever picks the project up next —
 whether that's the same author moving the code to a new repository,
@@ -71,11 +72,18 @@ tools/
     asset_export_checklist.md         # Per-asset sign-off sheet (PR #2)
     check_asset_ready.py              # One-command readiness wrapper (PR #2)
     README.md
+  fusion/
+    README.md                         # Fusion-stage ownership boundaries
+    GALLEY_V1_PARAMETRIC_PLAN.md      # galley_v1 planning/mapping notes
+    galley_v1_parameter_map.json      # Manifest-to-Fusion parameter map
+    validate_fusion_parameter_map.py  # Pure-Python map validator
+    export_galley_v1_parameters.py    # Deterministic dry-run exporter
   handoff/
     check_handoff_ready.py       # Extraction-readiness gate
 tests/                           # Pure-Python; no Blender required
   fixtures/
     galley_1000_contract_box.glb # Permanent golden generated fixture
+    galley_1000_fusion_parameters.expected.json
     README.md
   test_validator.py              # 10 tests
   test_blender_manifest_contract.py  # 38 tests
@@ -88,6 +96,7 @@ tests/                           # Pure-Python; no Blender required
   test_candidate_visual_audit.py # 11 tests
   test_render_evidence.py        # 20 tests
   test_human_visual_review.py    # 14 tests
+  test_fusion_parameter_map.py    # 10 tests
   test_runtime_consumer.py       # 18 tests
   test_package_report.py         # 16 tests
   test_handoff_ready.py          # 10 tests
@@ -135,7 +144,8 @@ Left behind during PaperAI incubation, then redone in this repository:
 | Candidate render evidence PR | merged | Adds a local Blender view-render script, ignored render output area, render-evidence metadata, and a pure-Python metadata validator. It does not commit PNG renders or promote the candidate. |
 | Candidate blockout improvement PR | merged | Regenerates the candidate as a script-generated Blender cabinet blockout with visible panel seams, countertop separation, plinth, and sink marker. It also updates SHA-pinned metadata and keeps the candidate non-production and non-promotable. |
 | Candidate render evidence PNG PR | merged | Commits the six small review PNGs for the current blockout, pins their paths, sizes, and SHA256 values in metadata, and keeps other render output ignored. These are not product screenshots and do not promote the candidate. |
-| Candidate human visual review PR | this slice | Adds human observations against the six committed render views, plus metadata and validation that keep the candidate non-production and do-not-promote. |
+| Candidate human visual review PR | merged | Adds human observations against the six committed render views, plus metadata and validation that keep the candidate non-production and do-not-promote. |
+| Fusion parameter map PR | this slice | Adds the first pure-Python `galley_v1` manifest-to-Fusion parameter map, deterministic dry-run exporter, expected output fixture, validator, and tests. It does not automate Fusion, create drawings, emit DXF/CNC, or claim manufacturing readiness. |
 
 ## Current command suite
 
@@ -180,6 +190,15 @@ python tools/assets/validate_render_evidence.py \
 python tools/assets/validate_human_visual_review.py \
     examples/assets/candidates/galley_1000_candidate_human_visual_review.json
 
+# Validate the galley_v1 Fusion parameter map
+python tools/fusion/validate_fusion_parameter_map.py \
+    tools/fusion/galley_v1_parameter_map.json
+
+# Export deterministic dry-run parameters for later Fusion work
+python tools/fusion/export_galley_v1_parameters.py \
+    --manifest examples/galley_1000.json \
+    --out build/fusion/galley_1000_fusion_parameters.json
+
 # Generate local render evidence when Blender is available
 blender --background --python tools/blender/render_candidate_views.py -- \
     --candidate examples/assets/candidates/galley_1000_candidate.glb \
@@ -214,6 +233,7 @@ python -m tests.test_candidate_review             # 13 tests
 python -m tests.test_candidate_visual_audit       # 11 tests
 python -m tests.test_render_evidence              # 20 tests
 python -m tests.test_human_visual_review          # 14 tests
+python -m tests.test_fusion_parameter_map         # 10 tests
 python -m tests.test_runtime_consumer             # 18 tests
 python -m tests.test_package_report               # 16 tests
 python -m tests.test_handoff_ready                # 10 tests
@@ -228,6 +248,9 @@ python -m tests.test_handoff_ready                # 10 tests
 - Blender is **not** installed. The `bpy` validator
   (`tools/blender/validate_in_blender.py`) is documented as a
   local-only authoritative gate.
+- Fusion 360 is **not** installed. The Fusion proof is pure Python and
+  validates only the manifest-to-parameter mapping and deterministic dry-run
+  JSON export.
 - Trigger scope: `workflow_dispatch`, `push`, and `pull_request`.
   No path filters are needed because the whole repository is DraftMyVan.
 - Permissions: `contents: read`. Nothing more.
@@ -260,10 +283,12 @@ python -m tests.test_handoff_ready                # 10 tests
   non-production and do-not-promote. Future candidate changes must regenerate
   those images and re-sign render-evidence metadata and review records.
 - **Catalog of one.** `examples/galley_1000.json` is the only module.
-- **No UE5, Fusion 360, or CNC integration.** Every PR deferred them
-  deliberately.
+- **No UE5, Fusion 360 automation, or CNC integration.** The first Fusion-side
+  work is a pure-Python `galley_v1` parameter-map dry-run from the same
+  manifest truth. It does not call Fusion APIs, create drawings, emit DXF/CNC,
+  or claim manufacturing-ready output.
 
-## What must happen before moving to Unity / UE5 / Fusion
+## What must happen before moving to Unity / UE5 / Fusion automation
 
 The gates above all live before the manifest reaches a renderer or a
 manufacturing tool. Before that handoff, in priority order:
@@ -282,6 +307,13 @@ manufacturing tool. Before that handoff, in priority order:
 2. **Add anchor support beyond `floor_back_left`** as the catalog
    grows. The enforcement table is in
    `tools/blender/_anchor_contract.py:expected_corners_mm`.
-3. **Decide axis-convention conversion** at the UE5 / Fusion boundary,
+3. **Extend the Fusion proof from dry-run parameters into a real template
+   adapter only after the mapping stays green.** `tools/fusion/` now proves
+   that `examples/galley_1000.json` can produce deterministic `galley_v1`
+   parameters (`Width`, `Depth`, `Height`, `PlyThickness`) and hardware from
+   manifest truth. A future PR still needs real Fusion-side template loading,
+   drawing/cut-list decisions, and manufacturing sign-off before any output can
+   be called production-ready.
+4. **Decide axis-convention conversion** at the UE5 / Fusion boundary,
    not by mutating the source GLB. The contract is documented in
    `tools/blender/README.md` and `_anchor_contract.py`.

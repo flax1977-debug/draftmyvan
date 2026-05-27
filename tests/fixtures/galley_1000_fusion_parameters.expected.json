@@ -1,0 +1,25 @@
+{
+  "template": "galley_v1",
+  "manifest_id": "galley_1000_sink_left_oak",
+  "source_manifest": "examples/galley_1000.json",
+  "generated_by": "tools/fusion/export_galley_v1_parameters.py",
+  "parameters": {
+    "Width": 1000,
+    "Depth": 520,
+    "Height": 900,
+    "PlyThickness": 18
+  },
+  "hardware": [
+    "hinges_4x",
+    "runners_2x"
+  ],
+  "ignored_fields": [
+    "visual.glb_path",
+    "visual.material_slots",
+    "visual.collision_proxy",
+    "anchor",
+    "placement",
+    "clearances",
+    "rules.service_access"
+  ]
+}
