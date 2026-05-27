@@ -13,6 +13,11 @@ Render evidence supports human review, but it is not promotion either. The
 current render-evidence state is `procedure_ready`; generated PNGs are ignored
 and not committed yet.
 
+The current candidate is a review-worthy blockout, not production art. Visible
+panel seams, countertop separation, and a sink marker improve review value, but
+they do not satisfy UV, PBR material, topology, joinery, hardware, visual
+sign-off, or manufacturability requirements.
+
 ## Required State Before Promotion
 
 - Candidate review metadata must be current with the exact candidate SHA.
@@ -39,6 +44,8 @@ all of the following are true:
   the current render-evidence metadata.
 - Human visual sign-off is recorded.
 - Human manufacturing or buildability sign-off is recorded.
+- UVs, real PBR materials, topology cleanup, joinery detail, and appropriate
+  hardware are complete enough for the intended production claim.
 - Current-asset acceptance metadata is updated to a real production-art state.
 - The golden contract fixture remains as the regression reference.
 

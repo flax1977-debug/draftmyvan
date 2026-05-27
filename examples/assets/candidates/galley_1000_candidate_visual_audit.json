@@ -2,23 +2,32 @@
   "manifest_id": "galley_1000_sink_left_oak",
   "candidate_asset_path": "examples/assets/candidates/galley_1000_candidate.glb",
   "candidate_review_path": "examples/assets/candidates/galley_1000_candidate_review.json",
-  "candidate_sha256": "157432f4e94f52e4975570761222ace84b804c99e2eca8b28eacca90c67984c6",
-  "audit_version": "0.1.0",
+  "candidate_sha256": "0821e06ce68396f413447ec46e16ea5cf179c4d1c5458c59681c77f27e115ee8",
+  "audit_version": "0.2.0",
   "audit_date": "2026-05-27",
   "visual_status": "not_production_ready",
   "promotion_recommendation": "do_not_promote",
-  "audited_views": [],
+  "audited_views": [
+    "front",
+    "rear",
+    "left",
+    "right",
+    "top",
+    "three_quarter"
+  ],
   "findings": [
-    "No committed render evidence exists yet.",
-    "Candidate geometry is a simple Blender export process test, not polished cabinet art.",
-    "Visual quality, materials, UVs, topology, and manufacturability have not been signed off."
+    "Local render evidence shows a cabinet blockout rather than a plain cuboid.",
+    "The blockout now has visible door and drawer panel seams, a countertop break, a plinth, and a simple sink marker.",
+    "Materials remain placeholder-level and limited to blockout color separation.",
+    "UVs, real PBR materials, topology cleanup, joinery detail, hardware, manufacturability review, and visual sign-off remain missing."
   ],
   "required_visual_improvements": [
-    "Capture repeatable front, rear, left, right, top, and three-quarter views",
-    "Replace placeholder visual treatment with reviewed cabinet-quality geometry",
-    "Add high-quality PBR materials",
-    "Add proper UV unwrapping and texture policy",
-    "Review topology and mesh hygiene for real-time use",
+    "Add proper UV unwrapping",
+    "Replace placeholder colors with real PBR materials",
+    "Clean up topology for real-time use",
+    "Add joinery detail",
+    "Add appropriate hardware",
+    "Complete manufacturability review",
     "Record human visual sign-off before any promotion PR"
   ],
   "reviewer": null

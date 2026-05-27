@@ -2,21 +2,23 @@
   "manifest_id": "galley_1000_sink_left_oak",
   "candidate_asset_path": "examples/assets/candidates/galley_1000_candidate.glb",
   "candidate_acceptance_path": "examples/assets/candidates/galley_1000_candidate.asset_acceptance.json",
-  "candidate_sha256": "157432f4e94f52e4975570761222ace84b804c99e2eca8b28eacca90c67984c6",
+  "candidate_sha256": "0821e06ce68396f413447ec46e16ea5cf179c4d1c5458c59681c77f27e115ee8",
   "golden_fixture_path": "tests/fixtures/galley_1000_contract_box.glb",
   "golden_fixture_sha256": "db31a7317f683735ba9e487607dc53636b662077aff45e19456e6909007c5e76",
   "validation_result": "ready",
   "production_art": false,
   "promotion_ready": false,
-  "review_version": "0.1.0",
+  "review_version": "0.2.0",
   "review_date": "2026-05-27",
   "reviewer": null,
-  "review_notes": "First real Blender export candidate. Contract-valid but not production art.",
+  "review_notes": "Script-generated Blender cabinet blockout candidate. Improved from the plain cuboid with visible panel seams, countertop separation, and a sink marker; still contract-valid but not production art.",
   "required_before_promotion": [
-    "High-quality PBR materials",
     "Proper UV unwrapping",
-    "Optimized topology",
-    "Visual sign-off",
-    "Manufacturability review"
+    "Real PBR materials",
+    "Topology cleanup",
+    "Joinery detail",
+    "Hardware",
+    "Manufacturability review",
+    "Visual sign-off"
   ]
 }

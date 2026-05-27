@@ -26,7 +26,7 @@ examples/
       README.md                  # Candidate directory rules
       PROMOTION_CRITERIA.md      # Human promotion criteria
       candidate_review_checklist.md
-      galley_1000_candidate.glb  # Simple Blender-exported candidate, not manifest asset
+      galley_1000_candidate.glb  # Script-generated blockout candidate, not manifest asset
       galley_1000_candidate.asset_acceptance.json
       galley_1000_candidate_review.json
       galley_1000_candidate_review.md
@@ -56,6 +56,7 @@ tools/
     _anchor_contract.py               # Shared anchor enforcement (PR #5)
     EXPORT_REAL_ASSET.md              # Human Blender export procedure (PR #2)
     RENDER_CANDIDATE_AUDIT.md         # Local visual audit render procedure
+    create_galley_candidate.py        # Local Blender candidate blockout generator
     render_candidate_views.py         # Local Blender PNG view renderer
     asset_export_checklist.md         # Per-asset sign-off sheet (PR #2)
     check_asset_ready.py              # One-command readiness wrapper (PR #2)
@@ -119,7 +120,8 @@ Left behind during PaperAI incubation, then redone in this repository:
 | Candidate workflow PR | merged | Adds the first candidate asset area and a simple Blender-exported `galley_1000_candidate.glb`, plus candidate-only metadata and validation. It does not replace the manifest asset or polished real art. |
 | Candidate review PR | merged | Adds SHA-pinned review metadata, a review report, checklist, promotion criteria, and a validator that keeps the candidate non-production and non-promotable. |
 | Candidate visual audit PR | merged | Adds SHA-pinned visual audit metadata and a local Blender render/audit procedure. It records findings without committing render images or promoting the candidate. |
-| Candidate render evidence PR | this slice | Adds a local Blender view-render script, ignored render output area, render-evidence metadata, and a pure-Python metadata validator. It does not commit PNG renders or promote the candidate. |
+| Candidate render evidence PR | merged | Adds a local Blender view-render script, ignored render output area, render-evidence metadata, and a pure-Python metadata validator. It does not commit PNG renders or promote the candidate. |
+| Candidate blockout improvement PR | this slice | Regenerates the candidate as a script-generated Blender cabinet blockout with visible panel seams, countertop separation, plinth, and sink marker. It also updates SHA-pinned metadata and keeps the candidate non-production and non-promotable. |
 
 ## Current command suite
 
@@ -164,6 +166,11 @@ python tools/assets/validate_render_evidence.py \
 blender --background --python tools/blender/render_candidate_views.py -- \
     --candidate examples/assets/candidates/galley_1000_candidate.glb \
     --out examples/assets/candidates/render_evidence/galley_1000_candidate/
+
+# Regenerate the candidate blockout when Blender is available
+blender --background --python tools/blender/create_galley_candidate.py -- \
+    --manifest examples/galley_1000.json \
+    --out examples/assets/candidates/galley_1000_candidate.glb
 
 # Read one manifest as typed runtime data
 python -m runtime.load_module examples/galley_1000.json
@@ -219,8 +226,8 @@ python -m tests.test_handoff_ready                # 10 tests
   `tests/fixtures/galley_1000_contract_box.glb`, and
   `examples/assets/galley_1000.asset_acceptance.json` records that no
   production art has been reviewed or accepted. The candidate GLB under
-  `examples/assets/candidates/` is a process test only and is not referenced
-  by the manifest. Candidate review metadata is SHA-pinned and explicitly
+  `examples/assets/candidates/` is a script-generated blockout only and is not
+  referenced by the manifest. Candidate review metadata is SHA-pinned and explicitly
   says the candidate is not production art and not promotion-ready. Candidate
   visual audit metadata is also SHA-pinned and currently says
   `not_production_ready` / `do_not_promote`; render images are not committed

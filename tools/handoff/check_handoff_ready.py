@@ -77,6 +77,7 @@ REQUIRED_FILES: tuple[str, ...] = (
     "tools/blender/EXPORT_REAL_ASSET.md",
     "tools/blender/asset_export_checklist.md",
     "tools/blender/RENDER_CANDIDATE_AUDIT.md",
+    "tools/blender/create_galley_candidate.py",
     "tools/blender/render_candidate_views.py",
     "tools/blender/check_asset_ready.py",
     "tools/handoff/check_handoff_ready.py",

@@ -58,6 +58,7 @@ def test_required_files_pass_on_current_repo() -> None:
         "tools/blender/_anchor_contract.py",
         "tools/blender/EXPORT_REAL_ASSET.md",
         "tools/blender/RENDER_CANDIDATE_AUDIT.md",
+        "tools/blender/create_galley_candidate.py",
         "tools/blender/render_candidate_views.py",
         "tools/blender/check_asset_ready.py",
         "tests/test_check_asset_ready.py",
@@ -229,6 +230,7 @@ def test_required_files_list_includes_all_critical_categories() -> None:
     for rel in (
         "tools/blender/EXPORT_REAL_ASSET.md",
         "tools/blender/asset_export_checklist.md",
+        "tools/blender/create_galley_candidate.py",
         "tools/blender/check_asset_ready.py",
         "tools/assets/validate_asset_acceptance.py",
         "tools/assets/validate_candidate_asset.py",

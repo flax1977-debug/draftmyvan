@@ -261,12 +261,26 @@ The first real-export candidate lives under:
 examples/assets/candidates/
 ```
 
-`galley_1000_candidate.glb` is a simple Blender-authored process test, not
-polished cabinet art and not the manifest asset. It proves that a non-generator
-Blender export can pass the same schema, dimension, `floor_back_left` anchor,
-material-slot, and collision-proxy gates while leaving both
+`galley_1000_candidate.glb` is now a script-generated Blender cabinet blockout,
+not polished cabinet art and not the manifest asset. It proves that a
+reproducible Blender export can pass the same schema, dimension,
+`floor_back_left` anchor, material-slot, and collision-proxy gates while leaving both
 `examples/assets/galley_1000.glb` and
 `tests/fixtures/galley_1000_contract_box.glb` untouched.
+
+Regenerate the candidate with Blender:
+
+```bash
+blender --background --python tools/blender/create_galley_candidate.py -- \
+    --manifest examples/galley_1000.json \
+    --out examples/assets/candidates/galley_1000_candidate.glb
+```
+
+The blockout adds visible cabinet carcass massing, front panel seams, a plinth,
+countertop separation, and a simple sink marker using the existing
+`oak_body` and `sink_metal` material slots. It still omits UVs, real PBR
+materials, topology cleanup, joinery detail, hardware, manufacturability
+review, and visual sign-off.
 
 Validate the candidate state with:
 

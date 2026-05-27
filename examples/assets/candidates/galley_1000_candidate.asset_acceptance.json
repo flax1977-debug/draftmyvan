@@ -2,6 +2,7 @@
   "manifest_id": "galley_1000_sink_left_oak",
   "manifest_path": "examples/galley_1000.json",
   "candidate_asset_path": "examples/assets/candidates/galley_1000_candidate.glb",
+  "candidate_sha256": "0821e06ce68396f413447ec46e16ea5cf179c4d1c5458c59681c77f27e115ee8",
   "candidate_asset_expected": true,
   "target_asset_path": "examples/assets/galley_1000.glb",
   "golden_fixture_path": "tests/fixtures/galley_1000_contract_box.glb",
@@ -21,11 +22,12 @@
     "visual_reviewed": false,
     "reviewer": null,
     "reviewed_at": null,
-    "notes": "Candidate export workflow test only. Simple Blender-authored geometry; not polished cabinet art and not approved for promotion."
+    "notes": "Script-generated Blender cabinet blockout candidate. It has visible panel seams, a countertop blockout, and a sink marker, but it is not production art and is not approved for promotion."
   },
   "created_with": {
     "tool": "Blender",
     "version": "5.1.2",
-    "notes": "Simple manually specified mesh coordinates exported through Blender background mode."
+    "script": "tools/blender/create_galley_candidate.py",
+    "notes": "Deterministic blockout generated from manifest dimensions and exported through Blender background mode."
   }
 }

@@ -1,7 +1,7 @@
 {
   "manifest_id": "galley_1000_sink_left_oak",
   "candidate_asset_path": "examples/assets/candidates/galley_1000_candidate.glb",
-  "candidate_sha256": "157432f4e94f52e4975570761222ace84b804c99e2eca8b28eacca90c67984c6",
+  "candidate_sha256": "0821e06ce68396f413447ec46e16ea5cf179c4d1c5458c59681c77f27e115ee8",
   "visual_audit_path": "examples/assets/candidates/galley_1000_candidate_visual_audit.json",
   "render_script": "tools/blender/render_candidate_views.py",
   "render_output_dir": "examples/assets/candidates/render_evidence/galley_1000_candidate/",

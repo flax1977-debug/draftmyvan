@@ -13,6 +13,11 @@ blender --background --python tools/blender/render_candidate_views.py -- \
   --out examples/assets/candidates/render_evidence/galley_1000_candidate/
 ```
 
+The renderer is visual-review tooling only. It orients the GLB contract axes
+for Blender's Z-up camera views and hides `UCX_` collision proxy meshes from
+the rendered PNGs. The collision proxy remains in the GLB and is still checked
+by the validators.
+
 Validate the metadata/procedure without Blender:
 
 ```bash
@@ -57,10 +62,18 @@ The script writes one PNG per standard view. Manual screenshots are acceptable
 for exploratory audit passes, but script output is preferred for repeatable
 evidence.
 
-Current local-only output path:
+Repository-local output path when evidence is intentionally retained:
 
 ```text
 examples/assets/candidates/render_evidence/galley_1000_candidate/
+```
+
+For throwaway inspection runs, write to `/tmp`, for example:
+
+```bash
+blender --background --python tools/blender/render_candidate_views.py -- \
+  --candidate examples/assets/candidates/galley_1000_candidate.glb \
+  --out /tmp/draftmyvan_candidate_renders_v2
 ```
 
 Use filenames that include the view name, for example:
