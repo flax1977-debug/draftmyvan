@@ -13,12 +13,12 @@ Module: `____________________`         Anchor: `floor_back_left`
 | 3 | Blender scene → Metric → Metres, unit scale `1.000` | ☐ |
 | 4 | Cabinet authored with rear-left-bottom corner at world `(0, 0, 0)`; extends into `+X`, `+Y`, `+Z` only | ☐ |
 | 5 | `Object → Apply → All Transforms`; Location `(0,0,0)`, Rotation `(0°,0°,0°)`, Scale `(1,1,1)` confirmed | ☐ |
-| 6 | Export → glTF Binary (`.glb`); **`+Y Up` is OFF**; Apply Modifiers ON; output basename matches `visual.glb_path` | ☐ |
+| 6 | Export → glTF Binary (`.glb`); **`+Y Up` is OFF**; Apply Modifiers ON; output basename matches `visual.glb_path` for production, or candidate metadata for candidate-only exports | ☐ |
 | 7 | Pure-Python validator passes: `python tools/blender/validate_glb_against_manifest.py --manifest … --glb /tmp/<module>.glb` → `RESULT: PASS` | ☐ |
 | 8 | (Optional) bpy validator agrees: `blender --background --python tools/blender/validate_in_blender.py -- --manifest … --glb /tmp/<module>.glb` → `RESULT: PASS` | ☐ |
 | 9 | Validator output includes `[OK] material slot …` for every manifest slot and `[OK] collision proxy …` for the expected proxy | ☐ |
-| 10 | Bounding box equals the generated fixture's to the mm (step 8 in `EXPORT_REAL_ASSET.md`) | ☐ |
-| 11 | `check_asset_ready.py --manifest … --glb /tmp/<module>.glb` → `RESULT: READY` | ☐ |
+| 10 | Bounding box equals the golden generated fixture's to the mm (step 8 in `EXPORT_REAL_ASSET.md`) | ☐ |
+| 11 | Candidate: `validate_candidate_asset.py …` → `CANDIDATE READY`; promotion: `check_asset_ready.py --manifest … --glb /tmp/<module>.glb` → `RESULT: READY` | ☐ |
 | 12 | **Do not** hand-edit the GLB binary; **do not** rely on a downstream tool to "fix" scale or axis | ☐ |
 | 13 | For a future real-art swap: keep `tests/fixtures/galley_1000_contract_box.glb`, replace only `examples/assets/<module>.glb`, update acceptance metadata, and run `python tools/assets/validate_asset_acceptance.py` | ☐ |
 

@@ -9,6 +9,7 @@ Today's contents:
 |---|---|---|
 | `galley_1000.glb` | Current manifest asset for `galley_1000_sink_left_oak`: still a plain 1000x520x900 mm generated box today, anchored at the floor back-left corner, with placeholder material slots and a placeholder collision proxy. See `galley_1000.glb.md`. | Currently byte-identical to `tests/fixtures/galley_1000_contract_box.glb`. It validates as the manifest asset, but is no longer the byte-pinned golden fixture. |
 | `galley_1000.asset_acceptance.json` | Acceptance metadata for the current manifest asset. | Validated by `tools/assets/validate_asset_acceptance.py`. |
+| `candidates/` | Candidate-only Blender exports and candidate metadata. These files are not referenced by the manifest. | Validated by `tools/assets/validate_candidate_asset.py`. |
 
 ## Where the golden fixture lives
 
@@ -30,6 +31,30 @@ This split is deliberate:
   reference.
 - `examples/assets/galley_1000.glb` is the asset referenced by the
   manifest and may become real art later.
+- `examples/assets/candidates/galley_1000_candidate.glb` is a candidate
+  export used to test the Blender workflow before any manifest asset is
+  replaced.
+
+## Candidate lifecycle
+
+The asset lifecycle is:
+
+```text
+golden fixture -> candidate asset -> accepted manifest asset -> future real art
+```
+
+Candidates live under `examples/assets/candidates/` and must keep
+`candidate_only: true`, `production_art: false`, and
+`promotion_allowed: false` until a later promotion PR accepts them. A
+candidate can prove the Blender export workflow and pass the full GLB gate,
+but it still does not replace `examples/assets/galley_1000.glb`.
+
+Validate the current candidate with:
+
+```bash
+python tools/assets/validate_candidate_asset.py \
+    examples/assets/candidates/galley_1000_candidate.asset_acceptance.json
+```
 
 ## Why real art cannot land casually
 
@@ -60,7 +85,8 @@ Real, polished GLBs cannot land before:
 Real art is not present in this PR. A future real-art swap must:
 
 - Keep `tests/fixtures/galley_1000_contract_box.glb`.
-- Replace only `examples/assets/galley_1000.glb`.
+- Promote a reviewed candidate by replacing only
+  `examples/assets/galley_1000.glb`.
 - Pass `python tools/blender/check_asset_ready.py --manifest examples/galley_1000.json`.
 - Update `galley_1000.asset_acceptance.json` from
   `generated_contract_fixture` to a real-art sign-off state.

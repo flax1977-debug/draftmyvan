@@ -1,11 +1,11 @@
 # Exporting a real DraftMyVan asset (Blender → GLB)
 
-This is the procedure a human (or a future helper script) must follow
-when replacing a generated fixture under `examples/assets/`
-with a real cabinet GLB. Until this procedure passes for a candidate
-asset, the current manifest asset stays generated. The generated box under
-`tests/fixtures/galley_1000_contract_box.glb` is the **golden boring
-reference**, not a placeholder to be silently overwritten.
+This is the procedure a human (or a future helper script) must follow when
+creating candidate GLBs and, later, replacing the current manifest asset
+under `examples/assets/` with accepted real art. Until promotion passes, the
+current manifest asset stays generated. The generated box under
+`tests/fixtures/galley_1000_contract_box.glb` is the golden reference, not a
+placeholder to be silently overwritten.
 
 > **Why a procedure at all?** Every prior PR (#3–#6) was about closing
 > the gap between "looks fine" and "actually buildable." Hand-exported
@@ -37,9 +37,10 @@ existing validators and must not be committed.
 5. **No post-export fix-ups.** UE5 import scale, Datasmith fudge,
    manual `matrix_world` tweaks — all forbidden. If a downstream tool
    thinks the asset is wrong, the asset is wrong. Fix the source.
-6. **File path.** Exported GLB basename must equal the basename of
-   `visual.glb_path` in the manifest. The committed location is
-   `examples/assets/<basename>`.
+6. **File path.** For a production manifest asset, the exported GLB basename
+   must equal the basename of `visual.glb_path` in the manifest. Candidate
+   GLBs may live under `examples/assets/candidates/` with a different
+   basename, but only when validated by `validate_candidate_asset.py`.
 
 ## Step-by-step
 
@@ -103,8 +104,9 @@ Recommended settings:
 | Geometry → UVs / Normals / Tangents | on if/when you have them (V1 fixture has none) |
 | Compression | off (use a plain GLB until size becomes a problem) |
 
-Save to a scratch path first (e.g. `/tmp/<module>.glb`). Do **not**
-overwrite the committed fixture yet.
+Save to a scratch path first (e.g. `/tmp/<module>.glb`). Do not overwrite
+`examples/assets/galley_1000.glb` or anything under `tests/fixtures/` while
+working on a candidate.
 
 ### 6. Run the pure-Python validator (CI gate)
 
@@ -146,7 +148,7 @@ non-applied transforms (see step 4) — fix Blender, re-export, restart.
 
 ### 8. Compare against the generated fixture
 
-Before swapping the committed fixture for your candidate, eyeball the
+Before storing or promoting a candidate, eyeball the
 size delta:
 
 ```bash
@@ -164,7 +166,27 @@ If the candidate's bounding box doesn't match the fixture's to the mm,
 the candidate is wrong — the fixture's dimensions are derived from
 the manifest, and so should the candidate's be.
 
-### 9. Replace only the manifest asset
+### 9. Store as a candidate first
+
+Before any promotion, put the exported GLB under
+`examples/assets/candidates/` and add candidate metadata:
+
+```bash
+python tools/assets/validate_candidate_asset.py \
+    examples/assets/candidates/galley_1000_candidate.asset_acceptance.json
+```
+
+Candidate metadata must keep:
+
+- `candidate_only: true`
+- `production_art: false`
+- `promotion_allowed: false`
+
+The candidate validator runs the same GLB gate with manifest path mismatch
+allowed for candidate storage. A passing candidate reports
+`RESULT: CANDIDATE READY`. It is still not the manifest asset.
+
+### 10. Replace only the manifest asset in a later promotion PR
 
 The fixture-swap gate now exists, but no real art lands until a future
 real-art PR. In that PR:

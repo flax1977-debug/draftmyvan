@@ -38,7 +38,7 @@ blender --background --python \
 
 | Command | Purpose | Exit |
 |---|---|---|
-| `python tools/blender/check_asset_ready.py --manifest examples/galley_1000.json` | One-command wrapper around manifest schema, GLB path, dimension, anchor, material-slot, and collision-proxy checks. Defaults to the committed fixture from `visual.glb_path`. | 0 READY, 1 NOT READY, 2 ERROR |
+| `python tools/blender/check_asset_ready.py --manifest examples/galley_1000.json` | One-command wrapper around manifest schema, GLB path, dimension, anchor, material-slot, and collision-proxy checks. Defaults to the current manifest asset from `visual.glb_path`. | 0 READY, 1 NOT READY, 2 ERROR |
 | `python tools/blender/check_asset_ready.py --manifest examples/galley_1000.json --glb /tmp/candidate.glb` | Check a candidate GLB before it is committed. | same |
 
 The full human export procedure is `tools/blender/EXPORT_REAL_ASSET.md`;
@@ -68,6 +68,23 @@ acceptance metadata to an explicit real-art sign-off state while keeping
 `tests/fixtures/galley_1000_contract_box.glb` as the permanent generated
 reference.
 
+## Candidate asset workflow
+
+| Command | Purpose | Exit |
+|---|---|---|
+| `python tools/assets/validate_candidate_asset.py examples/assets/candidates/galley_1000_candidate.asset_acceptance.json` | Validate candidate metadata and, when the candidate GLB exists, run the same GLB gates with manifest path mismatch explicitly allowed for candidate storage. | 0 ready or plan-only, 1 invalid |
+
+Candidate states:
+
+| result | meaning |
+|---|---|
+| `CANDIDATE READY` | Candidate metadata is valid, the candidate GLB exists, and the GLB gate passes. |
+| `CANDIDATE PLAN ONLY` | Metadata explicitly documents a candidate plan but does not claim a GLB exists yet. |
+| `CANDIDATE INVALID` | Metadata is malformed, claims production/promotion too early, references missing required files, or the candidate GLB fails a gate. |
+
+The current `galley_1000_candidate.glb` is a simple Blender-exported process
+test. It does not replace `examples/assets/galley_1000.glb`.
+
 ## Runtime consumer (PR #8)
 
 | Command | Purpose | Exit |
@@ -95,6 +112,7 @@ python -m tests.test_blender_manifest_contract    # 38 tests — Blender gate, a
 python -m tests.test_check_asset_ready            # 12 tests — real-asset readiness wrapper
 python -m tests.test_galley_fixture               # 15 tests — golden fixture + current manifest asset
 python -m tests.test_asset_acceptance             # 12 tests — fixture-swap metadata guard
+python -m tests.test_candidate_asset              # 13 tests — candidate workflow guard
 python -m tests.test_runtime_consumer             # 18 tests — manifest read as typed runtime data
 python -m tests.test_package_report               # 16 tests — catalog/package readiness
 python -m tests.test_handoff_ready                # 10 tests — extraction readiness helper
@@ -105,7 +123,8 @@ Run them all:
 ```bash
 for t in tests.test_validator tests.test_blender_manifest_contract \
          tests.test_check_asset_ready tests.test_galley_fixture \
-         tests.test_asset_acceptance tests.test_runtime_consumer \
+         tests.test_asset_acceptance tests.test_candidate_asset \
+         tests.test_runtime_consumer \
          tests.test_package_report \
          tests.test_handoff_ready ; do
     echo "=== $t" ; python -m $t || break

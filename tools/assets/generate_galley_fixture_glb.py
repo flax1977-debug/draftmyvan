@@ -33,7 +33,7 @@ The generated GLB:
       fixture proves contract wiring, not production collision art.
     * Uses metres in object data (glTF convention).
     * Is deterministic — `sort_keys=True` JSON, fixed vertex order,
-      fixed index layout — so the committed fixture can be regenerated
+      fixed index layout — so the golden contract fixture can be regenerated
       byte-for-byte and a test pins this.
     * Uses only the Python standard library (no Blender, no third-party
       glTF lib).

@@ -1,0 +1,31 @@
+{
+  "manifest_id": "galley_1000_sink_left_oak",
+  "manifest_path": "examples/galley_1000.json",
+  "candidate_asset_path": "examples/assets/candidates/galley_1000_candidate.glb",
+  "candidate_asset_expected": true,
+  "target_asset_path": "examples/assets/galley_1000.glb",
+  "golden_fixture_path": "tests/fixtures/galley_1000_contract_box.glb",
+  "asset_kind": "candidate_blender_export",
+  "candidate_only": true,
+  "production_art": false,
+  "promotion_allowed": false,
+  "validator_command": "python tools/assets/validate_candidate_asset.py examples/assets/candidates/galley_1000_candidate.asset_acceptance.json",
+  "required_checks": [
+    "schema",
+    "dimensions",
+    "floor_back_left_anchor",
+    "material_slots",
+    "collision_proxy"
+  ],
+  "human_signoff": {
+    "visual_reviewed": false,
+    "reviewer": null,
+    "reviewed_at": null,
+    "notes": "Candidate export workflow test only. Simple Blender-authored geometry; not polished cabinet art and not approved for promotion."
+  },
+  "created_with": {
+    "tool": "Blender",
+    "version": "5.1.2",
+    "notes": "Simple manually specified mesh coordinates exported through Blender background mode."
+  }
+}
