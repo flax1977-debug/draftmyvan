@@ -57,6 +57,12 @@ REQUIRED_FILES: tuple[str, ...] = (
     "examples/assets/candidates/galley_1000_candidate_visual_audit.md",
     "examples/assets/candidates/galley_1000_candidate_render_evidence.json",
     "examples/assets/candidates/render_evidence/README.md",
+    "examples/assets/candidates/render_evidence/galley_1000_candidate/front.png",
+    "examples/assets/candidates/render_evidence/galley_1000_candidate/rear.png",
+    "examples/assets/candidates/render_evidence/galley_1000_candidate/left.png",
+    "examples/assets/candidates/render_evidence/galley_1000_candidate/right.png",
+    "examples/assets/candidates/render_evidence/galley_1000_candidate/top.png",
+    "examples/assets/candidates/render_evidence/galley_1000_candidate/three_quarter.png",
     # Runtime consumer
     "runtime/__init__.py",
     "runtime/module.py",

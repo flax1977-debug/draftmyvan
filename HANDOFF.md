@@ -1,7 +1,7 @@
 # DraftMyVan — Handoff
 
 > **Status:** the DraftMyVan foundation now lives in its own repository.
-> It has twelve CI-gated pure-Python suites, a permanent generated GLB
+> It has thirteen CI-gated pure-Python suites, a permanent generated GLB
 > contract fixture, current-asset acceptance metadata, candidate acceptance,
 > review, visual-audit, and render-evidence metadata, two GLB validators (one
 > for CI, one for human use in Blender), material-slot and collision-proxy
@@ -34,7 +34,14 @@ examples/
       galley_1000_candidate_visual_audit.md
       galley_1000_candidate_render_evidence.json
       render_evidence/
-        README.md                # Local render output policy; PNGs ignored
+        README.md                # Render evidence policy
+        galley_1000_candidate/
+          front.png              # Committed blockout review evidence
+          rear.png
+          left.png
+          right.png
+          top.png
+          three_quarter.png
     README.md                    # Asset directory rules
 runtime/                         # Reference consumer (PR #8, #9)
   __init__.py                    # Package docstring, boundary doc, re-exports
@@ -122,7 +129,8 @@ Left behind during PaperAI incubation, then redone in this repository:
 | Candidate review PR | merged | Adds SHA-pinned review metadata, a review report, checklist, promotion criteria, and a validator that keeps the candidate non-production and non-promotable. |
 | Candidate visual audit PR | merged | Adds SHA-pinned visual audit metadata and a local Blender render/audit procedure. It records findings without committing render images or promoting the candidate. |
 | Candidate render evidence PR | merged | Adds a local Blender view-render script, ignored render output area, render-evidence metadata, and a pure-Python metadata validator. It does not commit PNG renders or promote the candidate. |
-| Candidate blockout improvement PR | this slice | Regenerates the candidate as a script-generated Blender cabinet blockout with visible panel seams, countertop separation, plinth, and sink marker. It also updates SHA-pinned metadata and keeps the candidate non-production and non-promotable. |
+| Candidate blockout improvement PR | merged | Regenerates the candidate as a script-generated Blender cabinet blockout with visible panel seams, countertop separation, plinth, and sink marker. It also updates SHA-pinned metadata and keeps the candidate non-production and non-promotable. |
+| Candidate render evidence PNG PR | this slice | Commits the six small review PNGs for the current blockout, pins their paths, sizes, and SHA256 values in metadata, and keeps other render output ignored. These are not product screenshots and do not promote the candidate. |
 
 ## Current command suite
 
@@ -195,7 +203,7 @@ python -m tests.test_candidate_asset              # 13 tests
 python -m tests.test_create_galley_candidate      # 7 tests
 python -m tests.test_candidate_review             # 13 tests
 python -m tests.test_candidate_visual_audit       # 11 tests
-python -m tests.test_render_evidence              # 9 tests
+python -m tests.test_render_evidence              # 20 tests
 python -m tests.test_runtime_consumer             # 18 tests
 python -m tests.test_package_report               # 16 tests
 python -m tests.test_handoff_ready                # 10 tests
@@ -234,9 +242,11 @@ python -m tests.test_handoff_ready                # 10 tests
   Candidate review metadata is SHA-pinned and explicitly says the candidate is
   not production art and not promotion-ready. Candidate
   visual audit metadata is also SHA-pinned and currently says
-  `not_production_ready` / `do_not_promote`; render images are not committed
-  yet. Render evidence metadata is procedure-only for now and points to an
-  ignored local output directory.
+  `not_production_ready` / `do_not_promote`. Six PNGs are committed as review
+  evidence for the current blockout and pinned by path, size, SHA256,
+  resolution, render engine, and lighting setup; they are not product
+  screenshots, visual sign-off, or promotion. Future candidate changes must
+  regenerate those images and re-sign render-evidence metadata.
 - **Catalog of one.** `examples/galley_1000.json` is the only module.
 - **No UE5, Fusion 360, or CNC integration.** Every PR deferred them
   deliberately.

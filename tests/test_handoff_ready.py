@@ -47,6 +47,12 @@ def test_required_files_pass_on_current_repo() -> None:
         "examples/assets/candidates/galley_1000_candidate_visual_audit.md",
         "examples/assets/candidates/galley_1000_candidate_render_evidence.json",
         "examples/assets/candidates/render_evidence/README.md",
+        "examples/assets/candidates/render_evidence/galley_1000_candidate/front.png",
+        "examples/assets/candidates/render_evidence/galley_1000_candidate/rear.png",
+        "examples/assets/candidates/render_evidence/galley_1000_candidate/left.png",
+        "examples/assets/candidates/render_evidence/galley_1000_candidate/right.png",
+        "examples/assets/candidates/render_evidence/galley_1000_candidate/top.png",
+        "examples/assets/candidates/render_evidence/galley_1000_candidate/three_quarter.png",
         "tests/fixtures/galley_1000_contract_box.glb",
         "runtime/load_module.py",
         "runtime/package_report.py",
@@ -222,6 +228,11 @@ def test_required_files_list_includes_all_critical_categories() -> None:
     assert "examples/assets/candidates/galley_1000_candidate_visual_audit.md" in rels
     assert "examples/assets/candidates/galley_1000_candidate_render_evidence.json" in rels
     assert "examples/assets/candidates/render_evidence/README.md" in rels
+    for view in ("front", "rear", "left", "right", "top", "three_quarter"):
+        assert (
+            f"examples/assets/candidates/render_evidence/galley_1000_candidate/{view}.png"
+            in rels
+        )
     assert "tests/fixtures/galley_1000_contract_box.glb" in rels
     assert any(r.startswith("runtime/") for r in rels)
     assert any(r.startswith("tools/blender/") for r in rels)

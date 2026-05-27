@@ -2,10 +2,19 @@
   "manifest_id": "galley_1000_sink_left_oak",
   "candidate_asset_path": "examples/assets/candidates/galley_1000_candidate.glb",
   "candidate_sha256": "0821e06ce68396f413447ec46e16ea5cf179c4d1c5458c59681c77f27e115ee8",
+  "generated_from_candidate_sha256": "0821e06ce68396f413447ec46e16ea5cf179c4d1c5458c59681c77f27e115ee8",
   "visual_audit_path": "examples/assets/candidates/galley_1000_candidate_visual_audit.json",
   "render_script": "tools/blender/render_candidate_views.py",
+  "render_command": "blender --background --python tools/blender/render_candidate_views.py -- --candidate examples/assets/candidates/galley_1000_candidate.glb --out examples/assets/candidates/render_evidence/galley_1000_candidate/",
+  "render_tool": "Blender",
+  "render_resolution": {
+    "width_px": 1024,
+    "height_px": 1024
+  },
+  "render_engine": "BLENDER_WORKBENCH",
+  "lighting_setup": "Single area key light named audit_key_light; energy 450; size is max candidate axis span; location is candidate center plus (-size.x, -size.y, size.z * 2.5).",
   "render_output_dir": "examples/assets/candidates/render_evidence/galley_1000_candidate/",
-  "committed_renders": false,
+  "committed_renders": true,
   "expected_views": [
     "front",
     "rear",
@@ -14,7 +23,46 @@
     "top",
     "three_quarter"
   ],
-  "evidence_status": "procedure_ready",
+  "render_files": [
+    {
+      "view": "front",
+      "path": "examples/assets/candidates/render_evidence/galley_1000_candidate/front.png",
+      "file_size_bytes": 726071,
+      "sha256": "87d3afe0a77d1a35396aa9df8e377659f6a10e8e6469377ae19c4eaddd5e4a18"
+    },
+    {
+      "view": "rear",
+      "path": "examples/assets/candidates/render_evidence/galley_1000_candidate/rear.png",
+      "file_size_bytes": 725998,
+      "sha256": "de7941551579a6124b3e97927242ac64966b460994252f3458ec840c0b6d595b"
+    },
+    {
+      "view": "left",
+      "path": "examples/assets/candidates/render_evidence/galley_1000_candidate/left.png",
+      "file_size_bytes": 685193,
+      "sha256": "0e6425bed5f2d8067a3eec8de7a520dca7733a02f7739d9899e9084644455954"
+    },
+    {
+      "view": "right",
+      "path": "examples/assets/candidates/render_evidence/galley_1000_candidate/right.png",
+      "file_size_bytes": 685496,
+      "sha256": "4cb22ba1aa633d4382897ea9be4ca7588aa6cf59295b52718f863c069b0c6167"
+    },
+    {
+      "view": "top",
+      "path": "examples/assets/candidates/render_evidence/galley_1000_candidate/top.png",
+      "file_size_bytes": 686100,
+      "sha256": "2469135e5303dc507d770abb27b10b07dce1a6364dcaaa80b74cdff7876d923d"
+    },
+    {
+      "view": "three_quarter",
+      "path": "examples/assets/candidates/render_evidence/galley_1000_candidate/three_quarter.png",
+      "file_size_bytes": 668669,
+      "sha256": "932a697c1045ea3b0e5453cb87c5ec8be58847724671f71ff33a58940dc26dc9"
+    }
+  ],
+  "evidence_status": "committed_review_evidence",
+  "render_note": "Evidence renders for blockout review only; not production art.",
   "production_art": false,
   "promotion_ready": false
 }

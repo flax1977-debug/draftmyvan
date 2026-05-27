@@ -109,19 +109,26 @@ sync with the exact candidate SHA, and promotion requires a future explicit PR.
 
 Visual audit is separate from validation and review. It records current visual
 findings and required improvements, but does not make the candidate
-production-ready. Render images are not committed or required in CI yet; the
-local procedure is `tools/blender/RENDER_CANDIDATE_AUDIT.md`.
+production-ready. The committed render evidence records six review views of
+the current blockout only; those PNGs are not product screenshots and do not
+promote the candidate. The local procedure is
+`tools/blender/RENDER_CANDIDATE_AUDIT.md`.
 
 ## Candidate render evidence workflow
 
 | Command | Purpose | Exit |
 |---|---|---|
-| `python tools/assets/validate_render_evidence.py examples/assets/candidates/galley_1000_candidate_render_evidence.json` | Validate render-evidence metadata: candidate SHA, visual-audit reference, render script path, expected views, local-only render state, and non-promotion flags. | 0 valid, 1 invalid |
+| `python tools/assets/validate_render_evidence.py examples/assets/candidates/galley_1000_candidate_render_evidence.json` | Validate render-evidence metadata: candidate SHA, visual-audit reference, render script path, expected views, committed PNG paths/sizes/SHA256 values, and non-promotion flags. | 0 valid, 1 invalid |
 | `blender --background --python tools/blender/render_candidate_views.py -- --candidate examples/assets/candidates/galley_1000_candidate.glb --out examples/assets/candidates/render_evidence/galley_1000_candidate/` | Generate local PNG evidence views when Blender is available. The renderer orients the GLB contract axes for Blender review and hides `UCX_` collision proxies from the visual output. | Blender exit code |
 
-Render evidence supports human review only. Generated PNGs under
-`examples/assets/candidates/render_evidence/` are ignored by Git for now, and
-CI validates only the metadata/procedure.
+Render evidence supports human review only. The six approved PNGs under
+`examples/assets/candidates/render_evidence/galley_1000_candidate/` are
+committed review evidence for the current blockout, not product screenshots.
+Their metadata records the 1024 x 1024 Workbench render setup and local area
+key light description from `tools/blender/render_candidate_views.py`.
+Other generated PNG output under `examples/assets/candidates/render_evidence/`
+remains ignored. Future candidate changes require regenerating the PNGs and
+updating their pinned file sizes and SHA256 values.
 
 ## Runtime consumer (PR #8)
 
@@ -154,7 +161,7 @@ python -m tests.test_candidate_asset              # 13 tests — candidate workf
 python -m tests.test_create_galley_candidate      # 7 tests — candidate generator manifest guard
 python -m tests.test_candidate_review             # 13 tests — candidate review guard
 python -m tests.test_candidate_visual_audit       # 11 tests — candidate visual audit guard
-python -m tests.test_render_evidence              # 9 tests — render evidence metadata guard
+python -m tests.test_render_evidence              # 20 tests — render evidence metadata guard
 python -m tests.test_runtime_consumer             # 18 tests — manifest read as typed runtime data
 python -m tests.test_package_report               # 16 tests — catalog/package readiness
 python -m tests.test_handoff_ready                # 10 tests — extraction readiness helper

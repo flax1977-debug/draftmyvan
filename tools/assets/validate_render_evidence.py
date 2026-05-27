@@ -22,6 +22,7 @@ DEFAULT_METADATA = (
 )
 
 REQUIRED_VIEWS = frozenset(("front", "rear", "left", "right", "top", "three_quarter"))
+ALLOWED_RENDER_ROOT_REL = Path("examples/assets/candidates/render_evidence")
 STATUS_VALID = "RENDER EVIDENCE VALID"
 STATUS_INVALID = "RENDER EVIDENCE INVALID"
 
@@ -54,6 +55,20 @@ def _required_bool(data: dict[str, Any], key: str) -> bool:
     return value
 
 
+def _required_positive_int(data: dict[str, Any], key: str, label: str) -> int:
+    value = data.get(key)
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        raise RenderEvidenceError(f"{label}.{key} must be a positive integer")
+    return value
+
+
+def _required_object(data: dict[str, Any], key: str) -> dict[str, Any]:
+    value = data.get(key)
+    if not isinstance(value, dict):
+        raise RenderEvidenceError(f"{key} must be an object")
+    return value
+
+
 def _repo_relative_path(root: Path, value: str, key: str) -> Path:
     path = Path(value)
     if path.is_absolute() or ".." in path.parts:
@@ -78,39 +93,101 @@ def _sha256(path: Path) -> str:
     return h.hexdigest()
 
 
-def _validate_expected_views(data: dict[str, Any]) -> None:
+def _validate_expected_views(data: dict[str, Any]) -> set[str]:
     views = data.get("expected_views")
     if not isinstance(views, list) or not all(isinstance(v, str) for v in views):
         raise RenderEvidenceError("expected_views must be a list of strings")
     missing = sorted(REQUIRED_VIEWS.difference(views))
     if missing:
         raise RenderEvidenceError("expected_views is missing: " + ", ".join(missing))
+    return set(views)
 
 
-def _validate_committed_render_paths(
+def _render_file_str(entry: dict[str, Any], key: str, label: str) -> str:
+    value = entry.get(key)
+    if not isinstance(value, str) or not value.strip():
+        raise RenderEvidenceError(f"{label}.{key} must be a non-empty string")
+    return value
+
+
+def _validate_committed_render_files(
     root: Path,
     data: dict[str, Any],
     render_output_dir: Path,
+    expected_views: set[str],
 ) -> None:
-    render_paths = data.get("render_paths")
-    if not isinstance(render_paths, dict):
+    render_files = data.get("render_files")
+    if not isinstance(render_files, list):
         raise RenderEvidenceError(
-            "committed_renders true requires render_paths for every expected view"
+            "committed_renders true requires render_files for every expected view"
         )
-    for view in sorted(REQUIRED_VIEWS):
-        value = render_paths.get(view)
-        if not isinstance(value, str) or not value.strip():
-            raise RenderEvidenceError(f"render_paths.{view} must be a non-empty string")
-        path = _repo_relative_path(root, value, f"render_paths.{view}")
+    allowed_root = (root / ALLOWED_RENDER_ROOT_REL).resolve()
+    seen: set[str] = set()
+    listed_paths: set[Path] = set()
+    for idx, entry in enumerate(render_files):
+        label = f"render_files[{idx}]"
+        if not isinstance(entry, dict):
+            raise RenderEvidenceError(f"{label} must be an object")
+        view = _render_file_str(entry, "view", label)
+        if view not in expected_views:
+            raise RenderEvidenceError(f"{label}.view is not in expected_views: {view}")
+        if view in seen:
+            raise RenderEvidenceError(f"render_files has duplicate view: {view}")
+        seen.add(view)
+
+        path = _repo_relative_path(root, _render_file_str(entry, "path", label), f"{label}.path")
         _ensure_file(path, f"render for {view}")
         if path.suffix.lower() != ".png":
-            raise RenderEvidenceError(f"render_paths.{view} must point to a PNG")
+            raise RenderEvidenceError(f"{label}.path must point to a PNG")
+        try:
+            path.relative_to(allowed_root)
+        except ValueError as e:
+            raise RenderEvidenceError(
+                f"{label}.path must be under {ALLOWED_RENDER_ROOT_REL}"
+            ) from e
         try:
             path.relative_to(render_output_dir)
         except ValueError as e:
             raise RenderEvidenceError(
-                f"render_paths.{view} must be under render_output_dir"
+                f"{label}.path must be under render_output_dir"
             ) from e
+        listed_paths.add(path)
+
+        expected_size = _required_positive_int(entry, "file_size_bytes", label)
+        actual_size = path.stat().st_size
+        if actual_size != expected_size:
+            raise RenderEvidenceError(
+                f"{label}.file_size_bytes mismatch: metadata={expected_size} actual={actual_size}"
+            )
+
+        expected_sha = _render_file_str(entry, "sha256", label).lower()
+        actual_sha = _sha256(path)
+        if actual_sha != expected_sha:
+            raise RenderEvidenceError(
+                f"{label}.sha256 mismatch: metadata={expected_sha} actual={actual_sha}"
+            )
+
+    missing = sorted(expected_views.difference(seen))
+    if missing:
+        raise RenderEvidenceError("render_files is missing: " + ", ".join(missing))
+
+    extra_files = sorted(
+        path
+        for path in render_output_dir.rglob("*")
+        if path.is_file() and path.resolve() not in listed_paths
+    )
+    if extra_files:
+        extras = ", ".join(str(path.relative_to(root)) for path in extra_files)
+        raise RenderEvidenceError("render_output_dir contains unapproved file(s): " + extras)
+
+
+def _validate_render_provenance(data: dict[str, Any]) -> None:
+    resolution = _required_object(data, "render_resolution")
+    _required_positive_int(resolution, "width_px", "render_resolution")
+    _required_positive_int(resolution, "height_px", "render_resolution")
+    if _required_str(data, "render_engine") != "BLENDER_WORKBENCH":
+        raise RenderEvidenceError('render_engine must be "BLENDER_WORKBENCH"')
+    _required_str(data, "lighting_setup")
 
 
 def validate_render_evidence(
@@ -163,23 +240,45 @@ def validate_render_evidence(
             raise RenderEvidenceError("candidate_sha256 must match visual audit metadata")
         lines.append(f"[OK] candidate SHA256 matches: {candidate_sha}")
 
-        _validate_expected_views(data)
+        expected_views = _validate_expected_views(data)
         lines.append("[OK] expected_views includes all required render views")
 
         committed_renders = _required_bool(data, "committed_renders")
         if committed_renders:
-            _validate_committed_render_paths(root, data, render_output_dir)
-            lines.append("[OK] committed render PNGs exist for every required view")
+            generated_from = _required_str(data, "generated_from_candidate_sha256").lower()
+            if generated_from != candidate_sha:
+                raise RenderEvidenceError(
+                    "generated_from_candidate_sha256 must match actual candidate SHA"
+                )
+            _required_str(data, "render_command")
+            if _required_str(data, "render_tool") != "Blender":
+                raise RenderEvidenceError('render_tool must be "Blender"')
+            _required_str(data, "render_note")
+            _validate_render_provenance(data)
+            lines.append("[OK] render provenance fields are recorded")
+            _validate_committed_render_files(root, data, render_output_dir, expected_views)
+            lines.append(
+                "[OK] committed render PNGs are present, SHA/size pinned, and no extra files found"
+            )
         else:
+            if "generated_from_candidate_sha256" in data:
+                generated_from = data["generated_from_candidate_sha256"]
+                if not isinstance(generated_from, str) or generated_from.lower() != candidate_sha:
+                    raise RenderEvidenceError(
+                        "generated_from_candidate_sha256 must match actual candidate SHA"
+                    )
             lines.append("[OK] committed_renders is false; PNG evidence remains local-only")
 
-        if _required_str(data, "evidence_status") != "procedure_ready":
-            raise RenderEvidenceError('evidence_status must be "procedure_ready"')
+        expected_status = (
+            "committed_review_evidence" if committed_renders else "procedure_ready"
+        )
+        if _required_str(data, "evidence_status") != expected_status:
+            raise RenderEvidenceError(f'evidence_status must be "{expected_status}"')
         if _required_bool(data, "production_art") is not False:
             raise RenderEvidenceError("production_art must be false for render evidence")
         if _required_bool(data, "promotion_ready") is not False:
             raise RenderEvidenceError("promotion_ready must be false for render evidence")
-        lines.append("[OK] evidence status procedure-ready; production/promote flags false")
+        lines.append(f"[OK] evidence status {expected_status}; production/promote flags false")
 
         lines.append(f"RESULT: {STATUS_VALID}")
         return STATUS_VALID, lines
