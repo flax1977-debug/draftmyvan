@@ -43,8 +43,13 @@ REQUIRED_FILES: tuple[str, ...] = (
     "manifest.schema.json",
     "examples/galley_1000.json",
     "examples/assets/galley_1000.glb",
+    "examples/assets/galley_1000.asset_acceptance.json",
     "examples/assets/README.md",
     "examples/assets/galley_1000.glb.md",
+    # Golden contract fixture (permanent regression reference;
+    # see tests/fixtures/README.md)
+    "tests/fixtures/galley_1000_contract_box.glb",
+    "tests/fixtures/README.md",
     # Runtime consumer
     "runtime/__init__.py",
     "runtime/module.py",
@@ -53,6 +58,7 @@ REQUIRED_FILES: tuple[str, ...] = (
     # Tools
     "tools/validate_manifest.py",
     "tools/assets/generate_galley_fixture_glb.py",
+    "tools/assets/validate_asset_acceptance.py",
     "tools/blender/validate_glb_against_manifest.py",
     "tools/blender/validate_in_blender.py",
     "tools/blender/_anchor_contract.py",
@@ -69,6 +75,7 @@ REQUIRED_FILES: tuple[str, ...] = (
     "tests/test_runtime_consumer.py",
     "tests/test_package_report.py",
     "tests/test_handoff_ready.py",
+    "tests/test_asset_acceptance.py",
     # Docs
     "README.md",
     "HANDOFF.md",
@@ -95,6 +102,7 @@ DYNAMIC_TEST_MODULES: tuple[str, ...] = (
     "tests.test_runtime_consumer",
     "tests.test_package_report",
     "tests.test_handoff_ready",
+    "tests.test_asset_acceptance",
 )
 
 

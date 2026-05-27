@@ -163,22 +163,58 @@ If the candidate's bounding box doesn't match the fixture's to the mm,
 the candidate is wrong — the fixture's dimensions are derived from
 the manifest, and so should the candidate's be.
 
-### 9. (Future, not in this PR) Replace the fixture
+### 9. Replace the current manifest asset with real art
 
-This is the step that does not yet exist. Today, the committed GLB
-under `examples/assets/<module>.glb` is the deterministic box from
-`tools/assets/generate_galley_fixture_glb.py`, pinned by
-`test_committed_fixture_matches_generator_byte_for_byte`. Replacing
-it with real art means:
+PR #4 added the **fixture-swap mechanism** that this step depends on.
+The roles of the two GLBs are now distinct:
 
-* Updating that test (or making it conditional).
-* Adding a per-asset "the committed binary is real art, signed off
-  on <date> by <author>" marker.
-* Ensuring the bpy validator agrees with the pure-Python one.
+* `examples/assets/<module>.glb` is the **current manifest asset** —
+  what every downstream consumer reads through `visual.glb_path`.
+* `tests/fixtures/<module>_contract_box.glb` is the **golden contract
+  fixture** — a permanent regression reference, pinned byte-for-byte
+  to `tools/assets/generate_galley_fixture_glb.py`'s output. It does
+  **not** appear in any manifest. It does **not** get replaced by real
+  art. The byte-determinism test
+  (`test_golden_fixture_matches_generator_byte_for_byte`) keeps
+  running forever.
 
-None of this lands in PR #2. PR #2 only documents the procedure and
-provides a single helper command (`check_asset_ready.py`) that runs
-the validators end-to-end on a candidate GLB.
+The acceptance metadata at
+`examples/assets/<module>.asset_acceptance.json` is the per-asset
+record that captures the phase change.
+
+To swap real art into the manifest asset slot:
+
+1. Pass every check above (steps 1–8). Run
+   `python tools/blender/check_asset_ready.py
+   --manifest examples/<module>.json --glb /tmp/<module>.glb` against
+   the candidate and confirm `RESULT: READY`.
+2. Copy the candidate over `examples/assets/<module>.glb`.
+   Do **not** touch `tests/fixtures/<module>_contract_box.glb`.
+3. Edit `examples/assets/<module>.asset_acceptance.json`:
+   * `generated_fixture_replaced` → `true`
+   * `asset_kind` → an honest label (e.g. `"production_art"`)
+   * `human_signoff.visual_reviewed` → `true`
+   * `human_signoff.production_art` → `true`
+   * `human_signoff.reviewer` → the human who signed off
+   * `human_signoff.notes` → what changed, when, why
+4. Update `tools/assets/validate_asset_acceptance.py` (and its tests)
+   so the phase invariants for "no real art yet"
+   (`generated_fixture_replaced` is `false`,
+   `human_signoff.production_art` is `false`) are inverted for the
+   real-art phase — the invariants progress with the project state.
+5. The parity test
+   (`test_manifest_asset_equals_golden_while_fixture_not_replaced`)
+   short-circuits automatically when the flag is flipped, so real art
+   with different bytes does not fail it. The golden fixture's own
+   determinism test still pins
+   `tests/fixtures/<module>_contract_box.glb`.
+6. Run the bpy validator (`validate_in_blender.py`) and confirm it
+   agrees with the pure-Python one. Both reports must be `RESULT: PASS`.
+
+The default `python tools/assets/generate_galley_fixture_glb.py` is
+safe to keep running after the swap: it always refreshes the golden
+fixture, but it refuses to overwrite the manifest asset once
+`generated_fixture_replaced` is `true`.
 
 ## Anti-patterns (never do this)
 

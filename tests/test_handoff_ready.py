@@ -35,12 +35,17 @@ def test_required_files_pass_on_current_repo() -> None:
         "manifest.schema.json",
         "examples/galley_1000.json",
         "examples/assets/galley_1000.glb",
+        "examples/assets/galley_1000.asset_acceptance.json",
+        "tests/fixtures/galley_1000_contract_box.glb",
+        "tests/fixtures/README.md",
         "runtime/load_module.py",
         "runtime/package_report.py",
         "tools/blender/_anchor_contract.py",
         "tools/blender/EXPORT_REAL_ASSET.md",
         "tools/blender/check_asset_ready.py",
+        "tools/assets/validate_asset_acceptance.py",
         "tests/test_check_asset_ready.py",
+        "tests/test_asset_acceptance.py",
         "HANDOFF.md",
         "EXTRACT_TO_REAL_REPO.md",
         "COMMANDS.md",
@@ -197,10 +202,15 @@ def test_required_files_list_includes_all_critical_categories() -> None:
         "tools/blender/EXPORT_REAL_ASSET.md",
         "tools/blender/asset_export_checklist.md",
         "tools/blender/check_asset_ready.py",
+        "tools/assets/validate_asset_acceptance.py",
         "tests/test_check_asset_ready.py",
+        "tests/test_asset_acceptance.py",
+        "tests/fixtures/galley_1000_contract_box.glb",
+        "examples/assets/galley_1000.asset_acceptance.json",
     ):
         assert rel in rels, f"required-files list dropped {rel}"
     assert "tests.test_check_asset_ready" in h.DYNAMIC_TEST_MODULES
+    assert "tests.test_asset_acceptance" in h.DYNAMIC_TEST_MODULES
     # Handoff docs must be listed as required (this PR's whole point).
     for doc in ("HANDOFF.md", "EXTRACT_TO_REAL_REPO.md", "COMMANDS.md"):
         assert doc in rels, f"required-files list dropped {doc}"

@@ -27,6 +27,9 @@ jobs:
       - name: Validate every example manifest
         run: python tools/validate_manifest.py --all
 
+      - name: Validate every asset-acceptance metadata file
+        run: python tools/assets/validate_asset_acceptance.py --all
+
       - name: Run manifest validator test suite
         run: python -m tests.test_validator
 
@@ -48,8 +51,11 @@ jobs:
       - name: Run handoff-ready suite (extraction-readiness helper)
         run: python -m tests.test_handoff_ready
 
+      - name: Run asset-acceptance suite (acceptance metadata validator)
+        run: python -m tests.test_asset_acceptance
+
       - name: Run handoff-ready CLI (static-only mode)
         run: python tools/handoff/check_handoff_ready.py
 
-      - name: Run asset-readiness CLI on committed fixture
+      - name: Run asset-readiness CLI on committed manifest asset
         run: python tools/blender/check_asset_ready.py --manifest examples/galley_1000.json

@@ -6,34 +6,72 @@ produce a geometrically-correct stand-in so the manifest → validator →
 asset pipeline can be exercised end-to-end before any polished cabinet
 art exists.
 
-Default invocation (no flags) regenerates the canonical fixture in place:
+Two outputs, two roles
+----------------------
+
+The generator targets two distinct files by default:
+
+1. The **golden contract fixture** at
+   ``tests/fixtures/galley_1000_contract_box.glb``.
+
+   This is the permanent regression reference. Its bytes are pinned to
+   this generator's output via
+   ``test_committed_fixture_matches_generator_byte_for_byte``. It does
+   **not** participate in any manifest's ``visual.glb_path`` — it lives
+   under ``tests/fixtures/`` precisely so future real cabinet art landing
+   under ``examples/assets/`` cannot silently erase it.
+
+2. The **current manifest asset** at
+   ``examples/assets/galley_1000.glb``.
+
+   This is the file that ``examples/galley_1000.json`` actually points
+   at. Today it is bit-identical to the golden fixture (because no real
+   art exists). The day real cabinet art lands, its bytes will diverge —
+   at which point the acceptance metadata at
+   ``examples/assets/galley_1000.asset_acceptance.json`` flips
+   ``generated_fixture_replaced`` to ``true`` and this generator refuses
+   to overwrite the manifest asset.
+
+Default invocation (no flags) regenerates the canonical fixture in place::
 
     cd /path/to/draftmyvan
     python tools/assets/generate_galley_fixture_glb.py
-    # reads  examples/galley_1000.json
-    # writes examples/assets/galley_1000.glb
 
-Both inputs can be overridden:
-    --manifest <path>   Override the manifest source.
-    --out <path>        Override the GLB output path.
+This:
+
+  * Always writes the golden contract fixture
+    (``tests/fixtures/galley_1000_contract_box.glb``).
+  * Also writes the manifest asset (``examples/assets/galley_1000.glb``)
+    **only** if the acceptance metadata for that asset declares
+    ``generated_fixture_replaced: false`` (or the metadata file is
+    absent). When the metadata says the manifest asset is real art,
+    the generator prints a notice and skips that write.
+
+Overrides::
+
+    --manifest <path>           Override the manifest source.
+    --out <path>                Write only to <path>; never touches
+                                either of the canonical defaults.
+    --skip-manifest-asset       Always skip the manifest asset write,
+                                even if metadata permits it.
 
 The generated GLB:
     * Has exactly the bounding box implied by the manifest's
-      `dimensions_mm` and `anchor`.
-    * Declares every `visual.material_slots[]` name as a placeholder
+      ``dimensions_mm`` and ``anchor``.
+    * Declares every ``visual.material_slots[]`` name as a placeholder
       material.
     * Contains a placeholder collision proxy node/mesh named exactly
-      `visual.collision_proxy`; it reuses the box geometry because this
+      ``visual.collision_proxy``; it reuses the box geometry because this
       fixture proves contract wiring, not production collision art.
     * Uses metres in object data (glTF convention).
-    * Is deterministic — `sort_keys=True` JSON, fixed vertex order,
+    * Is deterministic — ``sort_keys=True`` JSON, fixed vertex order,
       fixed index layout — so the committed fixture can be regenerated
       byte-for-byte and a test pins this.
     * Uses only the Python standard library (no Blender, no third-party
       glTF lib).
 
 Limits (V1, deliberate):
-    * Only `anchor = "floor_back_left"` is supported. Other anchors
+    * Only ``anchor = "floor_back_left"`` is supported. Other anchors
       raise — silent acceptance is not an option here either.
     * Geometry is a closed axis-aligned box (8 vertices, 12 triangles).
       Materials and collision proxy are placeholder contract markers only:
@@ -228,7 +266,31 @@ def make_box_glb_from_manifest(manifest: dict) -> bytes:
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent  # repository root
 DEFAULT_MANIFEST = REPO_ROOT / "examples" / "galley_1000.json"
-DEFAULT_OUT = REPO_ROOT / "examples" / "assets" / "galley_1000.glb"
+# Golden contract fixture: permanent regression reference. Lives under
+# tests/fixtures/ so future real cabinet art landing in examples/assets/
+# can never silently erase it.
+DEFAULT_GOLDEN_FIXTURE = REPO_ROOT / "tests" / "fixtures" / "galley_1000_contract_box.glb"
+# Current manifest asset: what examples/galley_1000.json points at.
+# Today this is the same bytes as the golden fixture; tomorrow it may be
+# real cabinet art (gated by asset_acceptance.json — see below).
+DEFAULT_MANIFEST_ASSET = REPO_ROOT / "examples" / "assets" / "galley_1000.glb"
+DEFAULT_ACCEPTANCE_METADATA = REPO_ROOT / "examples" / "assets" / "galley_1000.asset_acceptance.json"
+
+
+def _manifest_asset_is_real_art(metadata_path: Path) -> bool:
+    """True iff the acceptance metadata explicitly declares real art is in place.
+
+    Absent metadata, or metadata that does not flip the flag, is treated
+    as "still a generated fixture" — i.e. safe to overwrite.
+    """
+    if not metadata_path.exists():
+        return False
+    try:
+        data = json.loads(metadata_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        # If the metadata is unreadable, err on the side of NOT clobbering.
+        return True
+    return bool(data.get("generated_fixture_replaced", False))
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -237,11 +299,19 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--manifest", type=Path, default=DEFAULT_MANIFEST,
-        help=f"Manifest JSON (default: examples/galley_1000.json).",
+        help="Manifest JSON (default: examples/galley_1000.json).",
     )
     parser.add_argument(
-        "--out", type=Path, default=DEFAULT_OUT,
-        help=f"Output GLB path (default: examples/assets/galley_1000.glb).",
+        "--out", type=Path, default=None,
+        help="Write only to this path; do not touch the canonical "
+             "golden-fixture or manifest-asset paths. Use this for "
+             "candidate checks (e.g. /tmp/...).",
+    )
+    parser.add_argument(
+        "--skip-manifest-asset", action="store_true",
+        help="Always skip writing the manifest asset "
+             "(examples/assets/galley_1000.glb), even when the "
+             "acceptance metadata permits the overwrite.",
     )
     args = parser.parse_args(argv)
 
@@ -257,9 +327,33 @@ def main(argv: list[str] | None = None) -> int:
         print(f"ERROR: {e}", file=sys.stderr)
         return 2
 
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_bytes(blob)
-    print(f"wrote {args.out} ({len(blob)} bytes)")
+    if args.out is not None:
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        args.out.write_bytes(blob)
+        print(f"wrote {args.out} ({len(blob)} bytes)")
+        return 0
+
+    # Canonical default: golden fixture is always rewritten.
+    DEFAULT_GOLDEN_FIXTURE.parent.mkdir(parents=True, exist_ok=True)
+    DEFAULT_GOLDEN_FIXTURE.write_bytes(blob)
+    print(f"wrote golden fixture: {DEFAULT_GOLDEN_FIXTURE} ({len(blob)} bytes)")
+
+    if args.skip_manifest_asset:
+        print("skipped manifest asset (forced by --skip-manifest-asset)")
+        return 0
+
+    if _manifest_asset_is_real_art(DEFAULT_ACCEPTANCE_METADATA):
+        print(
+            f"skipped manifest asset: {DEFAULT_MANIFEST_ASSET}\n"
+            f"  reason: {DEFAULT_ACCEPTANCE_METADATA} declares "
+            f"generated_fixture_replaced=true (real art is in place).\n"
+            f"  to overwrite anyway, run with --out {DEFAULT_MANIFEST_ASSET}"
+        )
+        return 0
+
+    DEFAULT_MANIFEST_ASSET.parent.mkdir(parents=True, exist_ok=True)
+    DEFAULT_MANIFEST_ASSET.write_bytes(blob)
+    print(f"wrote manifest asset: {DEFAULT_MANIFEST_ASSET} ({len(blob)} bytes)")
     return 0
 
 

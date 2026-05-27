@@ -1,0 +1,21 @@
+{
+  "manifest_id": "galley_1000_sink_left_oak",
+  "manifest_path": "examples/galley_1000.json",
+  "asset_path": "examples/assets/galley_1000.glb",
+  "asset_kind": "generated_contract_fixture",
+  "generated_fixture_replaced": false,
+  "validator_command": "python tools/blender/check_asset_ready.py --manifest examples/galley_1000.json",
+  "required_checks": [
+    "schema",
+    "dimensions",
+    "floor_back_left_anchor",
+    "material_slots",
+    "collision_proxy"
+  ],
+  "human_signoff": {
+    "visual_reviewed": false,
+    "production_art": false,
+    "reviewer": null,
+    "notes": "Manifest asset is still the deterministic generated box. The golden contract fixture at tests/fixtures/galley_1000_contract_box.glb pins the generator's output byte-for-byte. Replacing this manifest asset with real cabinet art requires flipping generated_fixture_replaced and production_art to true, recording a reviewer, following tools/blender/EXPORT_REAL_ASSET.md, and re-running python tools/blender/check_asset_ready.py with the new GLB."
+  }
+}
