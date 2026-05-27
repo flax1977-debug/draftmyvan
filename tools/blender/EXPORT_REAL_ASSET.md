@@ -1,10 +1,11 @@
 # Exporting a real DraftMyVan asset (Blender → GLB)
 
 This is the procedure a human (or a future helper script) must follow
-when replacing a generated fixture under `examples/assets/`
+when replacing the current generated manifest asset under `examples/assets/`
 with a real cabinet GLB. Until this procedure passes for a candidate
-asset, the generated fixture stays — the generated box is the **golden
-boring reference**, not a placeholder to be silently overwritten.
+asset, that manifest asset stays generated. The permanent generated
+box is `tests/fixtures/galley_1000_contract_box.glb`; it is the golden
+reference, not a placeholder to be silently overwritten.
 
 > **Why a procedure at all?** Every prior PR (#3–#6) was about closing
 > the gap between "looks fine" and "actually buildable." Hand-exported
@@ -103,7 +104,7 @@ Recommended settings:
 | Compression | off (use a plain GLB until size becomes a problem) |
 
 Save to a scratch path first (e.g. `/tmp/<module>.glb`). Do **not**
-overwrite the committed fixture yet.
+overwrite the committed manifest asset yet.
 
 ### 6. Run the pure-Python validator (CI gate)
 
@@ -143,9 +144,9 @@ blender --background --python \
 The two checks should agree. If they disagree, the source has
 non-applied transforms (see step 4) — fix Blender, re-export, restart.
 
-### 8. Compare against the generated fixture
+### 8. Compare against the golden contract fixture
 
-Before swapping the committed fixture for your candidate, eyeball the
+Before swapping the committed manifest asset for your candidate, eyeball the
 size delta:
 
 ```bash
@@ -153,9 +154,9 @@ python -c "
 from pathlib import Path
 import sys; sys.path.insert(0, 'tools/blender')
 import validate_glb_against_manifest as v
-a = v.load_glb_bbox(Path('examples/assets/<module>.glb')).scaled(1000)
+a = v.load_glb_bbox(Path('tests/fixtures/<module>_contract_box.glb')).scaled(1000)
 b = v.load_glb_bbox(Path('/tmp/<module>.glb')).scaled(1000)
-print('fixture:', a.size_xyz, 'candidate:', b.size_xyz)
+print('golden fixture:', a.size_xyz, 'candidate:', b.size_xyz)
 "
 ```
 
@@ -163,22 +164,37 @@ If the candidate's bounding box doesn't match the fixture's to the mm,
 the candidate is wrong — the fixture's dimensions are derived from
 the manifest, and so should the candidate's be.
 
-### 9. (Future, not in this PR) Replace the fixture
+For `galley_1000`, the current golden fixture path is:
 
-This is the step that does not yet exist. Today, the committed GLB
-under `examples/assets/<module>.glb` is the deterministic box from
-`tools/assets/generate_galley_fixture_glb.py`, pinned by
-`test_committed_fixture_matches_generator_byte_for_byte`. Replacing
-it with real art means:
+```
+tests/fixtures/galley_1000_contract_box.glb
+```
 
-* Updating that test (or making it conditional).
-* Adding a per-asset "the committed binary is real art, signed off
-  on <date> by <author>" marker.
-* Ensuring the bpy validator agrees with the pure-Python one.
+### 9. Replace the manifest asset in a future real-art PR
 
-None of this lands in PR #2. PR #2 only documents the procedure and
-provides a single helper command (`check_asset_ready.py`) that runs
-the validators end-to-end on a candidate GLB.
+This PR adds the acceptance mechanism but does not add real art. A future
+real-art PR may replace:
+
+```
+examples/assets/galley_1000.glb
+```
+
+only after the candidate passes the full readiness gate. That PR must:
+
+* Leave `tests/fixtures/galley_1000_contract_box.glb` unchanged.
+* Keep `tests/test_galley_fixture.py` comparing the generator output against
+  the golden fixture, not against the manifest asset.
+* Update `examples/assets/galley_1000.asset_acceptance.json` from the
+  current generated-fixture state to production-art sign-off.
+* Keep the required checks complete: schema, dimensions,
+  floor_back_left_anchor, material_slots, and collision_proxy.
+* Ensure the bpy validator agrees with the pure-Python one for the final
+  committed asset.
+
+Until that future PR lands, `galley_1000.asset_acceptance.json` must keep
+`asset_kind: "generated_contract_fixture"`,
+`generated_fixture_replaced: false`, and
+`human_signoff.production_art: false`.
 
 ## Anti-patterns (never do this)
 

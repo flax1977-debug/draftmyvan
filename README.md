@@ -12,14 +12,16 @@ Nothing else. No UE5, no Blender, no Fusion, no UI, no CNC post processors yet.
 manifest.schema.json       # JSON Schema (Draft 2020-12) for a module
 examples/
   galley_1000.json         # First module: 1000 mm galley cabinet
-  assets/                  # Deterministic fixture GLB and asset notes
+  assets/                  # Current manifest GLB, acceptance metadata, notes
 runtime/                   # Reference manifest consumer + package report
 tools/
   validate_manifest.py     # CLI validator
-  assets/                  # Deterministic fixture generator
+  assets/                  # Deterministic fixture generator + acceptance validator
   blender/                 # GLB validators and export procedure
   handoff/                 # Extraction-readiness helper
-tests/                     # Pure-Python suites; no Blender required
+tests/
+  fixtures/                # Permanent golden contract GLBs
+  test_*.py                # Pure-Python suites; no Blender required
 ```
 
 ## Ground rules
@@ -60,7 +62,8 @@ OK    examples/galley_1000.json
 python -m tests.test_validator                    # schema + manifest
 python -m tests.test_blender_manifest_contract    # Blender gate, anchor enforcement
 python -m tests.test_check_asset_ready            # real-asset readiness wrapper
-python -m tests.test_galley_fixture               # committed fixture + generator determinism
+python -m tests.test_galley_fixture               # golden fixture + manifest asset validation
+python -m tests.test_asset_acceptance             # fixture-swap acceptance metadata
 python -m tests.test_runtime_consumer             # manifest read as typed runtime data
 python -m tests.test_package_report               # catalog/package readiness
 python -m tests.test_handoff_ready                # extraction-readiness helper
@@ -68,8 +71,15 @@ python -m tests.test_handoff_ready                # extraction-readiness helper
 
 Each suite prints `N/N passed` on success. None of them require Blender —
 the fixture suite uses a pure-Python GLB generator
-(`tools/assets/generate_galley_fixture_glb.py`) and pins the committed
-`examples/assets/galley_1000.glb` to that generator's output byte-for-byte.
+(`tools/assets/generate_galley_fixture_glb.py`) and pins the permanent
+golden contract fixture at `tests/fixtures/galley_1000_contract_box.glb`
+to that generator's output byte-for-byte.
+
+`examples/assets/galley_1000.glb` is the current manifest asset referenced
+by `examples/galley_1000.json`. Today it is still byte-identical to the
+generated contract box, but it is validated separately as the manifest
+asset so a future real cabinet GLB can replace it without deleting or
+weakening the golden fixture.
 
 ## Runtime consumer (reference implementation)
 
@@ -221,21 +231,38 @@ introducing it now live in `tools/blender/`:
   ```
 
 The committed `examples/assets/galley_1000.glb` remains the deterministic
-fixture. It uses placeholder box geometry, placeholder material names, and
-a placeholder collision proxy only to prove the contract. Replacing it with
-real art is a separate future PR that must also update the fixture test and
-add sign-off metadata.
+current manifest asset. It uses placeholder box geometry, placeholder
+material names, and a placeholder collision proxy only to prove the
+contract. The permanent byte-for-byte regression reference is
+`tests/fixtures/galley_1000_contract_box.glb`.
+
+Asset acceptance metadata lives next to the manifest asset:
+
+```bash
+python tools/assets/validate_asset_acceptance.py --all
+```
+
+For this PR, `examples/assets/galley_1000.asset_acceptance.json` records
+`asset_kind: "generated_contract_fixture"`,
+`generated_fixture_replaced: false`, and
+`human_signoff.production_art: false`. No real cabinet art is being added.
+A future real-art PR must keep the golden fixture unchanged, run the full
+readiness gate, and update the acceptance metadata/sign-off without
+removing any required checks.
 
 ## CI
 
-`.github/workflows/ci.yml` runs the manifest validator, the pure-Python
-test suites, the static handoff check, and the asset-readiness CLI on every
-push and pull request. Blender itself is intentionally not installed in CI;
-the Blender mode is a local-only authoritative gate.
+`.github/workflows/ci.yml` runs the manifest validator, acceptance metadata
+validator, the pure-Python test suites, the static handoff check, and the
+asset-readiness CLI on every push and pull request. Blender itself is
+intentionally not installed in CI; the Blender mode is a local-only
+authoritative gate.
 
 ## What's next (not in this slice)
 
-1. UE5 Data Asset / importer that consumes the manifest at editor time.
-2. Fusion 360 add-in that regenerates a parametric template from the same entry.
-3. Anchor enforcement for the remaining schema-valid anchor values
+1. Real cabinet art for `examples/assets/galley_1000.glb`, with human
+   sign-off and unchanged validation gates.
+2. UE5 Data Asset / importer that consumes the manifest at editor time.
+3. Fusion 360 add-in that regenerates a parametric template from the same entry.
+4. Anchor enforcement for the remaining schema-valid anchor values
    (currently only `floor_back_left` is enforced; the rest fail loudly).

@@ -39,6 +39,9 @@ jobs:
       - name: Run galley-fixture suite (generator determinism + end-to-end)
         run: python -m tests.test_galley_fixture
 
+      - name: Run asset-acceptance metadata suite
+        run: python -m tests.test_asset_acceptance
+
       - name: Run runtime-consumer suite (manifest read as typed data)
         run: python -m tests.test_runtime_consumer
 
@@ -51,5 +54,8 @@ jobs:
       - name: Run handoff-ready CLI (static-only mode)
         run: python tools/handoff/check_handoff_ready.py
 
-      - name: Run asset-readiness CLI on committed fixture
+      - name: Validate asset-acceptance metadata
+        run: python tools/assets/validate_asset_acceptance.py --all
+
+      - name: Run asset-readiness CLI on current manifest asset
         run: python tools/blender/check_asset_ready.py --manifest examples/galley_1000.json

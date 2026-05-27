@@ -1,11 +1,11 @@
 # DraftMyVan — Handoff
 
 > **Status:** the DraftMyVan foundation now lives in its own repository.
-> It has seven CI-gated pure-Python suites, a generated GLB fixture, two
-> validators (one for CI, one for human use in Blender), material-slot and
-> collision-proxy enforcement, a runtime reference consumer + package
-> report, and the documented Blender export procedure that was left behind
-> in PaperAI PR #7.
+> It has eight CI-gated pure-Python suites, a permanent generated GLB
+> contract fixture, two GLB validators (one for CI, one for human use in
+> Blender), material-slot and collision-proxy enforcement, asset-acceptance
+> metadata, a runtime reference consumer + package report, and the documented
+> Blender export procedure that was left behind in PaperAI PR #7.
 
 This document is the briefing for whoever picks the project up next —
 whether that's the same author moving the code to a new repository,
@@ -18,8 +18,9 @@ manifest.schema.json             # JSON Schema (Draft 2020-12), millimetres
 examples/
   galley_1000.json               # First module manifest
   assets/
-    galley_1000.glb              # Deterministic fixture box + material/proxy markers
-    galley_1000.glb.md           # Per-fixture explainer
+    galley_1000.glb              # Current manifest asset; generated box for now
+    galley_1000.asset_acceptance.json  # Current generated-fixture acceptance record
+    galley_1000.glb.md           # Per-asset explainer
     README.md                    # Asset directory rules
 runtime/                         # Reference consumer (PR #8, #9)
   __init__.py                    # Package docstring, boundary doc, re-exports
@@ -30,6 +31,7 @@ tools/
   validate_manifest.py           # JSON-Schema validator CLI (PR #3)
   assets/
     generate_galley_fixture_glb.py  # Deterministic GLB generator (PR #6)
+    validate_asset_acceptance.py    # Fixture-swap acceptance metadata gate
   blender/
     validate_glb_against_manifest.py  # Pure-Python GLB-vs-manifest gate (PR #4)
     validate_in_blender.py            # Authoritative bpy variant (PR #4)
@@ -41,10 +43,13 @@ tools/
   handoff/
     check_handoff_ready.py       # Extraction-readiness gate
 tests/                           # Pure-Python; no Blender required
+  fixtures/
+    galley_1000_contract_box.glb # Permanent golden generated contract fixture
   test_validator.py              # 10 tests
   test_blender_manifest_contract.py  # 38 tests
   test_check_asset_ready.py      # 12 tests
-  test_galley_fixture.py         # 11 tests
+  test_galley_fixture.py         # 14 tests
+  test_asset_acceptance.py       # 14 tests
   test_runtime_consumer.py       # 18 tests
   test_package_report.py         # 16 tests
   test_handoff_ready.py          # 10 tests
@@ -75,7 +80,7 @@ Merged into PaperAI `main` before extraction:
 | #3 | manifest schema, galley_1000 sample, validator, and CI gate | `manifest.schema.json` (Draft 2020-12, mm canonical, strict additionalProperties), `examples/galley_1000.json`, `tools/validate_manifest.py`, `tests/test_validator.py` (10 tests), `.github/workflows/draftmyvan.yml` scoped to `draftmyvan/**` |
 | #4 | Blender-side manifest validator (scale-drift gate) | `tools/blender/validate_glb_against_manifest.py` (pure-Python GLB parser using accessor min/max), `tools/blender/validate_in_blender.py` (bpy variant for local authoritative checks), `tests/test_blender_manifest_contract.py` (23 → 30 tests) |
 | #5 | enforce origin/anchor alignment for `floor_back_left` | `tools/blender/_anchor_contract.py` (shared enforcement), `floor_back_left` rule (`bbox_min ≈ (0,0,0)`, `bbox_max ≈ (W,D,H)`), other anchors fail loudly with `"anchor enforcement not implemented for <anchor>"`, 7 new tests |
-| #6 | deterministic galley_1000 GLB fixture and generator | `tools/assets/generate_galley_fixture_glb.py` (stdlib-only deterministic GLB box from manifest), `examples/assets/galley_1000.glb` (804 bytes, pinned byte-for-byte), `tests/test_galley_fixture.py` (8 tests including byte-determinism), per-fixture explainer + assets dir README |
+| #6 | deterministic galley_1000 GLB fixture and generator | `tools/assets/generate_galley_fixture_glb.py` (stdlib-only deterministic GLB box from manifest), the original generated `examples/assets/galley_1000.glb`, `tests/test_galley_fixture.py` byte-determinism coverage, per-fixture explainer + assets dir README. draftmyvan PR #4 later split the permanent golden copy into `tests/fixtures/`. |
 | #8 | runtime reference consumer for the manifest contract | `runtime/` package: `Module`/`Dimensions`/`ConsumerError` frozen dataclasses, `load_module(path)`, `python -m runtime.load_module` CLI, 18 tests. First **non-validator** consumer of the manifest. |
 | #9 | package readiness report for `examples/` catalog | `runtime/package_report.py`, `PackageReport` aggregator + `scan_package()` + `format_report()`, `python -m runtime.package_report` CLI, 16 tests; structural-integrity checks (duplicate ids, duplicate resolved asset paths, empty/missing inputs) |
 
@@ -84,7 +89,8 @@ Left behind during PaperAI incubation, then redone in this repository:
 | PR | Status | Why it matters |
 |---|---|---|
 | PaperAI **#7** | redone as draftmyvan PR #2 | Adds `tools/blender/EXPORT_REAL_ASSET.md` (the documented Blender export procedure for real cabinet art), `tools/blender/asset_export_checklist.md` (printable per-asset sign-off), `tools/blender/check_asset_ready.py` (one-command readiness wrapper), and `tests/test_check_asset_ready.py` (10 tests). It is the prerequisite for ever replacing the generated fixture with human-authored art. |
-| draftmyvan **#3** | this PR | Extends the GLB validators and deterministic fixture so `visual.material_slots` and `visual.collision_proxy` are enforced before any real art can land. |
+| draftmyvan **#3** | merged | Extends the GLB validators and deterministic fixture so `visual.material_slots` and `visual.collision_proxy` are enforced before any real art can land. |
+| draftmyvan **#4** | this PR | Separates the permanent generated contract fixture from the current manifest asset, adds `galley_1000.asset_acceptance.json`, validates acceptance metadata, and keeps the current manifest asset generated. No real art lands. |
 
 ## Current command suite
 
@@ -96,6 +102,9 @@ python tools/validate_manifest.py --all
 
 # Generate / regenerate the test fixture
 python tools/assets/generate_galley_fixture_glb.py
+
+# Validate asset-acceptance metadata
+python tools/assets/validate_asset_acceptance.py --all
 
 # Validate a GLB against its manifest (pure Python, CI-safe)
 python tools/blender/validate_glb_against_manifest.py \
@@ -122,7 +131,8 @@ Test suites (all pure Python):
 python -m tests.test_validator                    # 10 tests
 python -m tests.test_blender_manifest_contract    # 38 tests
 python -m tests.test_check_asset_ready            # 12 tests
-python -m tests.test_galley_fixture               # 11 tests
+python -m tests.test_galley_fixture               # 14 tests
+python -m tests.test_asset_acceptance             # 14 tests
 python -m tests.test_runtime_consumer             # 18 tests
 python -m tests.test_package_report               # 16 tests
 python -m tests.test_handoff_ready                # 10 tests
@@ -149,9 +159,11 @@ python -m tests.test_handoff_ready                # 10 tests
 - **The pure-Python GLB parser assumes identity transforms.** It reads
   POSITION-accessor `min`/`max`. For hierarchies, use the bpy variant
   (locally).
-- **No real cabinet art.** The committed `galley_1000.glb` is the
-  deterministic generated box. The export procedure now exists; the
-  fixture-swap mechanism and real asset sign-off are still separate work.
+- **No real cabinet art.** The committed `examples/assets/galley_1000.glb`
+  is still the deterministic generated box, and the acceptance metadata
+  says `generated_fixture_replaced: false`. The permanent golden copy is
+  `tests/fixtures/galley_1000_contract_box.glb` and must stay as the
+  regression reference even after real art replaces the manifest asset.
 - **Catalog of one.** `examples/galley_1000.json` is the only module.
 - **No UE5, Fusion 360, or CNC integration.** Every PR deferred them
   deliberately.
@@ -161,11 +173,11 @@ python -m tests.test_handoff_ready                # 10 tests
 The gates above all live before the manifest reaches a renderer or a
 manufacturing tool. Before that handoff, in priority order:
 
-1. **Add the fixture-swap mechanism** — update
-   `test_committed_fixture_matches_generator_byte_for_byte` (or make
-   it conditional on a "real art committed" marker) and add per-asset
-   sign-off metadata. See step 9 of `tools/blender/EXPORT_REAL_ASSET.md`
-   before any real GLB replaces the generated fixture.
+1. **Land signed-off production art** — replace only
+   `examples/assets/galley_1000.glb` after the candidate passes
+   `check_asset_ready.py`, update `galley_1000.asset_acceptance.json`
+   for production art/human sign-off, and keep
+   `tests/fixtures/galley_1000_contract_box.glb` unchanged.
 2. **Add anchor support beyond `floor_back_left`** as the catalog
    grows. The enforcement table is in
    `tools/blender/_anchor_contract.py:expected_corners_mm`.

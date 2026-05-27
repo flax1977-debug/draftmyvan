@@ -1,0 +1,21 @@
+{
+  "manifest_id": "galley_1000_sink_left_oak",
+  "manifest_path": "examples/galley_1000.json",
+  "asset_path": "examples/assets/galley_1000.glb",
+  "asset_kind": "generated_contract_fixture",
+  "generated_fixture_replaced": false,
+  "validator_command": "python tools/blender/check_asset_ready.py --manifest examples/galley_1000.json",
+  "required_checks": [
+    "schema",
+    "dimensions",
+    "floor_back_left_anchor",
+    "material_slots",
+    "collision_proxy"
+  ],
+  "human_signoff": {
+    "visual_reviewed": false,
+    "production_art": false,
+    "reviewer": null,
+    "notes": "Current manifest asset is still the deterministic generated contract box. No real cabinet art is included."
+  }
+}

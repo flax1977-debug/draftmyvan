@@ -17,7 +17,7 @@ sys.path.insert(0, str(REPO_ROOT / "tools" / "blender"))
 import check_asset_ready as car  # noqa: E402
 
 SAMPLE_MANIFEST = REPO_ROOT / "examples" / "galley_1000.json"
-FIXTURE_GLB = REPO_ROOT / "examples" / "assets" / "galley_1000.glb"
+MANIFEST_ASSET_GLB = REPO_ROOT / "examples" / "assets" / "galley_1000.glb"
 
 
 def _load(path: Path) -> dict:
@@ -44,8 +44,8 @@ def _write_generated_glb(manifest: dict, glb_path: Path) -> None:
 # Happy path
 # ---------------------------------------------------------------------------
 
-def test_committed_fixture_reports_ready() -> None:
-    code, lines = car.check(SAMPLE_MANIFEST, FIXTURE_GLB)
+def test_committed_manifest_asset_reports_ready() -> None:
+    code, lines = car.check(SAMPLE_MANIFEST, MANIFEST_ASSET_GLB)
     joined = "\n".join(lines)
     assert code == 0, joined
     assert "RESULT: READY" in joined
@@ -134,7 +134,7 @@ def test_manifest_schema_failure_reports_not_ready() -> None:
 
 
 def test_unreadable_manifest_returns_error_exit_2() -> None:
-    code, lines = car.check(Path("/tmp/missing_manifest.json"), FIXTURE_GLB)
+    code, lines = car.check(Path("/tmp/missing_manifest.json"), MANIFEST_ASSET_GLB)
     joined = "\n".join(lines)
     assert code == 2, joined
     assert "manifest" in joined.lower()
@@ -144,7 +144,7 @@ def test_missing_jsonschema_returns_error_exit_2() -> None:
     original = car.Draft202012Validator
     car.Draft202012Validator = None
     try:
-        code, lines = car.check(SAMPLE_MANIFEST, FIXTURE_GLB)
+        code, lines = car.check(SAMPLE_MANIFEST, MANIFEST_ASSET_GLB)
     finally:
         car.Draft202012Validator = original
     joined = "\n".join(lines)
@@ -169,10 +169,10 @@ def test_argparse_requires_manifest() -> None:
     raise AssertionError("missing --manifest should error out")
 
 
-def test_main_returns_0_for_committed_fixture() -> None:
+def test_main_returns_0_for_committed_manifest_asset() -> None:
     with redirect_stdout(io.StringIO()):
         code = car.main(["--manifest", str(SAMPLE_MANIFEST),
-                         "--glb", str(FIXTURE_GLB)])
+                         "--glb", str(MANIFEST_ASSET_GLB)])
     assert code == 0
 
 
@@ -189,7 +189,7 @@ def test_default_glb_resolver_strips_assets_prefix_correctly() -> None:
 
 def main() -> int:
     tests = [
-        test_committed_fixture_reports_ready,
+        test_committed_manifest_asset_reports_ready,
         test_default_glb_path_derived_from_manifest,
         test_missing_glb_file_reports_not_ready_with_hint,
         test_wrong_size_glb_reports_not_ready,
@@ -199,7 +199,7 @@ def main() -> int:
         test_unreadable_manifest_returns_error_exit_2,
         test_missing_jsonschema_returns_error_exit_2,
         test_argparse_requires_manifest,
-        test_main_returns_0_for_committed_fixture,
+        test_main_returns_0_for_committed_manifest_asset,
         test_default_glb_resolver_strips_assets_prefix_correctly,
     ]
     failed = 0

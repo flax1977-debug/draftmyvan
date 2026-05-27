@@ -1,12 +1,17 @@
-"""Tests for the committed galley_1000 GLB fixture and its generator.
+"""Tests for the galley_1000 contract fixture, manifest asset, and generator.
 
-These are the regression / determinism gates for the test-fixture asset:
+These are the regression / determinism gates for the generated contract box:
 
-  * The committed `examples/assets/galley_1000.glb` is byte-identical to
-    what `tools/assets/generate_galley_fixture_glb.py` produces from the manifest.
+  * The committed `tests/fixtures/galley_1000_contract_box.glb` is
+    byte-identical to what `tools/assets/generate_galley_fixture_glb.py`
+    produces from the manifest.
     If someone hand-edits the binary, or changes the generator, this
     test fails immediately.
-  * The committed fixture passes the full Blender-side validator
+  * The golden contract fixture passes the same geometry/material/proxy
+    validator gates, with the filename mismatch explicitly allowed because
+    it is no longer the manifest asset path.
+  * The manifest asset at `examples/assets/galley_1000.glb` still passes
+    the full Blender-side validator
     (manifest, dimension, anchor/origin, material, and collision gates)
     end-to-end.
   * The generator refuses anchors it does not support.
@@ -30,7 +35,9 @@ import generate_galley_fixture_glb as gen  # noqa: E402
 import validate_glb_against_manifest as v  # noqa: E402
 
 SAMPLE_MANIFEST = REPO_ROOT / "examples" / "galley_1000.json"
-FIXTURE_GLB = REPO_ROOT / "examples" / "assets" / "galley_1000.glb"
+CONTRACT_FIXTURE_GLB = REPO_ROOT / "tests" / "fixtures" / "galley_1000_contract_box.glb"
+MANIFEST_ASSET_GLB = REPO_ROOT / "examples" / "assets" / "galley_1000.glb"
+ASSET_ACCEPTANCE = REPO_ROOT / "examples" / "assets" / "galley_1000.asset_acceptance.json"
 
 
 def _load_manifest() -> dict:
@@ -38,25 +45,50 @@ def _load_manifest() -> dict:
         return json.load(f)
 
 
-def test_fixture_file_exists() -> None:
-    assert FIXTURE_GLB.exists(), f"committed fixture missing: {FIXTURE_GLB}"
+def _load_acceptance() -> dict:
+    with ASSET_ACCEPTANCE.open("r", encoding="utf-8") as f:
+        return json.load(f)
 
 
-def test_committed_fixture_matches_generator_byte_for_byte() -> None:
+def test_contract_fixture_file_exists() -> None:
+    assert CONTRACT_FIXTURE_GLB.exists(), (
+        f"golden contract fixture missing: {CONTRACT_FIXTURE_GLB}"
+    )
+
+
+def test_manifest_asset_file_exists() -> None:
+    assert MANIFEST_ASSET_GLB.exists(), f"manifest asset missing: {MANIFEST_ASSET_GLB}"
+
+
+def test_contract_fixture_matches_generator_byte_for_byte() -> None:
     """If this fails, either the generator drifted or the fixture was hand-edited."""
     generated = gen.make_box_glb_from_manifest(_load_manifest())
-    committed = FIXTURE_GLB.read_bytes()
+    committed = CONTRACT_FIXTURE_GLB.read_bytes()
     assert generated == committed, (
-        "committed examples/assets/galley_1000.glb does not match the "
+        "committed tests/fixtures/galley_1000_contract_box.glb does not match the "
         "output of tools/assets/generate_galley_fixture_glb.py. Regenerate with: "
         "python tools/assets/generate_galley_fixture_glb.py"
     )
 
 
-def test_committed_fixture_passes_full_validator() -> None:
+def test_contract_fixture_passes_contract_validator() -> None:
     report = v.validate(
         manifest_path=SAMPLE_MANIFEST,
-        glb_path=FIXTURE_GLB,
+        glb_path=CONTRACT_FIXTURE_GLB,
+        tolerance_mm=1.0,
+        glb_units="meters",
+        ignore_path_mismatch=True,
+    )
+    assert report.ok, "\n".join(report.messages)
+    joined = "\n".join(report.messages)
+    assert "RESULT: PASS" in joined
+    assert "override accepted" in joined
+
+
+def test_manifest_asset_passes_full_validator() -> None:
+    report = v.validate(
+        manifest_path=SAMPLE_MANIFEST,
+        glb_path=MANIFEST_ASSET_GLB,
         tolerance_mm=1.0,
         glb_units="meters",
     )
@@ -65,18 +97,28 @@ def test_committed_fixture_passes_full_validator() -> None:
     assert "RESULT: PASS" in joined
 
 
-def test_committed_fixture_bbox_matches_manifest_exactly() -> None:
-    bbox = v.load_glb_bbox(FIXTURE_GLB).scaled(1000.0)  # m → mm
+def test_contract_fixture_bbox_matches_manifest_exactly() -> None:
+    bbox = v.load_glb_bbox(CONTRACT_FIXTURE_GLB).scaled(1000.0)  # m -> mm
     w, d, h = bbox.size_xyz
     assert (round(w, 6), round(d, 6), round(h, 6)) == (1000.0, 520.0, 900.0)
     assert (round(bbox.min_x, 6), round(bbox.min_y, 6), round(bbox.min_z, 6)) == (0.0, 0.0, 0.0)
 
 
-def test_committed_fixture_declares_material_slots_and_collision_proxy() -> None:
-    gltf = v.load_glb_json(FIXTURE_GLB)
+def test_contract_fixture_declares_material_slots_and_collision_proxy() -> None:
+    gltf = v.load_glb_json(CONTRACT_FIXTURE_GLB)
     manifest = _load_manifest()
     assert v.glb_material_names(gltf) == set(manifest["visual"]["material_slots"])
     assert manifest["visual"]["collision_proxy"] in v.glb_node_mesh_names(gltf)
+
+
+def test_current_manifest_asset_matches_contract_fixture_until_replaced() -> None:
+    acceptance = _load_acceptance()
+    if acceptance["generated_fixture_replaced"] is False:
+        assert MANIFEST_ASSET_GLB.read_bytes() == CONTRACT_FIXTURE_GLB.read_bytes(), (
+            "asset acceptance says the generated fixture has not been replaced, "
+            "so examples/assets/galley_1000.glb must still match the golden "
+            "contract box byte-for-byte"
+        )
 
 
 def test_generator_refuses_unsupported_anchor() -> None:
@@ -153,11 +195,14 @@ def test_generated_glb_for_different_dims_still_passes_anchor_check() -> None:
 
 def main() -> int:
     tests = [
-        test_fixture_file_exists,
-        test_committed_fixture_matches_generator_byte_for_byte,
-        test_committed_fixture_passes_full_validator,
-        test_committed_fixture_bbox_matches_manifest_exactly,
-        test_committed_fixture_declares_material_slots_and_collision_proxy,
+        test_contract_fixture_file_exists,
+        test_manifest_asset_file_exists,
+        test_contract_fixture_matches_generator_byte_for_byte,
+        test_contract_fixture_passes_contract_validator,
+        test_manifest_asset_passes_full_validator,
+        test_contract_fixture_bbox_matches_manifest_exactly,
+        test_contract_fixture_declares_material_slots_and_collision_proxy,
+        test_current_manifest_asset_matches_contract_fixture_until_replaced,
         test_generator_refuses_unsupported_anchor,
         test_generator_refuses_missing_dimensions,
         test_generator_refuses_missing_material_slots,

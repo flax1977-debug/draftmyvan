@@ -3,7 +3,7 @@
 Pure Python only — no Blender, no UE5.
 
 These exercise the consumer as a **reader of an already-validated manifest**:
-  * the happy path (galley_1000.json loads, fixture exists);
+  * the happy path (galley_1000.json loads, manifest asset exists);
   * field typing (dimensions are ints, not strings);
   * GLB-path resolution (manifest's `assets/foo.glb` → on-disk
     `examples/assets/foo.glb`);
@@ -29,7 +29,7 @@ from runtime import load_module as lm  # noqa: E402
 from runtime.module import Dimensions, Module  # noqa: E402
 
 SAMPLE_MANIFEST = REPO_ROOT / "examples" / "galley_1000.json"
-FIXTURE_GLB = REPO_ROOT / "examples" / "assets" / "galley_1000.glb"
+MANIFEST_ASSET_GLB = REPO_ROOT / "examples" / "assets" / "galley_1000.glb"
 
 
 def _load_sample() -> dict:
@@ -78,13 +78,13 @@ def test_metre_accessors_match_manifest_mm() -> None:
     assert module.dimensions.height_m == 0.9
 
 
-def test_glb_path_resolves_to_committed_fixture() -> None:
+def test_glb_path_resolves_to_committed_manifest_asset() -> None:
     module = lm.load_module(SAMPLE_MANIFEST)
-    assert module.resolved_asset_path == FIXTURE_GLB
+    assert module.resolved_asset_path == MANIFEST_ASSET_GLB
     assert module.resolved_asset_path.exists()
 
 
-def test_asset_exists_true_for_current_fixture() -> None:
+def test_asset_exists_true_for_current_manifest_asset() -> None:
     module = lm.load_module(SAMPLE_MANIFEST)
     assert module.asset_exists is True
     assert module.consumable is True
@@ -290,8 +290,8 @@ def main() -> int:
         test_sample_manifest_loads_to_typed_module,
         test_dimensions_are_typed_integers_in_mm,
         test_metre_accessors_match_manifest_mm,
-        test_glb_path_resolves_to_committed_fixture,
-        test_asset_exists_true_for_current_fixture,
+        test_glb_path_resolves_to_committed_manifest_asset,
+        test_asset_exists_true_for_current_manifest_asset,
         test_missing_glb_loads_cleanly_with_asset_exists_false,
         test_cli_missing_asset_returns_1_and_prints_not_consumable,
         test_missing_id_raises_clear_consumer_error,

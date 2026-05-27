@@ -38,7 +38,7 @@ blender --background --python \
 
 | Command | Purpose | Exit |
 |---|---|---|
-| `python tools/blender/check_asset_ready.py --manifest examples/galley_1000.json` | One-command wrapper around manifest schema, GLB path, dimension, anchor, material-slot, and collision-proxy checks. Defaults to the committed fixture from `visual.glb_path`. | 0 READY, 1 NOT READY, 2 ERROR |
+| `python tools/blender/check_asset_ready.py --manifest examples/galley_1000.json` | One-command wrapper around manifest schema, GLB path, dimension, anchor, material-slot, and collision-proxy checks. Defaults to the current manifest asset from `visual.glb_path`. | 0 READY, 1 NOT READY, 2 ERROR |
 | `python tools/blender/check_asset_ready.py --manifest examples/galley_1000.json --glb /tmp/candidate.glb` | Check a candidate GLB before it is committed. | same |
 
 The full human export procedure is `tools/blender/EXPORT_REAL_ASSET.md`;
@@ -48,9 +48,19 @@ the printable sign-off sheet is `tools/blender/asset_export_checklist.md`.
 
 | Command | Purpose |
 |---|---|
-| `python tools/assets/generate_galley_fixture_glb.py` | Regenerate `examples/assets/galley_1000.glb` deterministically from `examples/galley_1000.json`. |
+| `python tools/assets/generate_galley_fixture_glb.py` | Regenerate `tests/fixtures/galley_1000_contract_box.glb` deterministically from `examples/galley_1000.json`. |
+| `python tools/assets/generate_galley_fixture_glb.py --out examples/assets/galley_1000.glb` | Refresh the current manifest asset while it is still the generated box. Do not use this after real art replaces the manifest asset. |
 
-`--manifest` and `--out` available as overrides; defaults match the canonical paths. Output is byte-for-byte stable; the file's bytes are pinned by `test_committed_fixture_matches_generator_byte_for_byte`.
+`--manifest` and `--out` are available as overrides. The default output is
+the permanent golden contract fixture under `tests/fixtures/`. Output is
+byte-for-byte stable; the file's bytes are pinned by
+`test_contract_fixture_matches_generator_byte_for_byte`.
+
+## Asset acceptance metadata (this PR, #4)
+
+| Command | Purpose | Exit |
+|---|---|---|
+| `python tools/assets/validate_asset_acceptance.py --all` | Validate every `*.asset_acceptance.json` file under `examples/assets/`. Checks manifest/asset references, manifest id match, full required gate list, and current no-real-art flags. | 0 valid, 1 invalid, 2 bad arguments |
 
 ## Runtime consumer (PR #8)
 
@@ -77,7 +87,8 @@ the printable sign-off sheet is `tools/blender/asset_export_checklist.md`.
 python -m tests.test_validator                    # 10 tests — schema + manifest
 python -m tests.test_blender_manifest_contract    # 38 tests — Blender gate, anchor/material/proxy enforcement
 python -m tests.test_check_asset_ready            # 12 tests — real-asset readiness wrapper
-python -m tests.test_galley_fixture               # 11 tests — committed fixture + generator determinism
+python -m tests.test_galley_fixture               # 14 tests — golden fixture + manifest asset validation
+python -m tests.test_asset_acceptance             # 14 tests — fixture-swap acceptance metadata
 python -m tests.test_runtime_consumer             # 18 tests — manifest read as typed runtime data
 python -m tests.test_package_report               # 16 tests — catalog/package readiness
 python -m tests.test_handoff_ready                # 10 tests — extraction readiness helper
@@ -88,7 +99,7 @@ Run them all:
 ```bash
 for t in tests.test_validator tests.test_blender_manifest_contract \
          tests.test_check_asset_ready tests.test_galley_fixture \
-         tests.test_runtime_consumer tests.test_package_report \
+         tests.test_asset_acceptance tests.test_runtime_consumer tests.test_package_report \
          tests.test_handoff_ready ; do
     echo "=== $t" ; python -m $t || break
 done
@@ -97,5 +108,4 @@ done
 ## What is NOT here
 
 These commands are still deliberately absent: UE5 import, Fusion 360,
-CNC/post-processing, dashboard/UI, catalog expansion, fixture-swap
-workflow, and real cabinet art.
+CNC/post-processing, dashboard/UI, catalog expansion, and real cabinet art.

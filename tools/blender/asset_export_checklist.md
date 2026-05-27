@@ -17,9 +17,9 @@ Module: `____________________`         Anchor: `floor_back_left`
 | 7 | Pure-Python validator passes: `python tools/blender/validate_glb_against_manifest.py --manifest … --glb /tmp/<module>.glb` → `RESULT: PASS` | ☐ |
 | 8 | (Optional) bpy validator agrees: `blender --background --python tools/blender/validate_in_blender.py -- --manifest … --glb /tmp/<module>.glb` → `RESULT: PASS` | ☐ |
 | 9 | Validator output includes `[OK] material slot …` for every manifest slot and `[OK] collision proxy …` for the expected proxy | ☐ |
-| 10 | Bounding box equals the generated fixture's to the mm (step 8 in `EXPORT_REAL_ASSET.md`) | ☐ |
+| 10 | Bounding box equals the golden contract fixture's to the mm (step 8 in `EXPORT_REAL_ASSET.md`) | ☐ |
 | 11 | `check_asset_ready.py --manifest … --glb /tmp/<module>.glb` → `RESULT: READY` | ☐ |
 | 12 | **Do not** hand-edit the GLB binary; **do not** rely on a downstream tool to "fix" scale or axis | ☐ |
-| 13 | Replace the committed fixture only after a separate fixture-swap PR adds the test update + sign-off marker | ☐ |
+| 13 | Replace only the manifest asset, leave `tests/fixtures/` unchanged, and update `*.asset_acceptance.json` for human sign-off | ☐ |
 
 If any row is unchecked, the GLB does not ship.

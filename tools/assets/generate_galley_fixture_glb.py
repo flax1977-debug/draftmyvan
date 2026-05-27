@@ -6,16 +6,23 @@ produce a geometrically-correct stand-in so the manifest → validator →
 asset pipeline can be exercised end-to-end before any polished cabinet
 art exists.
 
-Default invocation (no flags) regenerates the canonical fixture in place:
+Default invocation (no flags) regenerates the permanent golden contract
+fixture in place:
 
     cd /path/to/draftmyvan
     python tools/assets/generate_galley_fixture_glb.py
     # reads  examples/galley_1000.json
-    # writes examples/assets/galley_1000.glb
+    # writes tests/fixtures/galley_1000_contract_box.glb
 
 Both inputs can be overridden:
     --manifest <path>   Override the manifest source.
     --out <path>        Override the GLB output path.
+
+The manifest asset currently remains the same generated box at
+`examples/assets/galley_1000.glb`, but it is no longer the byte-pinned
+fixture. Future real cabinet art may replace that manifest asset only
+after it passes the same validation gates; the golden contract fixture
+stays here as the deterministic regression reference.
 
 The generated GLB:
     * Has exactly the bounding box implied by the manifest's
@@ -27,7 +34,7 @@ The generated GLB:
       fixture proves contract wiring, not production collision art.
     * Uses metres in object data (glTF convention).
     * Is deterministic — `sort_keys=True` JSON, fixed vertex order,
-      fixed index layout — so the committed fixture can be regenerated
+      fixed index layout — so the golden contract fixture can be regenerated
       byte-for-byte and a test pins this.
     * Uses only the Python standard library (no Blender, no third-party
       glTF lib).
@@ -228,7 +235,7 @@ def make_box_glb_from_manifest(manifest: dict) -> bytes:
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent  # repository root
 DEFAULT_MANIFEST = REPO_ROOT / "examples" / "galley_1000.json"
-DEFAULT_OUT = REPO_ROOT / "examples" / "assets" / "galley_1000.glb"
+DEFAULT_OUT = REPO_ROOT / "tests" / "fixtures" / "galley_1000_contract_box.glb"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -241,7 +248,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--out", type=Path, default=DEFAULT_OUT,
-        help=f"Output GLB path (default: examples/assets/galley_1000.glb).",
+        help="Output GLB path (default: tests/fixtures/galley_1000_contract_box.glb).",
     )
     args = parser.parse_args(argv)
 

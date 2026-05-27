@@ -95,9 +95,10 @@ for example:
 [OK] collision proxy 'UCX_galley_1000'
 ```
 
-The deterministic fixture uses placeholder material definitions and a
-placeholder `UCX_galley_1000` box mesh only to prove the contract. It is
-still not production art or a production collision hull.
+The golden generated contract fixture and the current generated manifest
+asset use placeholder material definitions and a placeholder
+`UCX_galley_1000` box mesh only to prove the contract. Neither is
+production art or a production collision hull.
 
 ### Supported anchors (V1)
 
