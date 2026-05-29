@@ -22,7 +22,24 @@ DEFAULT_STATUS_FILE = Path("/tmp/draftmyvan_fusion_status.json")
 BUILD_FUSION_DIR = REPO_ROOT / "build" / "fusion"
 TMP_ROOT = Path("/tmp").resolve(strict=False)
 SUPPORTED_COMMANDS = {"report_manual_verification_status"}
-EXPECTED_COMPONENT_BODIES = {
+
+# Current verified live Fusion structure (follow-up #4, kept-both decision
+# 2026-05-29): the runtime-verified script
+# tools/fusion/scripts/fusion_create_galley_v1/fusion_create_galley_v1.py
+# creates these as ROOT bodies, owned by a "DraftMyVan Galley" base feature.
+EXPECTED_ROOT_BODIES = (
+    "Galley_LeftSide",
+    "Galley_RightSide",
+    "Galley_BottomPanel",
+    "Galley_TopPanel",
+    "Galley_BackPanel",
+)
+EXPECTED_BASE_FEATURE_NAME = "DraftMyVan Galley"
+
+# Legacy only: the older dry-run/validation module's sketch-extrude path
+# produced per-panel COMPONENTS containing *_body bodies. This is NOT the
+# current runtime expectation; kept for backward-compatible recognition only.
+LEGACY_EXPECTED_COMPONENT_BODIES = {
     "Galley_LeftSide": "left_side_body",
     "Galley_RightSide": "right_side_body",
     "Galley_BottomPanel": "bottom_panel_body",
@@ -186,37 +203,46 @@ def _fusion_message(message: str) -> None:
         return
 
 
-def _component_body_status(root: Any) -> dict[str, Any]:
-    found_components: dict[str, list[str]] = {}
-    missing_components: list[str] = []
-    missing_bodies: list[str] = []
+def _root_body_status(root: Any) -> dict[str, Any]:
+    """Report whether the verified live galley structure is present.
 
-    for component_name, body_name in EXPECTED_COMPONENT_BODIES.items():
-        component = None
-        for index in range(root.occurrences.count):
-            occurrence = root.occurrences.item(index)
-            if occurrence.component and occurrence.component.name == component_name:
-                component = occurrence.component
+    The current verified structure (follow-up #4, kept-both decision) is five
+    ROOT bodies named Galley_* owned by a "DraftMyVan Galley" base feature. A
+    correct verified-runtime design must NOT be reported as missing just because
+    it lacks the legacy Galley_* -> *_body component layout, so this checks root
+    bodies (and the base feature) rather than per-panel components.
+    """
+    found_root_bodies = [
+        root.bRepBodies.item(index).name
+        for index in range(root.bRepBodies.count)
+    ]
+    missing_root_bodies = [
+        name for name in EXPECTED_ROOT_BODIES if name not in found_root_bodies
+    ]
+
+    base_feature_present = False
+    try:
+        base_features = root.features.baseFeatures
+        for index in range(base_features.count):
+            base_feat = base_features.item(index)
+            name = (base_feat.name if base_feat else "") or ""
+            if name.startswith(EXPECTED_BASE_FEATURE_NAME):
+                base_feature_present = True
                 break
-        if component is None:
-            missing_components.append(component_name)
-            missing_bodies.append(body_name)
-            continue
-        bodies = [
-            component.bRepBodies.item(body_index).name
-            for body_index in range(component.bRepBodies.count)
-        ]
-        found_components[component_name] = bodies
-        if body_name not in bodies:
-            missing_bodies.append(body_name)
+    except Exception:
+        # Base-feature introspection is best-effort; root-body match is the
+        # primary signal.
+        base_feature_present = False
 
     return {
-        "expected_component_count": len(EXPECTED_COMPONENT_BODIES),
-        "found_components": found_components,
-        "missing_components": missing_components,
-        "missing_bodies": missing_bodies,
-        "component_names_match": not missing_components,
-        "body_names_match": not missing_bodies,
+        "expected_structure": "root_bodies",
+        "expected_root_body_count": len(EXPECTED_ROOT_BODIES),
+        "expected_root_bodies": list(EXPECTED_ROOT_BODIES),
+        "found_root_bodies": found_root_bodies,
+        "missing_root_bodies": missing_root_bodies,
+        "root_bodies_match": not missing_root_bodies,
+        "base_feature_present": base_feature_present,
+        "expected_base_feature_name": EXPECTED_BASE_FEATURE_NAME,
     }
 
 
@@ -252,14 +278,14 @@ def report_manual_verification_status(command: dict[str, Any]) -> dict[str, Any]
         parameter = design.userParameters.itemByName(name)
         parameters[name] = parameter.expression if parameter else None
 
-    component_status = _component_body_status(root)
+    body_status = _root_body_status(root)
     return {
         **base,
         "running_in_fusion": True,
         "status": "manual_verification_reported",
         "user_parameters": parameters,
         "user_parameters_present": all(parameters.values()),
-        **component_status,
+        **body_status,
         "manual_review_required": True,
     }
 

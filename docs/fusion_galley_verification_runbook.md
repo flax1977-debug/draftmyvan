@@ -11,7 +11,8 @@ It does not create or approve manufacturing output.
 
 Use this run to verify that:
 
-- Fusion 360 can load `tools/fusion/fusion_create_galley_v1.py`.
+- Fusion 360 can load the canonical runtime script deployed from
+  `tools/fusion/scripts/fusion_create_galley_v1/fusion_create_galley_v1.py`.
 - The script can read the already validated panel payload at
   `/tmp/galley_1000_panels.json`.
 - The manual Fusion result contains exactly the expected five rectangular panel
@@ -76,37 +77,54 @@ launchctl unsetenv DRAFTMYVAN_FUSION_PANEL_PAYLOAD
 2. Create or open a blank test design.
 3. Open the `Utilities` workspace/tab.
 4. Open `Add-Ins` > `Scripts and Add-Ins`.
-5. In the `Scripts` area, add or select:
+5. Deploy the canonical runtime script into Fusion's Scripts folder first
+   (Fusion only runs scripts from `API/Scripts`, not from the repo). Copy the
+   whole folder:
 
-   ```text
-   /Users/florin/draftmyvan/tools/fusion/fusion_create_galley_v1.py
+   ```bash
+   cp "/Users/florin/draftmyvan/tools/fusion/scripts/fusion_create_galley_v1/fusion_create_galley_v1.py" \
+      "/Users/florin/Library/Application Support/Autodesk/Autodesk Fusion 360/API/Scripts/fusion_create_galley_v1/fusion_create_galley_v1.py"
    ```
 
-6. Run the script.
-7. Wait for the script result message.
-8. Inspect the browser tree and bodies/components in the design.
+6. In the `Scripts` area, add or select the deployed script:
+
+   ```text
+   ~/Library/Application Support/Autodesk/Autodesk Fusion 360/API/Scripts/fusion_create_galley_v1/fusion_create_galley_v1.py
+   ```
+
+7. Run the script.
+8. Wait for the script result message.
+9. Inspect the browser tree and bodies in the design.
 
 ## Expected Result
 
-The manual run should create five rectangular panel bodies/components only:
+The canonical runtime script creates five rectangular **root bodies** only
+(no per-panel components), committed into a single `DraftMyVan Galley`
+BaseFeature:
 
 ```text
-Galley_LeftSide -> left_side_body
-Galley_RightSide -> right_side_body
-Galley_BottomPanel -> bottom_panel_body
-Galley_TopPanel -> top_panel_body
-Galley_BackPanel -> back_panel_body
+Galley_LeftSide
+Galley_RightSide
+Galley_BottomPanel
+Galley_TopPanel
+Galley_BackPanel
 ```
 
-| Component | Body |
+| Root body | Owned by base feature |
 | --- | --- |
-| `Galley_LeftSide` | `left_side_body` |
-| `Galley_RightSide` | `right_side_body` |
-| `Galley_BottomPanel` | `bottom_panel_body` |
-| `Galley_TopPanel` | `top_panel_body` |
-| `Galley_BackPanel` | `back_panel_body` |
+| `Galley_LeftSide` | `DraftMyVan Galley` |
+| `Galley_RightSide` | `DraftMyVan Galley` |
+| `Galley_BottomPanel` | `DraftMyVan Galley` |
+| `Galley_TopPanel` | `DraftMyVan Galley` |
+| `Galley_BackPanel` | `DraftMyVan Galley` |
 
 No other bodies are expected.
+
+Backward-compatibility note: older runs (and the dry-run/geometry-plan
+validation module `tools/fusion/fusion_create_galley_v1.py`) used a
+component-per-panel layout with bodies named `left_side_body` etc. The cleanup
+in the runtime script still removes those legacy `Galley_*` component
+occurrences, but they are not the current expected structure.
 
 ## Pass/Fail Checklist
 
@@ -174,10 +192,11 @@ Do not edit the payload during this run.
 
 Symptom: `fusion_create_galley_v1.py` is not listed in `Scripts and Add-Ins`.
 
-Use the add/import control in the `Scripts` area and browse to:
+Use the add/import control in the `Scripts` area and browse to the deployed
+script (copy it from the repo first, see step 5):
 
 ```text
-/Users/florin/draftmyvan/tools/fusion/fusion_create_galley_v1.py
+~/Library/Application Support/Autodesk/Autodesk Fusion 360/API/Scripts/fusion_create_galley_v1/fusion_create_galley_v1.py
 ```
 
 If Fusion expects a folder rather than a file, select the containing folder:

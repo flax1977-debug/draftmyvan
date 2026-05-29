@@ -89,13 +89,30 @@ python tools/fusion/fusion_create_galley_v1.py \
     --dry-run tests/fixtures/galley_1000_panels.expected.json
 ```
 
-When run manually inside Fusion 360 with a valid panel payload, the guarded
-`run(context)` path can create the five rectangular panel bodies/components.
-Outside Fusion, Fusion-only functions fail clearly with:
+When run manually inside Fusion 360 with a valid panel payload, this module's
+guarded `run(context)` path can create the five panels via per-panel components
++ sketch/extrude. Outside Fusion, Fusion-only functions fail clearly with:
 
 ```text
 Fusion 360 API unavailable; run this inside Fusion 360 or use --dry-run
 ```
+
+### Two scripts, two roles (do not confuse them)
+
+- `tools/fusion/fusion_create_galley_v1.py` (this module) is the canonical
+  **dry-run / geometry-plan validation** library. It is CI-importable (no
+  top-level `adsk` import) and its `run(context)` uses the component +
+  sketch/extrude approach (`Galley_*` components containing `*_body` bodies).
+- `tools/fusion/scripts/fusion_create_galley_v1/fusion_create_galley_v1.py` is
+  the canonical **Fusion runtime body-creation** script. It is self-contained
+  (imports `adsk` at top level, not CI-importable) and creates five **root
+  bodies** named `Galley_*` from transient BRep boxes committed into a
+  `DraftMyVan Galley` BaseFeature (required in parametric designs). This is the
+  script that was actually run and verified in Fusion. Deploy it by copying the
+  folder into Fusion's `API/Scripts/`; see the verification runbook.
+
+These two use different geometry strategies and naming. Unifying or retiring
+one is a tracked follow-up (see `docs/current_status.md`).
 
 Manual execution and verification are documented in:
 

@@ -5,6 +5,18 @@ This module is intentionally importable in normal Python without Fusion 360 or
 Autodesk `adsk` modules installed. CI validates the deterministic geometry plan
 only; it does not execute Fusion geometry creation, drawings, cut lists, DXF, or
 CNC output.
+
+Role: this module is the canonical DRY-RUN / GEOMETRY-PLAN VALIDATION library
+(use `--dry-run`, or import its plan/validation functions). Its in-module
+`run(context)` builds geometry via per-panel components + sketch/extrude
+(`Galley_*` components containing `*_body` bodies).
+
+The canonical script for ACTUAL body creation inside Fusion is the separate,
+self-contained BRep/BaseFeature runtime script at
+`tools/fusion/scripts/fusion_create_galley_v1/fusion_create_galley_v1.py`,
+which creates root bodies named `Galley_*`. The two implementations use
+different geometry strategies and naming; see docs/current_status.md. Unifying
+or retiring one of them is a tracked follow-up.
 """
 
 from __future__ import annotations
@@ -586,6 +598,16 @@ def dry_run(payload_path: str | Path) -> tuple[str, list[str]]:
 
 def run(context: Any) -> None:
     """Fusion 360 script entry point.
+
+    BOUNDARY NOTE (follow-up #4, kept-both decision 2026-05-29): this is the
+    importable dry-run / geometry-plan VALIDATION module. This `run()` /
+    sketch-extrude path (per-panel components named ``Galley_*`` containing
+    ``*_body`` bodies) is NOT the currently runtime-verified generator. The
+    runtime-verified script is
+    ``tools/fusion/scripts/fusion_create_galley_v1/fusion_create_galley_v1.py``,
+    which creates ROOT bodies named ``Galley_*`` through a ``DraftMyVan Galley``
+    BaseFeature. Keep this module free of top-level ``adsk`` imports so it stays
+    CI-importable. Do not overwrite it with the runtime script.
 
     CI never calls this entry point. When run inside Fusion later, pass a panel
     payload path as `context` or through `DRAFTMYVAN_FUSION_PANEL_PAYLOAD`.

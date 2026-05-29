@@ -171,6 +171,87 @@ def test_jsonrpc_tools_call_returns_mcp_tool_payload() -> None:
     assert payload["status"] == "FUSION GEOMETRY DRY RUN VALID"
 
 
+class _FakeNamed:
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+
+class _FakeCollection:
+    def __init__(self, items: list) -> None:
+        self._items = items
+
+    @property
+    def count(self) -> int:
+        return len(self._items)
+
+    def item(self, index: int):
+        return self._items[index]
+
+
+class _FakeFeatures:
+    def __init__(self, base_features: list) -> None:
+        self.baseFeatures = _FakeCollection(base_features)
+
+
+class _FakeRoot:
+    def __init__(self, body_names: list[str], base_feature_names: list[str]) -> None:
+        self.bRepBodies = _FakeCollection([_FakeNamed(n) for n in body_names])
+        self.features = _FakeFeatures([_FakeNamed(n) for n in base_feature_names])
+
+
+def test_bridge_expects_verified_root_body_structure() -> None:
+    # Current expectation of record is the verified runtime structure: five
+    # ROOT bodies named Galley_*, owned by a "DraftMyVan Galley" base feature.
+    assert command_bridge.EXPECTED_ROOT_BODIES == (
+        "Galley_LeftSide",
+        "Galley_RightSide",
+        "Galley_BottomPanel",
+        "Galley_TopPanel",
+        "Galley_BackPanel",
+    )
+    assert command_bridge.EXPECTED_BASE_FEATURE_NAME == "DraftMyVan Galley"
+    # The old component->*_body mapping is retained only as explicitly legacy,
+    # not as the current runtime expectation.
+    assert hasattr(command_bridge, "LEGACY_EXPECTED_COMPONENT_BODIES")
+    assert not hasattr(command_bridge, "EXPECTED_COMPONENT_BODIES")
+
+
+def test_root_body_status_recognizes_verified_design() -> None:
+    root = _FakeRoot(
+        body_names=list(command_bridge.EXPECTED_ROOT_BODIES),
+        base_feature_names=["DraftMyVan Galley"],
+    )
+    status = command_bridge._root_body_status(root)
+    assert status["expected_structure"] == "root_bodies"
+    assert status["root_bodies_match"] is True
+    assert status["missing_root_bodies"] == []
+    assert status["base_feature_present"] is True
+
+
+def test_root_body_status_does_not_require_legacy_components() -> None:
+    # A correct verified-runtime design has root Galley_* bodies and NO legacy
+    # per-panel components. It must not be reported as missing.
+    root = _FakeRoot(
+        body_names=list(command_bridge.EXPECTED_ROOT_BODIES),
+        base_feature_names=["DraftMyVan Galley"],
+    )
+    # No occurrences/components attribute is consulted at all.
+    assert not hasattr(root, "occurrences")
+    status = command_bridge._root_body_status(root)
+    assert status["root_bodies_match"] is True
+
+
+def test_root_body_status_flags_missing_root_bodies() -> None:
+    root = _FakeRoot(
+        body_names=["Galley_LeftSide", "Galley_RightSide"],
+        base_feature_names=[],
+    )
+    status = command_bridge._root_body_status(root)
+    assert status["root_bodies_match"] is False
+    assert "Galley_BackPanel" in status["missing_root_bodies"]
+    assert status["base_feature_present"] is False
+
+
 def main() -> int:
     tests = [
         test_supported_tools_are_exact_allowlist,
@@ -185,6 +266,10 @@ def main() -> int:
         test_command_bridge_normalizes_report_status_command,
         test_report_status_can_write_allowlisted_command_file,
         test_jsonrpc_tools_call_returns_mcp_tool_payload,
+        test_bridge_expects_verified_root_body_structure,
+        test_root_body_status_recognizes_verified_design,
+        test_root_body_status_does_not_require_legacy_components,
+        test_root_body_status_flags_missing_root_bodies,
     ]
     failed = 0
     for test in tests:
