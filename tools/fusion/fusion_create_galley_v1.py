@@ -5,6 +5,18 @@ This module is intentionally importable in normal Python without Fusion 360 or
 Autodesk `adsk` modules installed. CI validates the deterministic geometry plan
 only; it does not execute Fusion geometry creation, drawings, cut lists, DXF, or
 CNC output.
+
+Role: this module is the canonical DRY-RUN / GEOMETRY-PLAN VALIDATION library
+(use `--dry-run`, or import its plan/validation functions). Its in-module
+`run(context)` builds geometry via per-panel components + sketch/extrude
+(`Galley_*` components containing `*_body` bodies).
+
+The canonical script for ACTUAL body creation inside Fusion is the separate,
+self-contained BRep/BaseFeature runtime script at
+`tools/fusion/scripts/fusion_create_galley_v1/fusion_create_galley_v1.py`,
+which creates root bodies named `Galley_*`. The two implementations use
+different geometry strategies and naming; see docs/current_status.md. Unifying
+or retiring one of them is a tracked follow-up.
 """
 
 from __future__ import annotations

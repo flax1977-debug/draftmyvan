@@ -22,7 +22,8 @@ This record is for verification-only geometry.
 | Git status before run | clean |
 | Payload path | `/tmp/galley_1000_panels.json` |
 | Payload manifest_id | `galley_1000_sink_left_oak` |
-| Script actually run | `~/Library/Application Support/Autodesk/Autodesk Fusion 360/API/Scripts/fusion_create_galley_v1/fusion_create_galley_v1.py` (self-contained replacement) |
+| Canonical runtime source (repo) | `tools/fusion/scripts/fusion_create_galley_v1/fusion_create_galley_v1.py` (vendored 2026-05-29) |
+| Script actually run (deployed copy) | `~/Library/Application Support/Autodesk/Autodesk Fusion 360/API/Scripts/fusion_create_galley_v1/fusion_create_galley_v1.py` |
 | `DRAFTMYVAN_FUSION_PANEL_PAYLOAD` value | `/tmp/galley_1000_panels.json` (default) |
 
 ## Code Fix Applied Before This Run
@@ -116,19 +117,28 @@ follow-ups.
 ## Follow-Up Issues
 
 ```text
-1. Naming/structure drift: docs (runbook, payload contract, result template,
-   current_status) describe component->body mapping `Galley_LeftSide ->
-   left_side_body` etc. The live script creates root bodies named `Galley_*`
-   with no per-panel components. Reconcile: either update the docs to the
-   actual `Galley_*` root-body convention, or change the script to match the
-   documented mapping. Recommend updating docs to match the live script.
+1. Naming/structure drift: ADDRESSED 2026-05-29. The verification-flow docs
+   (runbook, result template, current_status, and this record) now describe the
+   live runtime convention: five root bodies named `Galley_*` owned by a single
+   `DraftMyVan Galley` base feature. The component->body `*_body` mapping is now
+   labelled as the dry-run/geometry-plan VALIDATION module's output only, not
+   the runtime structure. (See follow-up 4: the two implementations still
+   diverge and should be unified.)
 
-2. Script-path drift: docs point at `tools/fusion/fusion_create_galley_v1.py`,
-   but that repo file is a dry-run geometry-plan skeleton. The actual body-
-   creating script lives in the Fusion Scripts folder
-   (`.../API/Scripts/fusion_create_galley_v1/fusion_create_galley_v1.py`) and
-   is labelled "self-contained replacement". Decide which is canonical and make
-   the docs/repo consistent (e.g. vendor the working script into the repo).
+2. Script-path drift: RESOLVED 2026-05-29. The working runtime script was
+   vendored into the repo as the canonical runtime source at
+   `tools/fusion/scripts/fusion_create_galley_v1/fusion_create_galley_v1.py`
+   (mirrors Fusion's API/Scripts/<name>/<name>.py layout; deploy = copy the
+   folder). The flat `tools/fusion/fusion_create_galley_v1.py` is kept as the
+   CI-importable dry-run/geometry-plan validation module (4 tests + tooling
+   depend on it; a test forbids top-level adsk imports in it, so it could not
+   be overwritten). Both files carry headers explaining the split.
+
+4. Two divergent galley implementations (NEW, OPEN): the runtime script uses
+   transient BRep boxes -> BaseFeature -> root bodies (`Galley_*`); the
+   validation module uses per-panel components + sketch/extrude (`Galley_*`
+   components containing `*_body` bodies). They produce different structures and
+   names. Decide a single canonical geometry strategy and unify or retire one.
 
 3. Re-run timeline hygiene (parametric): IMPLEMENTED 2026-05-29 (code only,
    Fusion runtime rerun still PENDING). `_delete_existing_galley` was rewritten

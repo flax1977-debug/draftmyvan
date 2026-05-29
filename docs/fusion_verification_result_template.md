@@ -26,7 +26,8 @@ This record is for verification-only geometry.
 | Repo SHA | `<fill in>` |
 | Git status before run | `<paste summary or attach output>` |
 | Payload path | `/tmp/galley_1000_panels.json` |
-| Fusion script path | `tools/fusion/fusion_create_galley_v1.py` |
+| Canonical runtime script (repo) | `tools/fusion/scripts/fusion_create_galley_v1/fusion_create_galley_v1.py` |
+| Fusion deploy path (copy before running) | `~/Library/Application Support/Autodesk/Autodesk Fusion 360/API/Scripts/fusion_create_galley_v1/fusion_create_galley_v1.py` |
 | `DRAFTMYVAN_FUSION_PANEL_PAYLOAD` value | `/tmp/galley_1000_panels.json` |
 
 ## Known Dry-Run Baseline
@@ -64,29 +65,34 @@ Galley_BackPanel -> back_panel_body
 
 ## Expected Result
 
-Expected manual result: five rectangular panel bodies/components only.
+Expected manual result (canonical runtime script): five rectangular **root
+bodies** only (no per-panel components), committed into a single
+`DraftMyVan Galley` BaseFeature.
 
-Expected component/body mapping:
+Expected body names:
 
 ```text
-Galley_LeftSide -> left_side_body
-Galley_RightSide -> right_side_body
-Galley_BottomPanel -> bottom_panel_body
-Galley_TopPanel -> top_panel_body
-Galley_BackPanel -> back_panel_body
+Galley_LeftSide
+Galley_RightSide
+Galley_BottomPanel
+Galley_TopPanel
+Galley_BackPanel
 ```
 
-## Observed Component And Body Names
+## Observed Body Names
 
 Record the names exactly as shown in Fusion.
 
-| Expected component | Expected body | Observed component | Observed body | Match |
-| --- | --- | --- | --- | --- |
-| `Galley_LeftSide` | `left_side_body` | `<fill in>` | `<fill in>` | `<yes/no>` |
-| `Galley_RightSide` | `right_side_body` | `<fill in>` | `<fill in>` | `<yes/no>` |
-| `Galley_BottomPanel` | `bottom_panel_body` | `<fill in>` | `<fill in>` | `<yes/no>` |
-| `Galley_TopPanel` | `top_panel_body` | `<fill in>` | `<fill in>` | `<yes/no>` |
-| `Galley_BackPanel` | `back_panel_body` | `<fill in>` | `<fill in>` | `<yes/no>` |
+| Expected root body | Observed body | Match |
+| --- | --- | --- |
+| `Galley_LeftSide` | `<fill in>` | `<yes/no>` |
+| `Galley_RightSide` | `<fill in>` | `<yes/no>` |
+| `Galley_BottomPanel` | `<fill in>` | `<yes/no>` |
+| `Galley_TopPanel` | `<fill in>` | `<yes/no>` |
+| `Galley_BackPanel` | `<fill in>` | `<yes/no>` |
+
+Also confirm exactly one base feature named `DraftMyVan Galley` is present
+(re-running must not accumulate empty base features).
 
 ## Pass/Fail Result
 
@@ -98,11 +104,14 @@ Select one:
 
 Pass requires all of the following:
 
-- Exactly five rectangular panel bodies/components were created.
-- Component and body names match the expected mapping exactly.
-- No extra bodies/components were created by the script.
+- Exactly five rectangular panel root bodies were created.
+- Body names match the expected `Galley_*` names exactly.
+- Exactly one `DraftMyVan Galley` base feature owns them (no empties on rerun).
+- No extra bodies were created by the script.
 - Payload path was `/tmp/galley_1000_panels.json`.
-- Script path was `tools/fusion/fusion_create_galley_v1.py`.
+- Canonical runtime script was
+  `tools/fusion/scripts/fusion_create_galley_v1/fusion_create_galley_v1.py`,
+  deployed to the Fusion `API/Scripts/fusion_create_galley_v1/` folder.
 - `DRAFTMYVAN_FUSION_PANEL_PAYLOAD` was
   `/tmp/galley_1000_panels.json`.
 - No CNC, DXF, drawings, cut lists, joinery, toolpaths, fabrication

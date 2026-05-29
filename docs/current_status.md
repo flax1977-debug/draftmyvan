@@ -154,15 +154,45 @@ Verification docs:
 - [Fusion verification result template](fusion_verification_result_template.md)
 - [Fusion verification result 2026-05-29 (completed run)](fusion_verification_result_2026-05-29.md)
 
+## Canonical Scripts (runtime vs planning)
+
+The repo now holds two distinct, non-duplicate galley scripts:
+
+- Canonical **Fusion runtime** body-creation script (the one actually run and
+  verified in Fusion):
+
+  ```text
+  tools/fusion/scripts/fusion_create_galley_v1/fusion_create_galley_v1.py
+  ```
+
+  Self-contained (imports `adsk` at top level, not CI-importable). Creates five
+  **root bodies** named `Galley_*` via transient BRep boxes committed into a
+  `DraftMyVan Galley` BaseFeature. Fusion only runs scripts from `API/Scripts`,
+  so it must be copied/synced into the Fusion Scripts folder before running
+  (unless that path is symlinked):
+
+  ```text
+  ~/Library/Application Support/Autodesk/Autodesk Fusion 360/API/Scripts/fusion_create_galley_v1/fusion_create_galley_v1.py
+  ```
+
+- Canonical **dry-run / geometry-plan validation** module (CI-importable, used
+  by tests and tooling):
+
+  ```text
+  tools/fusion/fusion_create_galley_v1.py
+  ```
+
+  Its `run(context)` uses a different strategy (per-panel components +
+  sketch/extrude, `Galley_*` components containing `*_body` bodies). The
+  `*_body` / component mapping shown under "dry-run result" above describes
+  this module, not the runtime script.
+
+Follow-up: the two implementations use different geometry strategies and
+naming and should eventually be unified or one retired.
+
 ## What Remains Manual
 
-The remaining milestone step is the local manual Fusion run.
-
-Fusion script:
-
-```text
-tools/fusion/fusion_create_galley_v1.py
-```
+The repeatable manual Fusion run (and rerun-idempotency check).
 
 Payload path:
 
@@ -170,37 +200,39 @@ Payload path:
 /tmp/galley_1000_panels.json
 ```
 
-Required environment variable for the future manual run:
+Optional environment variable override:
 
 ```text
 DRAFTMYVAN_FUSION_PANEL_PAYLOAD=/tmp/galley_1000_panels.json
 ```
 
-Expected manual verification result: five rectangular panel bodies/components
-only.
-
-Expected mapping:
+Expected runtime result: five rectangular **root bodies** only, owned by a
+single `DraftMyVan Galley` base feature:
 
 ```text
-Galley_LeftSide -> left_side_body
-Galley_RightSide -> right_side_body
-Galley_BottomPanel -> bottom_panel_body
-Galley_TopPanel -> top_panel_body
-Galley_BackPanel -> back_panel_body
+Galley_LeftSide
+Galley_RightSide
+Galley_BottomPanel
+Galley_TopPanel
+Galley_BackPanel
 ```
 
 ## Exact Next Manual Fusion Step
 
 On the Mac with Fusion 360 installed:
 
-1. Ensure `DRAFTMYVAN_FUSION_PANEL_PAYLOAD` is available to Fusion with value
-   `/tmp/galley_1000_panels.json`.
-2. Open Fusion 360.
-3. Create or open a blank test design.
-4. Go to `Utilities` > `Add-Ins` > `Scripts and Add-Ins`.
-5. Select `tools/fusion/fusion_create_galley_v1.py`.
-6. Run the script.
-7. Record the result using
+1. Deploy the canonical runtime script into Fusion's Scripts folder (copy from
+   `tools/fusion/scripts/fusion_create_galley_v1/fusion_create_galley_v1.py`
+   to the `API/Scripts/fusion_create_galley_v1/` path shown above).
+2. Optionally set `DRAFTMYVAN_FUSION_PANEL_PAYLOAD=/tmp/galley_1000_panels.json`
+   (the script defaults to this path).
+3. Open Fusion 360.
+4. Create or open a blank test design.
+5. Go to `Utilities` > `Add-Ins` > `Scripts and Add-Ins`.
+6. Select the deployed `fusion_create_galley_v1.py`.
+7. Run the script (run twice to confirm idempotent rerun: no duplicate bodies,
+   a single `DraftMyVan Galley` base feature).
+8. Record the result using
    [Fusion verification result template](fusion_verification_result_template.md).
 
 ## Exact Next Non-Manual Task Options
