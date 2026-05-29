@@ -3,7 +3,10 @@
 This document is the current "where are we?" status for the DraftMyVan Fusion
 galley verification milestone.
 
-The manual Fusion verification has not happened yet.
+The manual Fusion verification was completed on 2026-05-29: the script created
+five rectangular panel bodies successfully. See
+[Fusion verification result 2026-05-29](fusion_verification_result_2026-05-29.md).
+Two naming/path discrepancies were recorded as follow-ups (see that document).
 
 ## Current Repo State
 
@@ -48,7 +51,7 @@ payload.
 | Fusion geometry skeleton/manual execution path | Done |
 | Verification docs | Done |
 | Diagnostic panel schedule | Done |
-| Manual Fusion geometry creation | Pending |
+| Manual Fusion geometry creation | Done (2026-05-29, with naming follow-ups) |
 | Manufacturing output | Explicitly not started |
 
 ## What Has Been Validated
@@ -107,6 +110,7 @@ Verification docs:
 - [Fusion galley verification runbook](fusion_galley_verification_runbook.md)
 - [Fusion panel payload contract](fusion_panel_payload_contract.md)
 - [Fusion verification result template](fusion_verification_result_template.md)
+- [Fusion verification result 2026-05-29 (completed run)](fusion_verification_result_2026-05-29.md)
 
 ## What Remains Manual
 
