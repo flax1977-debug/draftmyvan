@@ -79,6 +79,7 @@ python -m tests.test_fusion_parameter_map         # Fusion parameter map dry-run
 python -m tests.test_fusion_skeleton              # Fusion skeleton payload guard
 python -m tests.test_fusion_panel_math            # Fusion panel math guard
 python -m tests.test_fusion_geometry_plan         # Fusion geometry plan guard
+python -m tests.test_fusion_diagnostic_panel_schedule # diagnostic schedule guard
 python -m tests.test_fusion_geometry_execution_skeleton # guarded manual body path
 python -m tests.test_fusion_local_availability    # local Fusion availability boundary
 python -m tests.test_fusion_mcp_bridge            # allowlisted MCP bridge guard
@@ -394,6 +395,9 @@ python tools/fusion/export_galley_v1_panels.py \
 python tools/fusion/check_fusion_geometry_plan.py \
     tests/fixtures/galley_1000_panels.expected.json
 
+python tools/fusion/diagnostic_panel_schedule.py \
+    tests/fixtures/galley_1000_panels.expected.json
+
 python tools/fusion/fusion_create_galley_v1.py \
     --dry-run tests/fixtures/galley_1000_panels.expected.json
 ```
@@ -410,6 +414,9 @@ deterministic Fusion geometry plan. The plan names the future component/body for
 each panel, sketch plane, extrude axis, extrusion distance, and provisional
 placement origin. CI validates the plan and the `--dry-run` path but does not
 run Fusion, import Autodesk modules, or create bodies.
+`tools/fusion/diagnostic_panel_schedule.py` emits a deterministic text schedule
+from the same validated panel payload as an independent verification aid. It is
+not manufacturing output.
 `tools/fusion/fusion_galley_v1_skeleton.py` can be imported in normal Python
 because Autodesk `adsk` imports are guarded inside Fusion-only functions. It
 validates and summarizes the payload and panel math for a later Fusion run.

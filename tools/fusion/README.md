@@ -71,6 +71,15 @@ python tools/fusion/check_fusion_geometry_plan.py --verbose \
     tests/fixtures/galley_1000_panels.expected.json
 ```
 
+`diagnostic_panel_schedule.py` emits a deterministic text schedule from the
+validated panel payload. This is a verification aid only, not manufacturing
+output:
+
+```bash
+python tools/fusion/diagnostic_panel_schedule.py \
+    tests/fixtures/galley_1000_panels.expected.json
+```
+
 `fusion_create_galley_v1.py --dry-run <panel-payload>` validates the same
 payload and summarizes the manual body-creation path without importing
 Autodesk:

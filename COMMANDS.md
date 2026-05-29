@@ -153,6 +153,7 @@ proof while the visual candidate remains blockout-only.
 | `python tools/fusion/export_galley_v1_panels.py --payload tests/fixtures/galley_1000_fusion_parameters.expected.json --out build/fusion/galley_1000_panels.json` | Export deterministic simple carcass panel math and documented assumptions. This is not a real cut list. | 0 exported, 1 invalid |
 | `python tools/fusion/check_fusion_geometry_plan.py tests/fixtures/galley_1000_panels.expected.json` | Validate the deterministic planned-not-executed Fusion component/body plan from the panel payload. | 0 valid, 1 invalid |
 | `python tools/fusion/check_fusion_geometry_plan.py --verbose tests/fixtures/galley_1000_panels.expected.json` | Print each planned panel sketch plane, extrude axis, extrude distance, and placement origin. | 0 valid, 1 invalid |
+| `python tools/fusion/diagnostic_panel_schedule.py tests/fixtures/galley_1000_panels.expected.json` | Emit a deterministic diagnostic panel schedule from the validated panel payload for verification only. | 0 valid, 1 invalid |
 | `python tools/fusion/fusion_create_galley_v1.py --dry-run tests/fixtures/galley_1000_panels.expected.json` | Validate the panel payload and summarize the manual Fusion body-creation path without Fusion installed. | 0 valid, 1 invalid |
 
 Fusion execution is local/manual only. The scripts guard Autodesk `adsk`
@@ -248,6 +249,7 @@ python -m tests.test_fusion_parameter_map         # 10 tests — Fusion dry-run 
 python -m tests.test_fusion_skeleton              # 10 tests — Fusion skeleton payload guard
 python -m tests.test_fusion_panel_math            # 11 tests — Fusion panel math guard
 python -m tests.test_fusion_geometry_plan         # 17 tests — Fusion geometry plan guard
+python -m tests.test_fusion_diagnostic_panel_schedule # 8 tests — diagnostic schedule guard
 python -m tests.test_fusion_geometry_execution_skeleton # 11 tests — guarded Fusion execution skeleton
 python -m tests.test_fusion_local_availability    # 4 tests — local Fusion availability boundary
 python -m tests.test_fusion_mcp_bridge            # 12 tests — allowlisted Fusion MCP bridge
@@ -270,6 +272,7 @@ for t in tests.test_validator tests.test_blender_manifest_contract \
          tests.test_fusion_skeleton \
          tests.test_fusion_panel_math \
          tests.test_fusion_geometry_plan \
+         tests.test_fusion_diagnostic_panel_schedule \
          tests.test_fusion_geometry_execution_skeleton \
          tests.test_fusion_local_availability \
          tests.test_fusion_mcp_bridge \
