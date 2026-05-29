@@ -52,7 +52,49 @@ payload.
 | Verification docs | Done |
 | Diagnostic panel schedule | Done |
 | Manual Fusion geometry creation | Done (2026-05-29, with naming follow-ups) |
+| Rerun cleanup / idempotency (code) | Implemented (syntax compile only; Fusion runtime rerun pending) |
 | Manufacturing output | Explicitly not started |
+
+## Script Fix And Rerun Cleanup (2026-05-29)
+
+The live galley script (the self-contained replacement run from the Fusion
+Scripts folder, `.../API/Scripts/fusion_create_galley_v1/fusion_create_galley_v1.py`)
+received two code changes.
+
+Completed (code written, Python syntax compile passed):
+
+1. Fixed the parametric-mode error `RuntimeError: 3 : A valid targetBaseFeature
+   is required` by creating a `"DraftMyVan Galley"` BaseFeature in
+   `_create_galley`, calling `startEdit()`, passing that base feature into
+   `_add_box`, and always calling `finishEdit()` in a `finally`.
+2. `_add_box` now accepts an optional `target_base_feature` and calls
+   `root.bRepBodies.add(temp_body, target_base_feature)` when supplied.
+3. `_create_galley` creates the five galley bodies inside the base-feature edit.
+4. Body names are captured while still inside the base-feature edit to avoid
+   stale body proxy references after `finishEdit()`.
+5. `_delete_existing_galley(root)` was rewritten so reruns are idempotent:
+   deletes old `"DraftMyVan Galley"` BaseFeatures first (prefix match, so
+   Fusion-renamed variants are caught), iterates Fusion collections backwards,
+   then cleans remaining orphan `Galley_*` bodies and legacy `Galley_*`
+   component occurrences, does not touch unrelated geometry, and collects
+   cleanup errors into a single `RuntimeError`. Outer `run()` error logging to
+   `/tmp/draftmyvan_fusion_last_error.txt` is left intact.
+
+This resolves the earlier follow-up about leftover/empty base features
+accumulating on rerun (implementation only).
+
+Not yet verified — pending a real run inside Fusion 360 (the `adsk.core` and
+`adsk.fusion` modules exist only inside Fusion's embedded Python, so this
+environment can only check syntax):
+
+- Full runtime inside Fusion 360.
+- Running the script twice in the same Fusion design.
+- No duplicate bodies after the second run.
+- No stale/empty `"DraftMyVan Galley"` base features accumulate.
+- The expected five bodies appear: `Galley_LeftSide`, `Galley_RightSide`,
+  `Galley_BottomPanel`, `Galley_TopPanel`, `Galley_BackPanel`.
+- The dimensions message box still appears.
+- `/tmp/draftmyvan_fusion_last_error.txt` still captures tracebacks on failure.
 
 ## What Has Been Validated
 

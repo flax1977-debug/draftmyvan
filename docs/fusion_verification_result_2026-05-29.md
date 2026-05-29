@@ -130,10 +130,16 @@ follow-ups.
    is labelled "self-contained replacement". Decide which is canonical and make
    the docs/repo consistent (e.g. vendor the working script into the repo).
 
-3. Re-run timeline hygiene (parametric): `_delete_existing_galley` removes
-   `Galley_*` bodies but not the prior "DraftMyVan Galley" BaseFeature, so
-   repeated runs leave empty base features in the timeline. Extend cleanup to
-   also remove prior base features by that name.
+3. Re-run timeline hygiene (parametric): IMPLEMENTED 2026-05-29 (code only,
+   Fusion runtime rerun still PENDING). `_delete_existing_galley` was rewritten
+   to delete old "DraftMyVan Galley" BaseFeatures first (prefix match, backwards
+   iteration), then clean orphan `Galley_*` bodies and legacy `Galley_*`
+   component occurrences, leaving unrelated geometry untouched, and to collect
+   cleanup errors into a single RuntimeError (outer run() still logs the full
+   traceback to /tmp/draftmyvan_fusion_last_error.txt). Python syntax compile
+   passed. Still to verify inside Fusion 360: run the script twice in one
+   design and confirm exactly five bodies (no duplicates) and a single
+   "DraftMyVan Galley" base feature (no empties accumulating).
 ```
 
 ## Final Statement
