@@ -45,6 +45,9 @@ captured inside the edit to avoid stale proxies after `finishEdit()`.
 
 ## Fusion Run Record
 
+Runtime status: PASSED. The deployed canonical runtime script was run twice in
+the same test design.
+
 | Check | Result |
 | --- | --- |
 | Fusion opened a blank test design | yes (`Untitled*` (DraftMyVan)) |
@@ -55,6 +58,18 @@ captured inside the edit to avoid stale proxies after `finishEdit()`.
 | Observed body count | 5 |
 | Extra geometry observed | no |
 | Units looked consistent with millimetre-scale geometry | yes (document units `mm, g`) |
+| `DraftMyVan Galley` base feature present after first run | yes |
+
+### Rerun / Idempotency Record (second run, same design)
+
+| Check | Result |
+| --- | --- |
+| Ran the same script a second time in the same design | yes |
+| Body count after second run | 5 (still exactly five `Galley_*`) |
+| Duplicate bodies created | no |
+| Empty `DraftMyVan Galley` base features piled up | no |
+| Dimensions message box appeared again | yes |
+| `/tmp/draftmyvan_fusion_last_error.txt` needed | no (no runtime failure) |
 
 ### Fusion Messages Or Errors
 
@@ -140,16 +155,16 @@ follow-ups.
    components containing `*_body` bodies). They produce different structures and
    names. Decide a single canonical geometry strategy and unify or retire one.
 
-3. Re-run timeline hygiene (parametric): IMPLEMENTED 2026-05-29 (code only,
-   Fusion runtime rerun still PENDING). `_delete_existing_galley` was rewritten
-   to delete old "DraftMyVan Galley" BaseFeatures first (prefix match, backwards
-   iteration), then clean orphan `Galley_*` bodies and legacy `Galley_*`
-   component occurrences, leaving unrelated geometry untouched, and to collect
-   cleanup errors into a single RuntimeError (outer run() still logs the full
-   traceback to /tmp/draftmyvan_fusion_last_error.txt). Python syntax compile
-   passed. Still to verify inside Fusion 360: run the script twice in one
-   design and confirm exactly five bodies (no duplicates) and a single
-   "DraftMyVan Galley" base feature (no empties accumulating).
+3. Re-run timeline hygiene (parametric): IMPLEMENTED and RUNTIME VERIFIED
+   2026-05-29. `_delete_existing_galley` was rewritten to delete old
+   "DraftMyVan Galley" BaseFeatures first (prefix match, backwards iteration),
+   then clean orphan `Galley_*` bodies and legacy `Galley_*` component
+   occurrences, leaving unrelated geometry untouched, and to collect cleanup
+   errors into a single RuntimeError (outer run() still logs the full traceback
+   to /tmp/draftmyvan_fusion_last_error.txt). Python syntax compile and repo
+   tests passed. VERIFIED in Fusion 360: ran the script twice in one design;
+   after the second run there were still exactly five `Galley_*` bodies, no
+   duplicates, and no pile-up of empty "DraftMyVan Galley" base features.
 ```
 
 ## Final Statement

@@ -3,10 +3,14 @@
 This document is the current "where are we?" status for the DraftMyVan Fusion
 galley verification milestone.
 
-The manual Fusion verification was completed on 2026-05-29: the script created
-five rectangular panel bodies successfully. See
+The manual Fusion verification PASSED on 2026-05-29: the canonical runtime
+script ran twice in the same test design, creating the five `Galley_*` root
+bodies with no errors, no duplicate bodies on rerun, and no pile-up of empty
+`DraftMyVan Galley` base features. Both the BaseFeature fix and the
+rerun/idempotency cleanup are runtime verified. See
 [Fusion verification result 2026-05-29](fusion_verification_result_2026-05-29.md).
-Two naming/path discrepancies were recorded as follow-ups (see that document).
+The script-path and naming follow-ups are resolved/addressed; one architectural
+follow-up (#4: unify the runtime script and the validation module) remains open.
 
 ## Current Repo State
 
@@ -52,7 +56,7 @@ payload.
 | Verification docs | Done |
 | Diagnostic panel schedule | Done |
 | Manual Fusion geometry creation | Done (2026-05-29, with naming follow-ups) |
-| Rerun cleanup / idempotency (code) | Implemented (syntax compile only; Fusion runtime rerun pending) |
+| Rerun cleanup / idempotency | Runtime VERIFIED in Fusion 360 (2026-05-29, ran twice; no duplicates, no empty base-feature pile-up) |
 | Manufacturing output | Explicitly not started |
 
 ## Script Fix And Rerun Cleanup (2026-05-29)
@@ -61,12 +65,15 @@ The live galley script (the self-contained replacement run from the Fusion
 Scripts folder, `.../API/Scripts/fusion_create_galley_v1/fusion_create_galley_v1.py`)
 received two code changes.
 
-Completed (code written, Python syntax compile passed):
+Completed and RUNTIME VERIFIED in Fusion 360 on 2026-05-29 (ran twice in the
+same test design; Python syntax compile and repo tests also passed):
 
 1. Fixed the parametric-mode error `RuntimeError: 3 : A valid targetBaseFeature
    is required` by creating a `"DraftMyVan Galley"` BaseFeature in
    `_create_galley`, calling `startEdit()`, passing that base feature into
-   `_add_box`, and always calling `finishEdit()` in a `finally`.
+   `_add_box`, and always calling `finishEdit()` in a `finally`. **Runtime
+   verified:** first run produced no error and the dimensions message box, the
+   `DraftMyVan Galley` base feature, and the five `Galley_*` root bodies.
 2. `_add_box` now accepts an optional `target_base_feature` and calls
    `root.bRepBodies.add(temp_body, target_base_feature)` when supplied.
 3. `_create_galley` creates the five galley bodies inside the base-feature edit.
@@ -78,23 +85,27 @@ Completed (code written, Python syntax compile passed):
    then cleans remaining orphan `Galley_*` bodies and legacy `Galley_*`
    component occurrences, does not touch unrelated geometry, and collects
    cleanup errors into a single `RuntimeError`. Outer `run()` error logging to
-   `/tmp/draftmyvan_fusion_last_error.txt` is left intact.
+   `/tmp/draftmyvan_fusion_last_error.txt` is left intact. **Runtime verified:**
+   running the script a second time in the same design left exactly five
+   `Galley_*` bodies with no duplicates and no pile-up of empty
+   `DraftMyVan Galley` base features.
 
 This resolves the earlier follow-up about leftover/empty base features
-accumulating on rerun (implementation only).
+accumulating on rerun (implementation and runtime both confirmed).
 
-Not yet verified — pending a real run inside Fusion 360 (the `adsk.core` and
-`adsk.fusion` modules exist only inside Fusion's embedded Python, so this
-environment can only check syntax):
+Runtime verification (2026-05-29, Fusion 360) — all confirmed by the operator:
 
-- Full runtime inside Fusion 360.
-- Running the script twice in the same Fusion design.
-- No duplicate bodies after the second run.
-- No stale/empty `"DraftMyVan Galley"` base features accumulate.
-- The expected five bodies appear: `Galley_LeftSide`, `Galley_RightSide`,
-  `Galley_BottomPanel`, `Galley_TopPanel`, `Galley_BackPanel`.
-- The dimensions message box still appears.
-- `/tmp/draftmyvan_fusion_last_error.txt` still captures tracebacks on failure.
+- Full runtime inside Fusion 360: PASS (no error dialog on first run).
+- Ran the script twice in the same Fusion design: PASS.
+- No duplicate bodies after the second run: PASS.
+- No stale/empty `"DraftMyVan Galley"` base features accumulated: PASS.
+- The expected five bodies appeared: `Galley_LeftSide`, `Galley_RightSide`,
+  `Galley_BottomPanel`, `Galley_TopPanel`, `Galley_BackPanel`: PASS.
+- The dimensions message box appeared on both runs: PASS.
+- `/tmp/draftmyvan_fusion_last_error.txt` was not needed (no runtime failure).
+
+Note: the earlier compile-only / runtime-pending caveat is now superseded by
+this verified run. Syntax compile and the repo test suite also pass.
 
 ## What Has Been Validated
 
@@ -137,7 +148,8 @@ fabrication instructions, or manufacturing-ready output.
 
 Relationship to manual Fusion verification: this diagnostic schedule checks the
 same panel data before Fusion is run. It does not create or verify Fusion
-bodies, and it does not replace the pending manual Fusion geometry step.
+bodies, and it did not replace the manual Fusion geometry step (now runtime
+verified, 2026-05-29).
 
 ## What Has Been Documented
 
@@ -242,7 +254,8 @@ These tasks do not require running Fusion:
 - Push this status document commit after it is created.
 - Review the three verification docs for consistency after this status document
   lands.
-- Add a repo issue or task note for the pending manual Fusion run.
+- Track architectural follow-up #4 (unify the runtime script and the dry-run /
+  geometry-plan validation module, which still diverge). Still OPEN.
 - Harden the payload schema and tests in a separate future code change, if
   needed.
 - Prepare a docs-only evidence folder convention for future screenshots, if
