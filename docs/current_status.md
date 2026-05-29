@@ -199,8 +199,19 @@ The repo now holds two distinct, non-duplicate galley scripts:
   `*_body` / component mapping shown under "dry-run result" above describes
   this module, not the runtime script.
 
-Follow-up: the two implementations use different geometry strategies and
-naming and should eventually be unified or one retired.
+Follow-up #4 (OPEN): the two implementations use different geometry strategies
+and naming and should eventually be unified or one retired. **Decision
+2026-05-29: keep both with explicit boundaries for now — no unification done.**
+The canonical live structure of record is the verified runtime structure: five
+root bodies named `Galley_*` owned by a `DraftMyVan Galley` base feature.
+
+As a small boundary-alignment change (not unification), the Fusion command
+bridge (`tools/fusion/fusion_command_bridge.py`) status check was fixed to
+expect that verified root-body structure (`EXPECTED_ROOT_BODIES` +
+`EXPECTED_BASE_FEATURE_NAME`) instead of the legacy `Galley_* -> *_body`
+component layout, so a correct verified-runtime design is no longer reported as
+missing. The legacy mapping is retained as `LEGACY_EXPECTED_COMPONENT_BODIES`
+for backward-compatible recognition only.
 
 ## What Remains Manual
 

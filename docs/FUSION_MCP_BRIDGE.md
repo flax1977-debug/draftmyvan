@@ -119,9 +119,13 @@ tools/fusion/fusion_command_bridge.py
 
 3. Read the status through the MCP tool `report_manual_verification_status`.
 
-The Fusion-side command bridge only reports component/body/parameter status. It
-does not create geometry. Continue to run `fusion_create_galley_v1.py` manually
-for the current five-panel geometry proof.
+The Fusion-side command bridge only reports root-body/base-feature/parameter
+status. It does not create geometry. The current expected structure is the
+verified five root bodies named `Galley_*` owned by a `DraftMyVan Galley` base
+feature (the bridge checks for these, not the legacy `Galley_* -> *_body`
+component layout). Continue to run the canonical runtime script
+(`tools/fusion/scripts/fusion_create_galley_v1/fusion_create_galley_v1.py`,
+deployed into Fusion's `API/Scripts`) manually for the geometry proof.
 
 ## Current Limitations
 

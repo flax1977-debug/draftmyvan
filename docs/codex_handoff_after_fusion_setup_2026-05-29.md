@@ -146,7 +146,15 @@ divergent geometry strategies and naming:
 
 This divergence is intentional for now but unresolved. A single canonical
 geometry strategy should be chosen and the two unified (or one retired). **Do
-not assume #4 is done.** No work on it has been started.
+not assume #4 is done.** No unification work has been done.
+
+**Update 2026-05-29 — Option B chosen (keep both, explicit boundaries):** no
+unification was performed. A code-level boundary note was added to the
+validation module's `run()`, and one concrete drift bug was fixed — the Fusion
+command bridge (`tools/fusion/fusion_command_bridge.py`) now checks for the
+verified root-body structure (`EXPECTED_ROOT_BODIES` + a `DraftMyVan Galley`
+base feature) instead of the legacy `Galley_* -> *_body` component layout
+(retained as `LEGACY_EXPECTED_COMPONENT_BODIES`). Follow-up #4 remains OPEN.
 
 ## Exact Remaining TODOs
 

@@ -599,6 +599,16 @@ def dry_run(payload_path: str | Path) -> tuple[str, list[str]]:
 def run(context: Any) -> None:
     """Fusion 360 script entry point.
 
+    BOUNDARY NOTE (follow-up #4, kept-both decision 2026-05-29): this is the
+    importable dry-run / geometry-plan VALIDATION module. This `run()` /
+    sketch-extrude path (per-panel components named ``Galley_*`` containing
+    ``*_body`` bodies) is NOT the currently runtime-verified generator. The
+    runtime-verified script is
+    ``tools/fusion/scripts/fusion_create_galley_v1/fusion_create_galley_v1.py``,
+    which creates ROOT bodies named ``Galley_*`` through a ``DraftMyVan Galley``
+    BaseFeature. Keep this module free of top-level ``adsk`` imports so it stays
+    CI-importable. Do not overwrite it with the runtime script.
+
     CI never calls this entry point. When run inside Fusion later, pass a panel
     payload path as `context` or through `DRAFTMYVAN_FUSION_PANEL_PAYLOAD`.
     This guarded path creates the five rectangular panel bodies for manual
