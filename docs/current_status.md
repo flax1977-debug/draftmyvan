@@ -13,17 +13,16 @@ Repository:
 /Users/florin/draftmyvan
 ```
 
-Known HEAD before this status document:
+Known HEAD before this diagnostic schedule status update:
 
 ```text
-8ede5e93c7b839e8db4e46033c3409c941b5a3fd
+8e4cace7195ecc464e4ffaf5138bd1e007d747d3
 ```
 
-Branch state before this status document:
+Branch state before this diagnostic schedule status update:
 
 ```text
-main pushed to origin/main through the Fusion verification result template
-commit.
+main pushed to origin/main through the diagnostic Fusion panel schedule commit.
 ```
 
 Working tree before this status document:
@@ -48,6 +47,7 @@ payload.
 | Panel math/payload planning | Done |
 | Fusion geometry skeleton/manual execution path | Done |
 | Verification docs | Done |
+| Diagnostic panel schedule | Done |
 | Manual Fusion geometry creation | Pending |
 | Manufacturing output | Explicitly not started |
 
@@ -73,6 +73,26 @@ Galley_BackPanel -> back_panel_body
 
 This validates the Python dry-run path and planned component/body names. It
 does not prove that Fusion has created bodies yet.
+
+## Diagnostic Panel Schedule
+
+The repo now includes a pure-Python diagnostic panel schedule generator:
+
+```bash
+python tools/fusion/diagnostic_panel_schedule.py \
+    tests/fixtures/galley_1000_panels.expected.json
+```
+
+Purpose: emit a deterministic, human-readable schedule from the validated
+galley panel payload so the Fusion verification path has a second text-based
+check of the five planned panels and expected component/body mapping.
+
+Warning: this is not CNC, DXF, drawing, cut-list, joinery, nesting, toolpath,
+fabrication instructions, or manufacturing-ready output.
+
+Relationship to manual Fusion verification: this diagnostic schedule checks the
+same panel data before Fusion is run. It does not create or verify Fusion
+bodies, and it does not replace the pending manual Fusion geometry step.
 
 ## What Has Been Documented
 
