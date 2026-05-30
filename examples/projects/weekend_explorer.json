@@ -21,6 +21,14 @@
       "rotation_deg": 0,
       "zone": "kitchen",
       "visible": true
+    },
+    {
+      "instance_id": "bench_left_front",
+      "module_id": "bench_900_storage",
+      "position_mm": { "x": 0, "y": 1200, "z": 0 },
+      "rotation_deg": 0,
+      "zone": "seating",
+      "visible": true
     }
   ]
 }

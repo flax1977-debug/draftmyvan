@@ -41,7 +41,7 @@ def test_example_project_loads() -> None:
     project = pj.load_project(EXAMPLE)
     assert project.id == "weekend_explorer"
     assert project.name == "Weekend Explorer"
-    assert len(project.instances) == 1
+    assert len(project.instances) == 2  # galley + bench
 
 
 def test_van_fields() -> None:

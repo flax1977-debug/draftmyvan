@@ -30,9 +30,26 @@ def test_list_projects_includes_example() -> None:
     projects = resp.json()["projects"]
     p = next(p for p in projects if p["id"] == PROJECT_ID)
     assert p["name"] == "Weekend Explorer", p
-    assert p["instance_count"] == 1, p
-    assert p["total_weight_kg"] == 45, p
+    assert p["instance_count"] == 2, p
+    assert p["total_weight_kg"] == 73, p  # galley 45 + bench 28
     assert p["van"]["dimensions_mm"] == {"length": 5932, "width": 2020, "height": 2760}, p
+
+
+def test_catalog_has_two_modules() -> None:
+    client = TestClient(app)
+    ids = {m["id"] for m in client.get("/api/modules").json()["modules"]}
+    assert {"galley_1000_sink_left_oak", "bench_900_storage"} <= ids, ids
+
+
+def test_project_has_two_instances() -> None:
+    client = TestClient(app)
+    body = client.get(f"/api/projects/{PROJECT_ID}").json()
+    by_id = {i["instance_id"]: i for i in body["module_instances"]}
+    assert set(by_id) == {"galley_back_left", "bench_left_front"}, by_id
+    bench = by_id["bench_left_front"]
+    assert bench["module_id"] == "bench_900_storage", bench
+    assert bench["zone"] == "seating", bench
+    assert bench["module"]["glb_url"] == "/assets/bench_900.glb", bench
 
 
 def test_project_detail_resolves_module() -> None:
@@ -41,8 +58,7 @@ def test_project_detail_resolves_module() -> None:
     assert resp.status_code == 200, resp.status_code
     body = resp.json()
     assert body["van"]["make"] == "Mercedes-Benz", body
-    inst = body["module_instances"][0]
-    assert inst["instance_id"] == "galley_back_left", inst
+    inst = next(i for i in body["module_instances"] if i["instance_id"] == "galley_back_left")
     assert inst["module_id"] == "galley_1000_sink_left_oak", inst
     assert inst["position_mm"] == {"x": 0, "y": 0, "z": 0}, inst
     assert inst["zone"] == "kitchen", inst
@@ -56,7 +72,7 @@ def test_project_build_status() -> None:
     resp = client.get(f"/api/projects/{PROJECT_ID}/build-status")
     assert resp.status_code == 200, resp.status_code
     body = resp.json()
-    assert body["total_weight_kg"] == 45, body
+    assert body["total_weight_kg"] == 73, body  # galley 45 + bench 28
     assert body["max_payload_kg"] == 1200, body
     assert body["payload_ok"] is True, body
     assert body["within_bounds"] is True, body
@@ -102,6 +118,26 @@ def test_validate_layout_detects_out_of_bounds_edit() -> None:
     assert body["build_ready"] is False, body
 
 
+def test_validate_layout_detects_collision_between_instances() -> None:
+    client = TestClient(app)
+    # Default layout: no collision.
+    base = client.get(f"/api/projects/{PROJECT_ID}/build-status").json()
+    assert base["collision_count"] == 0, base
+    # Move the bench onto the galley (both anchored at origin) → overlap.
+    resp = client.post(
+        f"/api/projects/{PROJECT_ID}/validate-layout",
+        json={"instances": [{"instance_id": "bench_left_front",
+                             "position_mm": {"x": 0, "y": 0, "z": 0},
+                             "rotation_deg": 0}]},
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["collision_count"] >= 1, body
+    pair = {body["collisions"][0]["instance_a"], body["collisions"][0]["instance_b"]}
+    assert pair == {"galley_back_left", "bench_left_front"}, body
+    assert body["build_ready"] is False, body
+
+
 def test_validate_layout_unknown_instance_returns_422() -> None:
     client = TestClient(app)
     resp = client.post(
@@ -128,11 +164,14 @@ def main() -> int:
 
     tests = [
         test_list_projects_includes_example,
+        test_catalog_has_two_modules,
+        test_project_has_two_instances,
         test_project_detail_resolves_module,
         test_project_build_status,
         test_unknown_project_returns_404,
         test_validate_layout_noop_matches_saved,
         test_validate_layout_detects_out_of_bounds_edit,
+        test_validate_layout_detects_collision_between_instances,
         test_validate_layout_unknown_instance_returns_422,
         test_validate_layout_unknown_project_returns_404,
     ]
