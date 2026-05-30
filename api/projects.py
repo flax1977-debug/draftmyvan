@@ -9,6 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Optional
 
+from runtime import layout_validation
 from runtime.project import (
     EXAMPLES_DIR,
     Project,
@@ -138,25 +139,52 @@ def get_project(project_id: str) -> Optional[dict[str, Any]]:
 
 
 def project_build_status(project_id: str) -> Optional[dict[str, Any]]:
-    """Per-project readiness: payload budget + van-box containment."""
+    """Per-project readiness: van-box containment + collision + clearance + payload."""
     project = _find(project_id)
     if project is None:
         return None
-    cards = _cards_by_id()
     index = index_modules()
+    specs = layout_validation.module_specs()
+
     issues = containment_issues(project, index)
-    total = _total_weight(project, cards)
-    max_payload = project.van.max_payload_kg
-    payload_ok = total <= max_payload
     within_bounds = len(issues) == 0
+
+    validation = layout_validation.validate_layout(project, specs)
+    payload = validation.payload
+    collisions = [
+        {"instance_a": c.instance_a, "instance_b": c.instance_b, "overlap_mm": c.overlap_mm}
+        for c in validation.collisions
+    ]
+    clearance = [
+        {
+            "instance_a": w.instance_a,
+            "instance_b": w.instance_b,
+            "kind": w.kind,
+            "gap_mm": w.gap_mm,
+            "required_mm": w.required_mm,
+        }
+        for w in validation.clearance_warnings
+    ]
+
+    build_ready = within_bounds and not collisions and payload.weight_ok
+
     return {
         "project_id": project.id,
         "instance_count": len(project.instances),
-        "total_weight_kg": total,
-        "max_payload_kg": max_payload,
-        "payload_headroom_kg": round(max_payload - total, 3),
-        "payload_ok": payload_ok,
+        # Payload (existing keys kept stable; max_payload_kg may be null).
+        "total_weight_kg": payload.total_weight_kg,
+        "max_payload_kg": payload.limit_kg,
+        "payload_headroom_kg": payload.remaining_kg,
+        "payload_ok": payload.weight_ok,
+        "limit_enforced": payload.limit_enforced,
+        # Van-box containment (existing keys).
         "within_bounds": within_bounds,
         "bounds_issues": issues,
-        "build_ready": payload_ok and within_bounds,
+        # Collision + clearance (new).
+        "collisions": collisions,
+        "collision_count": len(collisions),
+        "clearance_warnings": clearance,
+        "clearance_not_enforced": list(validation.clearance_not_enforced),
+        # Overall.
+        "build_ready": build_ready,
     }

@@ -113,6 +113,9 @@ jobs:
       - name: Run project-model suite (loader + containment)
         run: python -m tests.test_project_model
 
+      - name: Run layout-validation suite (collision + clearance + payload)
+        run: python -m tests.test_layout_validation
+
       - name: Run project schema suite (jsonschema)
         run: python -m tests.test_validate_project
 

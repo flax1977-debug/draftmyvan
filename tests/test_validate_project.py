@@ -65,6 +65,13 @@ def test_additional_property_fails() -> None:
     assert errors, "additionalProperties:false must reject unknown top-level keys"
 
 
+def test_payload_limit_is_optional() -> None:
+    data = _load_example()
+    del data["van"]["max_payload_kg"]
+    errors = list(_validator().iter_errors(data))
+    assert errors == [], [e.message for e in errors]
+
+
 def main() -> int:
     if not _DEPS_AVAILABLE:
         print('SKIP  project schema suite: jsonschema not installed (pip install -e ".[dev]")')
@@ -78,6 +85,7 @@ def main() -> int:
         test_missing_required_field_fails,
         test_unknown_zone_fails,
         test_additional_property_fails,
+        test_payload_limit_is_optional,
     ]
     failed = 0
     for t in tests:
