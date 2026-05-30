@@ -13,6 +13,7 @@ export interface Dimensions {
 export interface ModuleCard {
   id: string;
   type: string;
+  anchor: string;
   display_name: string | null;
   category: string | null;
   dimensions_mm: Dimensions;
@@ -110,6 +111,7 @@ export interface Van {
 
 export interface ProjectInstanceModule {
   type: string;
+  anchor: string;
   display_name: string | null;
   dimensions_mm: Dimensions;
   weight_kg: number | null;

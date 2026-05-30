@@ -13,10 +13,20 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
+from runtime import anchors  # noqa: E402
 from runtime import layout_validation as lv  # noqa: E402
-from runtime.project import ModuleInstance, Project, Van, Vec3, load_project  # noqa: E402
+from runtime.project import (  # noqa: E402
+    ModuleInstance,
+    Project,
+    Van,
+    Vec3,
+    containment_issues,
+    index_modules,
+    load_project,
+)
 
 GALLEY = "galley_1000_sink_left_oak"
+LOCKER = "overhead_locker_1200"  # ceiling_left, 1200x300x350
 SPECS = lv.module_specs()
 EXAMPLE = REPO_ROOT / "examples" / "projects" / "weekend_explorer.json"
 
@@ -129,6 +139,79 @@ def test_example_project_is_clean() -> None:
     assert v.payload.limit_enforced is True
 
 
+# --- anchor semantics --------------------------------------------------
+
+def test_anchor_floor_back_left_box() -> None:
+    assert anchors.aabb("floor_back_left", 0, 0, 0, 1000, 520, 900) == (0, 1000, 0, 520, 0, 900)
+
+
+def test_anchor_wall_right_extends_in_negative_x() -> None:
+    # Against the right wall: x runs [x-w, x]; z is floor-style (up).
+    box = anchors.aabb("wall_right", 2020, 0, 100, 1000, 520, 900)
+    assert (box[0], box[1]) == (1020, 2020), box
+    assert (box[4], box[5]) == (100, 1000), box
+
+
+def test_anchor_ceiling_hangs_down_from_z() -> None:
+    # z is the TOP (at the ceiling); height extends downward.
+    box = anchors.aabb("ceiling_left", 0, 0, 2760, 1200, 300, 350)
+    assert (box[4], box[5]) == (2410, 2760), box
+    assert (box[0], box[1], box[2], box[3]) == (0, 1200, 0, 300), box
+
+
+def test_unsupported_anchor_raises() -> None:
+    try:
+        anchors.aabb("floor_back_right", 0, 0, 0, 1, 1, 1)
+        assert False, "expected UnsupportedAnchorError"
+    except anchors.UnsupportedAnchorError:
+        pass
+
+
+def _van_box(payload: float | None = 1200) -> Van:
+    return _van(payload)
+
+
+def test_wall_left_module_inside_van_is_in_bounds() -> None:
+    # A 300-deep module on the left wall at mid-height fits the van box.
+    box = anchors.aabb("wall_left", 0, 1000, 1200, 300, 1000, 350)
+    x0, x1, y0, y1, z0, z1 = box
+    inside = 0 <= x0 and x1 <= 2020 and 0 <= y0 and y1 <= 5932 and 0 <= z0 and z1 <= 2760
+    assert inside, box
+
+
+def test_wall_right_module_out_of_bounds_when_too_wide() -> None:
+    # 2500 mm extending in -x from the right wall passes x=0 → out of bounds.
+    x0, x1, *_ = anchors.aabb("wall_right", 2020, 0, 100, 2500, 300, 300)
+    assert x0 < 0, (x0, x1)
+
+
+def test_ceiling_module_inside_van_passes_containment() -> None:
+    idx = index_modules()
+    inst = ModuleInstance("locker_a", LOCKER, Vec3(0, 1000, 2760), 0, "utilities", True)
+    project = Project("t", "t", _van_box(), (inst,))
+    assert containment_issues(project, idx) == []
+
+
+def test_ceiling_module_out_of_bounds_is_flagged() -> None:
+    idx = index_modules()
+    # Top at z=300 → hangs down to z=-50 → below the floor → out of bounds.
+    inst = ModuleInstance("locker_b", LOCKER, Vec3(0, 1000, 300), 0, "utilities", True)
+    project = Project("t", "t", _van_box(), (inst,))
+    issues = containment_issues(project, idx)
+    assert len(issues) == 1 and "outside the van box" in issues[0], issues
+
+
+def test_collision_between_floor_and_ceiling_modules() -> None:
+    # Galley on the floor (z 0..900) and a ceiling locker hung low (top z=900
+    # → z 550..900) overlapping in x/y → AABB collision across mount types.
+    galley = ModuleInstance("g", GALLEY, Vec3(0, 0, 0), 0, "kitchen", True)
+    locker = ModuleInstance("l", LOCKER, Vec3(0, 0, 900), 0, "utilities", True)
+    project = Project("t", "t", _van_box(), (galley, locker))
+    collisions = lv.detect_collisions(project, SPECS)
+    assert len(collisions) == 1, collisions
+    assert {collisions[0].instance_a, collisions[0].instance_b} == {"g", "l"}
+
+
 def main() -> int:
     tests = [
         test_non_overlapping_modules_have_no_collision,
@@ -141,6 +224,15 @@ def main() -> int:
         test_payload_under_limit_is_ok,
         test_payload_over_limit_is_not_ok,
         test_missing_payload_limit_is_not_enforced,
+        test_anchor_floor_back_left_box,
+        test_anchor_wall_right_extends_in_negative_x,
+        test_anchor_ceiling_hangs_down_from_z,
+        test_unsupported_anchor_raises,
+        test_wall_left_module_inside_van_is_in_bounds,
+        test_wall_right_module_out_of_bounds_when_too_wide,
+        test_ceiling_module_inside_van_passes_containment,
+        test_ceiling_module_out_of_bounds_is_flagged,
+        test_collision_between_floor_and_ceiling_modules,
         test_example_project_is_clean,
     ]
     failed = 0

@@ -57,7 +57,11 @@
         "ceiling_back_left",
         "ceiling_back_right",
         "wall_left_back",
-        "wall_right_back"
+        "wall_right_back",
+        "wall_left",
+        "wall_right",
+        "ceiling_left",
+        "ceiling_right"
       ]
     },
     "placement": {

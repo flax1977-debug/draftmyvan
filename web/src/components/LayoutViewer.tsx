@@ -11,6 +11,19 @@ const SNAP_MM = 50;
 
 const snap = (mm: number) => Math.round(mm / SNAP_MM) * SNAP_MM;
 
+// Van-space minimum corner (mm) for an instance, mirroring runtime/anchors.py
+// (rotation-0 reference; group rotation handles rotation_deg). Right anchors
+// extend in -X from x; ceiling anchors hang down from z.
+function minCorner(inst: ProjectInstance): [number, number, number] {
+  const { x, y, z } = inst.position_mm;
+  const w = inst.module?.dimensions_mm.width ?? 0;
+  const h = inst.module?.dimensions_mm.height ?? 0;
+  const anchor = inst.module?.anchor ?? "floor_back_left";
+  const right = anchor === "wall_right" || anchor === "ceiling_right";
+  const ceiling = anchor === "ceiling_left" || anchor === "ceiling_right";
+  return [right ? x - w : x, ceiling ? z - h : z, y];
+}
+
 function PlacedModule({
   inst,
   url,
@@ -23,11 +36,10 @@ function PlacedModule({
   const { scene } = useGLTF(url);
   const { gl } = useThree();
   const object = useMemo(() => scene.clone(true), [scene]);
-  const pos: [number, number, number] = [
-    inst.position_mm.x / MM,
-    inst.position_mm.z / MM,
-    inst.position_mm.y / MM,
-  ];
+  // Place the GLB's local-origin (bbox-min) corner at the anchor's van-space
+  // minimum corner; Three Y = van Z (height), Three Z = van Y (length).
+  const [cx, cy, cz] = minCorner(inst);
+  const pos: [number, number, number] = [cx / MM, cy / MM, cz / MM];
   return (
     <group
       position={pos}

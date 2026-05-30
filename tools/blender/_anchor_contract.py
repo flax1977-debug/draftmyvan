@@ -33,7 +33,9 @@ from __future__ import annotations
 
 from typing import Iterable
 
-SUPPORTED_ANCHORS: frozenset[str] = frozenset({"floor_back_left"})
+SUPPORTED_ANCHORS: frozenset[str] = frozenset(
+    {"floor_back_left", "wall_left", "wall_right", "ceiling_left", "ceiling_right"}
+)
 
 
 class UnsupportedAnchorError(Exception):
@@ -48,9 +50,17 @@ def expected_corners_mm(
     anchor: str,
     dims_mm: tuple[int, int, int],
 ) -> tuple[tuple[float, float, float], tuple[float, float, float]]:
-    """Return (expected_min, expected_max) corners in millimetres for `anchor`."""
+    """Return (expected_min, expected_max) GLB-mesh corners in millimetres.
+
+    The GLB authoring origin is anchor-independent in V1: a module GLB always
+    has its bounding-box minimum at the local origin and its maximum at
+    (width, depth, height). The anchor's layout meaning (which van corner the
+    position denotes, which way it extends) is applied at placement time by
+    runtime.anchors, not baked into the mesh. Every SUPPORTED anchor therefore
+    shares this same expected mesh box; unsupported anchors fail loudly.
+    """
     width, depth, height = dims_mm
-    if anchor == "floor_back_left":
+    if anchor in SUPPORTED_ANCHORS:
         return (0.0, 0.0, 0.0), (float(width), float(depth), float(height))
     raise UnsupportedAnchorError(anchor)
 

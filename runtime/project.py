@@ -15,11 +15,11 @@ cross-checks things JSON Schema cannot express:
 from __future__ import annotations
 
 import json
-import math
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from . import anchors
 from .load_module import ConsumerError, load_module
 from .module import Module
 
@@ -28,9 +28,6 @@ EXAMPLES_DIR = REPO_ROOT / "examples"
 
 ZONES = ("kitchen", "seating", "storage", "bed", "utilities")
 
-# Containment is only enforced for this anchor (the one the rest of the repo
-# enforces); see manifest README "currently only floor_back_left is enforced".
-_CHECKABLE_ANCHOR = "floor_back_left"
 
 
 class ProjectError(Exception):
@@ -217,33 +214,12 @@ def load_project(project_path: Path, manifests_dir: Path = EXAMPLES_DIR) -> Proj
     return parse_project(raw, manifests_dir)
 
 
-def _footprint_bounds(
-    module: Module, inst: ModuleInstance
-) -> tuple[float, float, float, float]:
-    """Axis-aligned (minx, maxx, miny, maxy) of the rotated footprint, in mm.
-
-    The module's width maps to van X, depth to van Y. The footprint rectangle
-    is rotated about the anchor corner by rotation_deg, then offset by the
-    instance position. For rotation_deg == 0 this is simply
-    [px, px+width] x [py, py+depth].
-    """
-    w = module.dimensions.width_mm
-    d = module.dimensions.depth_mm
-    theta = math.radians(inst.rotation_deg)
-    cos_t, sin_t = math.cos(theta), math.sin(theta)
-    corners = ((0.0, 0.0), (w, 0.0), (0.0, d), (w, d))
-    xs = [cx * cos_t - cy * sin_t for cx, cy in corners]
-    ys = [cx * sin_t + cy * cos_t for cx, cy in corners]
-    px, py = inst.position_mm.x, inst.position_mm.y
-    return (px + min(xs), px + max(xs), py + min(ys), py + max(ys))
-
-
 def containment_issues(project: Project, index: dict[str, Module] | None = None) -> list[str]:
     """Return human-readable issues for instances that fall outside the van box.
 
-    Only instances whose module uses the ``floor_back_left`` anchor are checked
-    (the only anchor with enforced semantics); others are not enough data and
-    are skipped. An empty list means every checkable instance fits.
+    Bounds are computed per the module's anchor (see runtime.anchors). An
+    instance whose anchor is not yet supported is skipped (not enough data).
+    An empty list means every checkable instance fits inside the van box.
     """
     if index is None:
         index = index_modules()
@@ -251,15 +227,25 @@ def containment_issues(project: Project, index: dict[str, Module] | None = None)
     issues: list[str] = []
     for inst in project.instances:
         module = index.get(inst.module_id)
-        if module is None or module.anchor != _CHECKABLE_ANCHOR:
+        if module is None:
             continue
-        x0, x1, y0, y1 = _footprint_bounds(module, inst)
-        z0 = float(inst.position_mm.z)
-        z1 = z0 + module.dimensions.height_mm
+        try:
+            x0, x1, y0, y1, z0, z1 = anchors.aabb(
+                module.anchor,
+                inst.position_mm.x,
+                inst.position_mm.y,
+                inst.position_mm.z,
+                module.dimensions.width_mm,
+                module.dimensions.depth_mm,
+                module.dimensions.height_mm,
+                inst.rotation_deg,
+            )
+        except anchors.UnsupportedAnchorError:
+            continue
         if x0 < 0 or x1 > van.width_mm or y0 < 0 or y1 > van.length_mm or z0 < 0 or z1 > van.height_mm:
             issues.append(
                 f"instance {inst.instance_id!r} (module {inst.module_id!r}) extends outside the van box: "
-                f"footprint x[{x0:.0f},{x1:.0f}] y[{y0:.0f},{y1:.0f}] z[{z0:.0f},{z1:.0f}] mm "
+                f"box x[{x0:.0f},{x1:.0f}] y[{y0:.0f},{y1:.0f}] z[{z0:.0f},{z1:.0f}] mm "
                 f"vs van width={van.width_mm} length={van.length_mm} height={van.height_mm} mm"
             )
     return issues
