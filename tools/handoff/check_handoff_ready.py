@@ -152,6 +152,34 @@ FORBIDDEN_PY_SUBSTRINGS: tuple[str, ...] = (
     "import dart",
 )
 
+# Directories the .py scan must never descend into. These are local /
+# gitignored artifacts (virtualenvs, build output, caches) that can
+# contain unrelated source — e.g. once `.venv` exists from
+# `pip install -e ".[dev]"`, it holds third-party packages with `lib/`
+# in their paths/strings and would trip FORBIDDEN_PY_SUBSTRINGS. CI is
+# clean (no .venv) so this only bites locally.
+IGNORED_DIR_NAMES: frozenset[str] = frozenset(
+    {
+        "__pycache__",
+        ".venv",
+        "venv",
+        ".git",
+        "build",
+        "dist",
+        "node_modules",
+        ".pytest_cache",
+    }
+)
+
+
+def _is_ignored(rel_parts: tuple[str, ...]) -> bool:
+    """True if any path component is an ignored dir (incl. `*.egg-info`)."""
+    for part in rel_parts:
+        if part in IGNORED_DIR_NAMES or part.endswith(".egg-info"):
+            return True
+    return False
+
+
 # Test modules invoked under `--include-dynamic`. Add new test modules
 # here when they land.
 DYNAMIC_TEST_MODULES: tuple[str, ...] = (
@@ -208,8 +236,10 @@ def check_no_host_app_references(root: Path) -> tuple[bool, list[str]]:
     """Scan every .py file under `root` for forbidden host-app substrings."""
     findings: list[tuple[Path, str]] = []
     for py in sorted(root.rglob("*.py")):
-        # Skip __pycache__ — irrelevant and may contain unrelated strings.
-        if "__pycache__" in py.parts:
+        # Skip local / gitignored artifact dirs (virtualenvs, build
+        # output, caches, __pycache__) — they may contain unrelated
+        # source that trips the forbidden-substring scan.
+        if _is_ignored(py.relative_to(root).parts):
             continue
         try:
             text = py.read_text(encoding="utf-8")
