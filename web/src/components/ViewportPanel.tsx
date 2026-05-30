@@ -39,11 +39,13 @@ function MovementControls({
   onNudge,
   onRotate,
   onReset,
+  onRemove,
 }: {
   edited: boolean;
   onNudge: (axis: "x" | "y", delta: number) => void;
   onRotate: (delta: number) => void;
   onReset: () => void;
+  onRemove: () => void;
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2 border-b border-neutral-800 px-4 py-3 text-xs">
@@ -56,6 +58,13 @@ function MovementControls({
       <CtrlButton label="⟲ −90°" onClick={() => onRotate(-90)} />
       <CtrlButton label="⟳ +90°" onClick={() => onRotate(90)} />
       <CtrlButton label="Reset" onClick={onReset} />
+      <button
+        type="button"
+        onClick={onRemove}
+        className="rounded border border-red-700/70 px-2 py-1 text-xs text-red-300 hover:bg-red-900/40"
+      >
+        Remove from layout
+      </button>
       {edited && <span className="ml-1 text-amber-400">● local edits (unsaved)</span>}
     </div>
   );
@@ -118,6 +127,7 @@ export default function ViewportPanel({
   onNudge,
   onRotate,
   onReset,
+  onRemove,
   onDrag,
 }: {
   project: ProjectDetail | null;
@@ -127,6 +137,7 @@ export default function ViewportPanel({
   onNudge: (axis: "x" | "y", delta: number) => void;
   onRotate: (delta: number) => void;
   onReset: () => void;
+  onRemove: () => void;
   onDrag: (instanceId: string, posMm: { x: number; y: number; z: number }) => void;
 }) {
   return (
@@ -189,6 +200,7 @@ export default function ViewportPanel({
               onNudge={onNudge}
               onRotate={onRotate}
               onReset={onReset}
+              onRemove={onRemove}
             />
             <InstanceInspector inst={instance} detail={detail} />
           </>

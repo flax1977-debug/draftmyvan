@@ -38,7 +38,9 @@ export default function App() {
   const [edits, setEdits] = useState<Record<string, Edit>>({});
   // Local, unsaved instances added from the catalog (not yet in the project).
   const [added, setAdded] = useState<ProjectInstance[]>([]);
-  const dirty = Object.keys(edits).length > 0 || added.length > 0;
+  // Saved instance_ids removed locally (not yet persisted).
+  const [removed, setRemoved] = useState<Set<string>>(new Set());
+  const dirty = Object.keys(edits).length > 0 || added.length > 0 || removed.size > 0;
 
   useEffect(() => {
     fetchModules()
@@ -61,8 +63,9 @@ export default function App() {
       const e = edits[inst.instance_id];
       return e ? { ...inst, position_mm: { ...e.position_mm }, rotation_deg: e.rotation_deg } : inst;
     };
-    return [...project.module_instances.map(apply), ...added.map(apply)];
-  }, [project, edits, added]);
+    const kept = project.module_instances.filter((i) => !removed.has(i.instance_id));
+    return [...kept.map(apply), ...added.map(apply)];
+  }, [project, edits, added, removed]);
 
   const effectiveProject = useMemo<ProjectDetail | null>(
     () => (project ? { ...project, module_instances: effectiveInstances } : null),
@@ -185,6 +188,35 @@ export default function App() {
     }
   }
 
+  // Remove the selected placed instance from the local layout. An unsaved
+  // added instance just disappears; a saved instance is marked removed (a
+  // dirty change that Save persists and Discard restores).
+  function removeSelected() {
+    if (selection?.kind !== "instance") return;
+    const id = selection.id;
+    const isAdded = added.some((i) => i.instance_id === id);
+    setEdits((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    if (isAdded) {
+      setAdded((prev) => prev.filter((i) => i.instance_id !== id));
+    } else {
+      setRemoved((prev) => new Set(prev).add(id));
+    }
+    setSelection(null);
+  }
+
+  // Discard ALL unsaved changes (edits, added, removed) → back to the saved
+  // project. This is how an unsaved deletion is restored.
+  function discardChanges() {
+    setEdits({});
+    setAdded([]);
+    setRemoved(new Set());
+    setSelection(null);
+  }
+
   // Add a catalog module as a new local placed instance (unsaved).
   function addInstance(card: ModuleCard) {
     if (!project) return;
@@ -258,6 +290,7 @@ export default function App() {
       setProject(fresh);
       setEdits({}); // new baseline === saved; dirty clears
       setAdded([]); // added instances are now part of the saved project
+      setRemoved(new Set()); // removals are now persisted
     } catch (e) {
       setSaveError(String(e)); // keep local edits visible
     } finally {
@@ -275,6 +308,7 @@ export default function App() {
           dirty={dirty}
           saving={saving}
           onSave={save}
+          onDiscard={discardChanges}
         />
         {(error || saveError || editError) && (
           <div className="bg-red-950/60 px-5 py-2 text-xs text-red-300">
@@ -300,6 +334,7 @@ export default function App() {
             onNudge={nudge}
             onRotate={rotate}
             onReset={resetInstance}
+            onRemove={removeSelected}
             onDrag={dragTo}
           />
           <CatalogPanel
