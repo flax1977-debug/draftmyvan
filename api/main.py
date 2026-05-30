@@ -1,12 +1,16 @@
-"""FastAPI application skeleton for the DraftMyVan configurator.
+"""FastAPI application for the DraftMyVan configurator.
 
-Task 1 scope (intentionally minimal):
-  - GET /api/health        liveness/info probe.
-  - GET /assets/<file>     static mount for committed GLB assets so the
-                           browser 3D view can load them directly.
+Endpoints (all read-only):
+  - GET /api/health             liveness/info probe.
+  - GET /api/modules            catalog cards for every committed module.
+  - GET /api/modules/{id}       selected-module detail (404 if unknown).
+  - GET /api/build-status       aggregate readiness for the Build-Ready badge.
+  - GET /assets/<file>          static mount for committed GLB assets so the
+                                browser 3D view can load them directly.
 
-Catalog, selected-module, and build-status endpoints arrive in later tasks
-and will reuse the existing runtime consumer rather than duplicate it.
+Serialization/aggregation reuses the existing runtime consumer
+(runtime.load_module / runtime.package_report) and the schema gate
+(tools/validate_manifest.py) rather than duplicating contract logic.
 """
 
 from __future__ import annotations

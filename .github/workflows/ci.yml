@@ -22,7 +22,9 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: python -m pip install --upgrade pip jsonschema
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
 
       - name: Validate every example manifest
         run: python tools/validate_manifest.py --all
@@ -95,6 +97,15 @@ jobs:
 
       - name: Run handoff-ready suite (extraction-readiness helper)
         run: python -m tests.test_handoff_ready
+
+      - name: Run API health suite (FastAPI skeleton)
+        run: python -m tests.test_api_health
+
+      - name: Run API modules suite (catalog + detail endpoints)
+        run: python -m tests.test_api_modules
+
+      - name: Run API build-status suite (aggregate readiness)
+        run: python -m tests.test_api_build_status
 
       - name: Run handoff-ready CLI (static-only mode)
         run: python tools/handoff/check_handoff_ready.py
