@@ -70,8 +70,8 @@ def _fixture_bytes() -> bytes:
 def test_committed_examples_scan_as_package_ready() -> None:
     report = pr.scan_package(EXAMPLES_DIR)
     assert not report.errors, report.errors
-    assert report.total_modules == 2  # galley + bench
-    assert report.consumable_modules == 2
+    assert report.total_modules == 4  # galley + bench + wardrobe + locker
+    assert report.consumable_modules == 4
     assert report.missing_assets == 0
     assert report.exit_code() == 0
     assert report.ok is True
@@ -299,8 +299,8 @@ def test_cli_duplicate_ids_return_exit_2() -> None:
 def test_format_report_summary_counts_match_aggregates() -> None:
     report = pr.scan_package(EXAMPLES_DIR)
     rendered = "\n".join(pr.format_report(report))
-    assert "total modules:    2" in rendered  # galley + bench
-    assert "consumable:       2" in rendered
+    assert "total modules:    4" in rendered  # galley + bench + wardrobe + locker
+    assert "consumable:       4" in rendered
     assert "missing assets:   0" in rendered
     assert "manifest errors:  0" in rendered
 

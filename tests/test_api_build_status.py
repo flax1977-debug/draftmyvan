@@ -35,7 +35,7 @@ def test_build_status_is_ready_for_current_catalog() -> None:
     assert body["all_valid"] is True, body
     assert body["collisions"] == [], body
     assert body["weight_ok"] is True, body
-    assert body["module_count"] == 2, body
+    assert body["module_count"] == 4, body
     assert body["missing_assets"] == 0, body
     assert body["schema_errors"] == {}, body
     assert body["package_errors"] == [], body
@@ -44,8 +44,8 @@ def test_build_status_is_ready_for_current_catalog() -> None:
 def test_summed_weight_matches_manifest() -> None:
     client = TestClient(app)
     body = client.get("/api/build-status").json()
-    # galley_1000 (45 kg) + bench_900 (28 kg).
-    assert body["total_weight_kg"] == 73, body
+    # Whole catalog: galley 45 + bench 28 + wardrobe 38 + locker 14.
+    assert body["total_weight_kg"] == 125, body
 
 
 def test_not_yet_enforced_checks_are_reported_honestly() -> None:
