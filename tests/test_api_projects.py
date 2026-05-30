@@ -76,6 +76,49 @@ def test_unknown_project_returns_404() -> None:
     assert client.get("/api/projects/nope/build-status").status_code == 404
 
 
+def test_validate_layout_noop_matches_saved() -> None:
+    client = TestClient(app)
+    resp = client.post(f"/api/projects/{PROJECT_ID}/validate-layout", json={"instances": []})
+    assert resp.status_code == 200, resp.status_code
+    body = resp.json()
+    assert body["build_ready"] is True, body
+    assert body["within_bounds"] is True, body
+    assert body["collision_count"] == 0, body
+
+
+def test_validate_layout_detects_out_of_bounds_edit() -> None:
+    client = TestClient(app)
+    # Galley width 1000 mm; anchor at x=2000 pushes it past the 2020 mm width.
+    resp = client.post(
+        f"/api/projects/{PROJECT_ID}/validate-layout",
+        json={"instances": [{"instance_id": "galley_back_left",
+                             "position_mm": {"x": 2000, "y": 0, "z": 0},
+                             "rotation_deg": 0}]},
+    )
+    assert resp.status_code == 200, resp.status_code
+    body = resp.json()
+    assert body["within_bounds"] is False, body
+    assert len(body["bounds_issues"]) == 1, body
+    assert body["build_ready"] is False, body
+
+
+def test_validate_layout_unknown_instance_returns_422() -> None:
+    client = TestClient(app)
+    resp = client.post(
+        f"/api/projects/{PROJECT_ID}/validate-layout",
+        json={"instances": [{"instance_id": "nope",
+                             "position_mm": {"x": 0, "y": 0, "z": 0},
+                             "rotation_deg": 0}]},
+    )
+    assert resp.status_code == 422, resp.status_code
+
+
+def test_validate_layout_unknown_project_returns_404() -> None:
+    client = TestClient(app)
+    resp = client.post("/api/projects/nope/validate-layout", json={"instances": []})
+    assert resp.status_code == 404, resp.status_code
+
+
 def main() -> int:
     if not _DEPS_AVAILABLE:
         print('SKIP  api projects suite: fastapi/httpx not installed (pip install -e ".[dev]")')
@@ -88,6 +131,10 @@ def main() -> int:
         test_project_detail_resolves_module,
         test_project_build_status,
         test_unknown_project_returns_404,
+        test_validate_layout_noop_matches_saved,
+        test_validate_layout_detects_out_of_bounds_edit,
+        test_validate_layout_unknown_instance_returns_422,
+        test_validate_layout_unknown_project_returns_404,
     ]
     failed = 0
     for t in tests:

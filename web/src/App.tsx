@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Sidebar from "./components/Sidebar";
 import TopBar from "./components/TopBar";
 import StatusBar from "./components/StatusBar";
@@ -9,16 +9,19 @@ import {
   fetchModule,
   fetchModules,
   fetchProject,
-  fetchProjectBuildStatus,
+  validateLayout,
+  type InstanceEdit,
   type ModuleCard,
   type ModuleDetail,
   type ProjectBuildStatus,
   type ProjectDetail,
+  type ProjectInstance,
 } from "./api";
 
 const PROJECT_ID = "weekend_explorer";
 
 type Selection = { kind: "module" | "instance"; id: string } | null;
+type Edit = { position_mm: { x: number; y: number; z: number }; rotation_deg: number };
 
 export default function App() {
   const [modules, setModules] = useState<ModuleCard[]>([]);
@@ -27,8 +30,10 @@ export default function App() {
   const [selection, setSelection] = useState<Selection>(null);
   const [detail, setDetail] = useState<ModuleDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
+  // Local, unsaved position/rotation overrides keyed by instance_id.
+  const [edits, setEdits] = useState<Record<string, Edit>>({});
 
-  // Initial load: catalog + the example project + its build status.
   useEffect(() => {
     fetchModules()
       .then(({ modules }) => setModules(modules))
@@ -41,18 +46,27 @@ export default function App() {
         }
       })
       .catch((e) => setError(String(e)));
-    fetchProjectBuildStatus(PROJECT_ID)
-      .then(setStatus)
-      .catch((e) => setError(String(e)));
   }, []);
 
-  const selectedInstance = useMemo(() => {
-    if (selection?.kind !== "instance" || !project) return null;
-    return project.module_instances.find((i) => i.instance_id === selection.id) ?? null;
-  }, [selection, project]);
+  // Apply local edits over the saved instances for rendering + inspection.
+  const effectiveInstances = useMemo<ProjectInstance[]>(() => {
+    if (!project) return [];
+    return project.module_instances.map((inst) => {
+      const e = edits[inst.instance_id];
+      return e ? { ...inst, position_mm: { ...e.position_mm }, rotation_deg: e.rotation_deg } : inst;
+    });
+  }, [project, edits]);
 
-  // Module detail is fetched for whichever module is in focus — a catalog
-  // selection or the module behind a selected placed instance.
+  const effectiveProject = useMemo<ProjectDetail | null>(
+    () => (project ? { ...project, module_instances: effectiveInstances } : null),
+    [project, effectiveInstances],
+  );
+
+  const selectedInstance = useMemo(() => {
+    if (selection?.kind !== "instance") return null;
+    return effectiveInstances.find((i) => i.instance_id === selection.id) ?? null;
+  }, [selection, effectiveInstances]);
+
   const selectedModuleId =
     selection?.kind === "module" ? selection.id : selectedInstance?.module_id ?? null;
 
@@ -63,33 +77,108 @@ export default function App() {
     }
     let cancelled = false;
     fetchModule(selectedModuleId)
-      .then((d) => {
-        if (!cancelled) setDetail(d);
-      })
+      .then((d) => !cancelled && setDetail(d))
       .catch((e) => setError(String(e)));
     return () => {
       cancelled = true;
     };
   }, [selectedModuleId]);
 
+  // Live validation: re-run whenever the saved project loads or edits change.
+  // Only the latest response is applied; on failure we keep the last status.
+  const seq = useRef(0);
+  useEffect(() => {
+    if (!project) return;
+    const overrides: InstanceEdit[] = Object.entries(edits).map(([instance_id, e]) => ({
+      instance_id,
+      position_mm: e.position_mm,
+      rotation_deg: e.rotation_deg,
+    }));
+    const mine = ++seq.current;
+    validateLayout(PROJECT_ID, overrides)
+      .then((s) => {
+        if (mine === seq.current) {
+          setStatus(s);
+          setEditError(null);
+        }
+      })
+      .catch((e) => {
+        if (mine === seq.current) setEditError(String(e));
+      });
+  }, [project, edits]);
+
+  // --- local movement handlers (operate on the selected instance) ---------
+
+  // Base edit for an instance: its current override, or its saved values.
+  function baseEdit(instanceId: string): Edit | null {
+    const saved = project?.module_instances.find((i) => i.instance_id === instanceId);
+    if (!saved) return null;
+    return { position_mm: { ...saved.position_mm }, rotation_deg: saved.rotation_deg };
+  }
+
+  function nudge(axis: "x" | "y", delta: number) {
+    if (selection?.kind !== "instance") return;
+    const id = selection.id;
+    setEdits((prev) => {
+      const base = prev[id] ?? baseEdit(id);
+      if (!base) return prev;
+      return {
+        ...prev,
+        [id]: { ...base, position_mm: { ...base.position_mm, [axis]: base.position_mm[axis] + delta } },
+      };
+    });
+  }
+
+  function rotate(delta: number) {
+    if (selection?.kind !== "instance") return;
+    const id = selection.id;
+    setEdits((prev) => {
+      const base = prev[id] ?? baseEdit(id);
+      if (!base) return prev;
+      return { ...prev, [id]: { ...base, rotation_deg: (((base.rotation_deg + delta) % 360) + 360) % 360 } };
+    });
+  }
+
+  function resetInstance() {
+    if (selection?.kind !== "instance") return;
+    setEdits((prev) => {
+      const next = { ...prev };
+      delete next[selection.id];
+      return next;
+    });
+  }
+
+  const selectedEdited =
+    selection?.kind === "instance" ? selection.id in edits : false;
+
   return (
     <div className="flex h-full w-full bg-neutral-950 text-neutral-200">
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar project={project} status={status} />
-        {error && (
+        {(error || editError) && (
           <div className="bg-red-950/60 px-5 py-2 text-xs text-red-300">
-            API error: {error} — is the backend running on the API origin?
+            {error
+              ? `API error: ${error} — is the backend running on the API origin?`
+              : `Validation failed: ${editError} — showing the last known layout.`}
           </div>
         )}
         <div className="flex min-h-0 flex-1">
           <VanOverviewPanel
-            project={project}
+            project={effectiveProject}
             status={status}
             selectedInstanceId={selectedInstance?.instance_id ?? null}
             onSelectInstance={(id) => setSelection({ kind: "instance", id })}
           />
-          <ViewportPanel project={project} detail={detail} instance={selectedInstance} />
+          <ViewportPanel
+            project={effectiveProject}
+            detail={detail}
+            instance={selectedInstance}
+            edited={selectedEdited}
+            onNudge={nudge}
+            onRotate={rotate}
+            onReset={resetInstance}
+          />
           <CatalogPanel
             modules={modules}
             selectedId={selection?.kind === "module" ? selection.id : null}
