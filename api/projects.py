@@ -6,21 +6,28 @@ Reuses runtime.project (typed load + containment) and the existing catalog
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 from typing import Any, Optional
 
 from runtime import layout_validation
 from runtime.project import (
     EXAMPLES_DIR,
+    ModuleInstance,
     Project,
     ProjectError,
     Van,
+    Vec3,
     containment_issues,
     index_modules,
     load_project,
 )
 
 from . import catalog
+
+
+class LayoutEditError(ValueError):
+    """A layout edit payload referenced an unknown instance or bad values."""
 
 PROJECTS_DIR = EXAMPLES_DIR / "projects"
 
@@ -138,11 +145,8 @@ def get_project(project_id: str) -> Optional[dict[str, Any]]:
     }
 
 
-def project_build_status(project_id: str) -> Optional[dict[str, Any]]:
-    """Per-project readiness: van-box containment + collision + clearance + payload."""
-    project = _find(project_id)
-    if project is None:
-        return None
+def _build_status_dict(project: Project) -> dict[str, Any]:
+    """Validation/build-status payload for a saved or in-memory edited project."""
     index = index_modules()
     specs = layout_validation.module_specs()
 
@@ -188,3 +192,47 @@ def project_build_status(project_id: str) -> Optional[dict[str, Any]]:
         # Overall.
         "build_ready": build_ready,
     }
+
+
+def project_build_status(project_id: str) -> Optional[dict[str, Any]]:
+    """Build status for the saved project on disk; None if not found."""
+    project = _find(project_id)
+    if project is None:
+        return None
+    return _build_status_dict(project)
+
+
+def _apply_overrides(project: Project, overrides: list[dict[str, Any]]) -> Project:
+    """Return a new Project with position/rotation replaced for matching ids.
+
+    In-memory only — never writes to disk. Raises LayoutEditError for an
+    unknown instance_id.
+    """
+    by_id = {inst.instance_id: inst for inst in project.instances}
+    edited: dict[str, ModuleInstance] = {}
+    for ov in overrides:
+        iid = ov.get("instance_id")
+        if iid not in by_id:
+            raise LayoutEditError(f"unknown instance_id: {iid!r}")
+        pos = ov["position_mm"]
+        edited[iid] = replace(
+            by_id[iid],
+            position_mm=Vec3(x=int(pos["x"]), y=int(pos["y"]), z=int(pos["z"])),
+            rotation_deg=float(ov["rotation_deg"]),
+        )
+    new_instances = tuple(edited.get(inst.instance_id, inst) for inst in project.instances)
+    return replace(project, instances=new_instances)
+
+
+def validate_layout_overrides(
+    project_id: str, overrides: list[dict[str, Any]]
+) -> Optional[dict[str, Any]]:
+    """Validate the saved project with in-memory instance overrides applied.
+
+    Returns the same shape as ``project_build_status``; None if the project
+    is not found. Raises LayoutEditError for an unknown instance_id.
+    """
+    project = _find(project_id)
+    if project is None:
+        return None
+    return _build_status_dict(_apply_overrides(project, overrides))

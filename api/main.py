@@ -20,8 +20,27 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
 from . import build_status, catalog, projects
+
+
+class PositionIn(BaseModel):
+    x: int
+    y: int
+    z: int
+
+
+class InstanceOverrideIn(BaseModel):
+    instance_id: str
+    position_mm: PositionIn
+    rotation_deg: float
+
+
+class LayoutEditIn(BaseModel):
+    """Unsaved local edits: position/rotation overrides keyed by instance_id."""
+
+    instances: list[InstanceOverrideIn] = []
 
 API_VERSION = "0.1.0"
 
@@ -49,7 +68,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=DEV_ORIGINS,
-    allow_methods=["GET"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
@@ -103,8 +122,25 @@ def get_project(project_id: str) -> dict[str, object]:
 
 @app.get("/api/projects/{project_id}/build-status")
 def get_project_build_status(project_id: str) -> dict[str, object]:
-    """Per-project readiness: payload budget + van-box containment."""
+    """Per-project readiness for the saved project: collision/clearance/payload."""
     status = projects.project_build_status(project_id)
+    if status is None:
+        raise HTTPException(status_code=404, detail=f"project not found: {project_id}")
+    return status
+
+
+@app.post("/api/projects/{project_id}/validate-layout")
+def validate_project_layout(project_id: str, edit: LayoutEditIn) -> dict[str, object]:
+    """Validate the saved project with unsaved local edits applied (no writes).
+
+    Returns the same shape as build-status. 404 if the project is unknown,
+    422 if an override references an unknown instance_id.
+    """
+    overrides = [o.model_dump() for o in edit.instances]
+    try:
+        status = projects.validate_layout_overrides(project_id, overrides)
+    except projects.LayoutEditError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
     if status is None:
         raise HTTPException(status_code=404, detail=f"project not found: {project_id}")
     return status

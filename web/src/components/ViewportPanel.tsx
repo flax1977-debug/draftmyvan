@@ -22,6 +22,45 @@ function Spec({ label, value }: { label: string; value: string }) {
   );
 }
 
+function CtrlButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="rounded border border-neutral-700 px-2 py-1 text-xs text-neutral-200 hover:bg-neutral-800"
+    >
+      {label}
+    </button>
+  );
+}
+
+function MovementControls({
+  edited,
+  onNudge,
+  onRotate,
+  onReset,
+}: {
+  edited: boolean;
+  onNudge: (axis: "x" | "y", delta: number) => void;
+  onRotate: (delta: number) => void;
+  onReset: () => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2 border-b border-neutral-800 px-4 py-3 text-xs">
+      <span className="text-neutral-500">Move (±50 mm):</span>
+      <CtrlButton label="−X" onClick={() => onNudge("x", -50)} />
+      <CtrlButton label="+X" onClick={() => onNudge("x", 50)} />
+      <CtrlButton label="−Y" onClick={() => onNudge("y", -50)} />
+      <CtrlButton label="+Y" onClick={() => onNudge("y", 50)} />
+      <span className="ml-2 text-neutral-500">Rotate:</span>
+      <CtrlButton label="⟲ −90°" onClick={() => onRotate(-90)} />
+      <CtrlButton label="⟳ +90°" onClick={() => onRotate(90)} />
+      <CtrlButton label="Reset" onClick={onReset} />
+      {edited && <span className="ml-1 text-amber-400">● local edits (unsaved)</span>}
+    </div>
+  );
+}
+
 function InstanceInspector({ inst, detail }: { inst: ProjectInstance; detail: ModuleDetail | null }) {
   const d = detail?.dimensions_mm ?? inst.module?.dimensions_mm;
   const p = inst.position_mm;
@@ -75,10 +114,18 @@ export default function ViewportPanel({
   project,
   detail,
   instance,
+  edited,
+  onNudge,
+  onRotate,
+  onReset,
 }: {
   project: ProjectDetail | null;
   detail: ModuleDetail | null;
   instance: ProjectInstance | null;
+  edited: boolean;
+  onNudge: (axis: "x" | "y", delta: number) => void;
+  onRotate: (delta: number) => void;
+  onReset: () => void;
 }) {
   return (
     <main className="flex flex-1 flex-col bg-neutral-950">
@@ -127,7 +174,15 @@ export default function ViewportPanel({
           ))}
         </div>
         {instance ? (
-          <InstanceInspector inst={instance} detail={detail} />
+          <>
+            <MovementControls
+              edited={edited}
+              onNudge={onNudge}
+              onRotate={onRotate}
+              onReset={onReset}
+            />
+            <InstanceInspector inst={instance} detail={detail} />
+          </>
         ) : detail ? (
           <ModuleInspector detail={detail} />
         ) : (

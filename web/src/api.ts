@@ -68,6 +68,18 @@ async function getJson<T>(path: string): Promise<T> {
   return (await resp.json()) as T;
 }
 
+async function postJson<T>(path: string, body: unknown): Promise<T> {
+  const resp = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!resp.ok) {
+    throw new Error(`${path} → HTTP ${resp.status}`);
+  }
+  return (await resp.json()) as T;
+}
+
 export function fetchModules(): Promise<{ modules: ModuleCard[] }> {
   return getJson("/api/modules");
 }
@@ -158,4 +170,19 @@ export function fetchProject(id: string): Promise<ProjectDetail> {
 
 export function fetchProjectBuildStatus(id: string): Promise<ProjectBuildStatus> {
   return getJson(`/api/projects/${id}/build-status`);
+}
+
+// Unsaved local edits: position/rotation overrides keyed by instance_id.
+export interface InstanceEdit {
+  instance_id: string;
+  position_mm: { x: number; y: number; z: number };
+  rotation_deg: number;
+}
+
+// Validate the saved project with local edits applied (server does not write).
+export function validateLayout(
+  id: string,
+  instances: InstanceEdit[],
+): Promise<ProjectBuildStatus> {
+  return postJson(`/api/projects/${id}/validate-layout`, { instances });
 }
