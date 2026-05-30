@@ -14,6 +14,9 @@ htmlcov/
 # Frontend (web/)
 node_modules/
 web/dist/
+
+# Local-only Claude tooling config (not shared)
+.claude/launch.json
 examples/assets/candidates/render_evidence/**/*.png
 !examples/assets/candidates/render_evidence/galley_1000_candidate/
 !examples/assets/candidates/render_evidence/galley_1000_candidate/front.png
