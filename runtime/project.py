@@ -52,7 +52,7 @@ class Van:
     length_mm: int
     width_mm: int
     height_mm: int
-    max_payload_kg: float
+    max_payload_kg: float | None
 
 
 @dataclass(frozen=True)
@@ -124,6 +124,9 @@ def _parse_van(raw: Any) -> Van:
     wheelbase = raw.get("wheelbase_mm") if isinstance(raw, dict) else None
     if wheelbase is not None:
         wheelbase = _require_int(wheelbase, "van.wheelbase_mm")
+    payload = raw.get("max_payload_kg") if isinstance(raw, dict) else None
+    if payload is not None:
+        payload = _require_number(payload, "van.max_payload_kg")
     return Van(
         make=str(make) if make is not None else None,
         model=str(model) if model is not None else None,
@@ -131,7 +134,7 @@ def _parse_van(raw: Any) -> Van:
         length_mm=_require_int(_require(dims, "length", "van.dimensions_mm.length"), "van.dimensions_mm.length"),
         width_mm=_require_int(_require(dims, "width", "van.dimensions_mm.width"), "van.dimensions_mm.width"),
         height_mm=_require_int(_require(dims, "height", "van.dimensions_mm.height"), "van.dimensions_mm.height"),
-        max_payload_kg=_require_number(_require(raw, "max_payload_kg", "van.max_payload_kg"), "van.max_payload_kg"),
+        max_payload_kg=payload,
     )
 
 

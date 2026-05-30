@@ -28,7 +28,7 @@
     "van": {
       "description": "The base vehicle. Dimensions are the overall bounding box used for containment checks (interior offsets are not modelled yet).",
       "type": "object",
-      "required": ["dimensions_mm", "max_payload_kg"],
+      "required": ["dimensions_mm"],
       "additionalProperties": false,
       "properties": {
         "make": { "type": "string", "maxLength": 80 },

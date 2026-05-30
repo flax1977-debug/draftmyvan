@@ -62,6 +62,12 @@ def test_project_build_status() -> None:
     assert body["within_bounds"] is True, body
     assert body["bounds_issues"] == [], body
     assert body["build_ready"] is True, body
+    # Task 7 fields.
+    assert body["collisions"] == [], body
+    assert body["collision_count"] == 0, body
+    assert body["clearance_warnings"] == [], body
+    assert "front_clearance" in body["clearance_not_enforced"], body
+    assert body["limit_enforced"] is True, body
 
 
 def test_unknown_project_returns_404() -> None:
