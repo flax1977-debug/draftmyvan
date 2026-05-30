@@ -29,6 +29,9 @@ jobs:
       - name: Validate every example manifest
         run: python tools/validate_manifest.py --all
 
+      - name: Validate every example project
+        run: python tools/validate_project.py --all
+
       - name: Run manifest validator test suite
         run: python -m tests.test_validator
 
@@ -106,6 +109,15 @@ jobs:
 
       - name: Run API build-status suite (aggregate readiness)
         run: python -m tests.test_api_build_status
+
+      - name: Run project-model suite (loader + containment)
+        run: python -m tests.test_project_model
+
+      - name: Run project schema suite (jsonschema)
+        run: python -m tests.test_validate_project
+
+      - name: Run API projects suite (project endpoints)
+        run: python -m tests.test_api_projects
 
       - name: Run handoff-ready CLI (static-only mode)
         run: python tools/handoff/check_handoff_ready.py

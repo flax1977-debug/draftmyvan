@@ -21,7 +21,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from . import build_status, catalog
+from . import build_status, catalog, projects
 
 API_VERSION = "0.1.0"
 
@@ -84,6 +84,30 @@ def get_module(module_id: str) -> dict[str, object]:
 def get_build_status() -> dict[str, object]:
     """Aggregate readiness for the Build-Ready badge and status bar."""
     return build_status.compute()
+
+
+@app.get("/api/projects")
+def list_projects() -> dict[str, object]:
+    """All committed projects as summaries."""
+    return {"projects": projects.list_projects()}
+
+
+@app.get("/api/projects/{project_id}")
+def get_project(project_id: str) -> dict[str, object]:
+    """Full project detail; 404 if no project has that id."""
+    project = projects.get_project(project_id)
+    if project is None:
+        raise HTTPException(status_code=404, detail=f"project not found: {project_id}")
+    return project
+
+
+@app.get("/api/projects/{project_id}/build-status")
+def get_project_build_status(project_id: str) -> dict[str, object]:
+    """Per-project readiness: payload budget + van-box containment."""
+    status = projects.project_build_status(project_id)
+    if status is None:
+        raise HTTPException(status_code=404, detail=f"project not found: {project_id}")
+    return status
 
 
 # Mounted last so it never shadows /api routes.
