@@ -42,7 +42,7 @@ function MovementControls({
   onRemove,
 }: {
   edited: boolean;
-  onNudge: (axis: "x" | "y", delta: number) => void;
+  onNudge: (axis: "x" | "y" | "z", delta: number) => void;
   onRotate: (delta: number) => void;
   onReset: () => void;
   onRemove: () => void;
@@ -54,6 +54,8 @@ function MovementControls({
       <CtrlButton label="+X" onClick={() => onNudge("x", 50)} />
       <CtrlButton label="−Y" onClick={() => onNudge("y", -50)} />
       <CtrlButton label="+Y" onClick={() => onNudge("y", 50)} />
+      <CtrlButton label="−Z" onClick={() => onNudge("z", -50)} />
+      <CtrlButton label="+Z" onClick={() => onNudge("z", 50)} />
       <span className="ml-2 text-neutral-500">Rotate:</span>
       <CtrlButton label="⟲ −90°" onClick={() => onRotate(-90)} />
       <CtrlButton label="⟳ +90°" onClick={() => onRotate(90)} />
@@ -134,7 +136,7 @@ export default function ViewportPanel({
   detail: ModuleDetail | null;
   instance: ProjectInstance | null;
   edited: boolean;
-  onNudge: (axis: "x" | "y", delta: number) => void;
+  onNudge: (axis: "x" | "y" | "z", delta: number) => void;
   onRotate: (delta: number) => void;
   onReset: () => void;
   onRemove: () => void;
@@ -152,7 +154,7 @@ export default function ViewportPanel({
           </button>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-xs text-neutral-500">Drag module on floor · 50 mm snap</span>
+          <span className="text-xs text-neutral-500">Drag moves X/Y · buttons adjust Z/rotation · 50 mm</span>
           <button
             type="button"
             className="rounded-md border border-neutral-700 px-3 py-1 text-sm text-neutral-300 hover:bg-neutral-800"

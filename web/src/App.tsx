@@ -133,7 +133,7 @@ export default function App() {
     return { position_mm: { ...inst.position_mm }, rotation_deg: inst.rotation_deg };
   }
 
-  function nudge(axis: "x" | "y", delta: number) {
+  function nudge(axis: "x" | "y" | "z", delta: number) {
     if (selection?.kind !== "instance") return;
     const id = selection.id;
     setEdits((prev) => {
