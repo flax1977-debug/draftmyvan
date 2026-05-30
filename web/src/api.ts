@@ -79,3 +79,83 @@ export function fetchModule(id: string): Promise<ModuleDetail> {
 export function fetchBuildStatus(): Promise<BuildStatus> {
   return getJson("/api/build-status");
 }
+
+// --- projects (Task 6/7 endpoints) -------------------------------------
+
+export interface VanDimensions {
+  length: number;
+  width: number;
+  height: number;
+}
+
+export interface Van {
+  make: string | null;
+  model: string | null;
+  wheelbase_mm?: number | null;
+  dimensions_mm: VanDimensions;
+  max_payload_kg: number | null;
+}
+
+export interface ProjectInstanceModule {
+  type: string;
+  display_name: string | null;
+  dimensions_mm: Dimensions;
+  weight_kg: number | null;
+  glb_url: string;
+}
+
+export interface ProjectInstance {
+  instance_id: string;
+  module_id: string;
+  position_mm: { x: number; y: number; z: number };
+  rotation_deg: number;
+  zone: string;
+  visible: boolean;
+  module: ProjectInstanceModule | null;
+}
+
+export interface ProjectDetail {
+  id: string;
+  name: string;
+  van: Van;
+  module_instances: ProjectInstance[];
+}
+
+export interface Collision {
+  instance_a: string;
+  instance_b: string;
+  overlap_mm: { x: number; y: number; z: number };
+}
+
+export interface ClearanceWarning {
+  instance_a: string;
+  instance_b: string;
+  kind: string;
+  gap_mm: number;
+  required_mm: number;
+}
+
+export interface ProjectBuildStatus {
+  project_id: string;
+  instance_count: number;
+  total_weight_kg: number;
+  max_payload_kg: number | null;
+  payload_headroom_kg: number | null;
+  payload_ok: boolean;
+  limit_enforced: boolean;
+  within_bounds: boolean;
+  bounds_issues: string[];
+  collisions: Collision[];
+  collision_count: number;
+  clearance_warnings: ClearanceWarning[];
+  clearance_not_enforced: string[];
+  build_ready: boolean;
+}
+
+export function fetchProject(id: string): Promise<ProjectDetail> {
+  return getJson(`/api/projects/${id}`);
+}
+
+export function fetchProjectBuildStatus(id: string): Promise<ProjectBuildStatus> {
+  return getJson(`/api/projects/${id}/build-status`);
+}

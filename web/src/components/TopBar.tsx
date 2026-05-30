@@ -1,6 +1,7 @@
-import type { BuildStatus } from "../api";
+import type { ProjectBuildStatus, ProjectDetail } from "../api";
 
-// Top bar: project identity + global actions + a live Build-Ready badge.
+// Top bar: project identity + global actions + a live Build-Ready badge
+// (driven by the project's build status).
 
 function Action({ label }: { label: string }) {
   return (
@@ -13,7 +14,7 @@ function Action({ label }: { label: string }) {
   );
 }
 
-function BuildBadge({ status }: { status: BuildStatus | null }) {
+function BuildBadge({ status }: { status: ProjectBuildStatus | null }) {
   if (status === null) {
     return (
       <span className="ml-2 rounded-md bg-neutral-700 px-3 py-1.5 text-sm font-medium text-neutral-300">
@@ -35,13 +36,20 @@ function BuildBadge({ status }: { status: BuildStatus | null }) {
   );
 }
 
-export default function TopBar({ status }: { status: BuildStatus | null }) {
+export default function TopBar({
+  project,
+  status,
+}: {
+  project: ProjectDetail | null;
+  status: ProjectBuildStatus | null;
+}) {
+  const vanLabel = project?.van.model ?? null;
   return (
     <header className="flex items-center justify-between border-b border-neutral-800 bg-neutral-900 px-5 py-3">
       <div className="flex items-center gap-3">
-        <span className="text-sm font-semibold text-white">Sprinter L2H2</span>
-        <span className="text-neutral-600">•</span>
-        <span className="text-sm text-neutral-400">Weekend Explorer</span>
+        {vanLabel && <span className="text-sm font-semibold text-white">{vanLabel}</span>}
+        {vanLabel && <span className="text-neutral-600">•</span>}
+        <span className="text-sm text-neutral-300">{project?.name ?? "—"}</span>
         <span className="ml-2 text-xs text-emerald-400">✓ Saved</span>
       </div>
 
