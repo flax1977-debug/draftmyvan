@@ -154,6 +154,19 @@ export default function App() {
     });
   }
 
+  // Pointer drag in the 3D viewport feeds the SAME local edit state as the
+  // nudge buttons (so validation/dirty/save are shared). No-op when the
+  // snapped position is unchanged, to avoid redundant validation requests.
+  function dragTo(instanceId: string, posMm: { x: number; y: number; z: number }) {
+    setEdits((prev) => {
+      const base = prev[instanceId] ?? baseEdit(instanceId);
+      if (!base) return prev;
+      const p = base.position_mm;
+      if (p.x === posMm.x && p.y === posMm.y && p.z === posMm.z) return prev;
+      return { ...prev, [instanceId]: { ...base, position_mm: posMm } };
+    });
+  }
+
   const selectedEdited =
     selection?.kind === "instance" ? selection.id in edits : false;
 
@@ -217,6 +230,7 @@ export default function App() {
             onNudge={nudge}
             onRotate={rotate}
             onReset={resetInstance}
+            onDrag={dragTo}
           />
           <CatalogPanel
             modules={modules}
