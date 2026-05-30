@@ -145,3 +145,29 @@ jobs:
 
       - name: Run Fusion geometry dry-run CLI
         run: python tools/fusion/fusion_create_galley_v1.py --dry-run tests/fixtures/galley_1000_panels.expected.json
+
+  web:
+    name: Build frontend (web/)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies (clean, from lockfile)
+        run: npm ci
+
+      - name: TypeScript check
+        run: npm run typecheck
+
+      - name: Vite build (also runs tsc --noEmit)
+        run: npm run build
