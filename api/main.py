@@ -13,9 +13,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+
+from . import catalog
 
 API_VERSION = "0.1.0"
 
@@ -57,6 +59,21 @@ def health() -> dict[str, object]:
         "version": API_VERSION,
         "assets_dir_present": ASSETS_DIR.is_dir(),
     }
+
+
+@app.get("/api/modules")
+def list_modules() -> dict[str, object]:
+    """Catalog: every committed module as a lightweight card."""
+    return {"modules": catalog.list_modules()}
+
+
+@app.get("/api/modules/{module_id}")
+def get_module(module_id: str) -> dict[str, object]:
+    """Selected-module detail; 404 if no manifest has that id."""
+    module = catalog.get_module(module_id)
+    if module is None:
+        raise HTTPException(status_code=404, detail=f"module not found: {module_id}")
+    return module
 
 
 # Mounted last so it never shadows /api routes.
