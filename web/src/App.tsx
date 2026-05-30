@@ -9,8 +9,10 @@ import {
   fetchModule,
   fetchModules,
   fetchProject,
+  saveLayout,
   validateLayout,
   type InstanceEdit,
+  type InstanceFull,
   type ModuleCard,
   type ModuleDetail,
   type ProjectBuildStatus,
@@ -31,8 +33,11 @@ export default function App() {
   const [detail, setDetail] = useState<ModuleDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   // Local, unsaved position/rotation overrides keyed by instance_id.
   const [edits, setEdits] = useState<Record<string, Edit>>({});
+  const dirty = Object.keys(edits).length > 0;
 
   useEffect(() => {
     fetchModules()
@@ -100,6 +105,7 @@ export default function App() {
         if (mine === seq.current) {
           setStatus(s);
           setEditError(null);
+          setSaveError(null); // a new edit supersedes a prior failed save
         }
       })
       .catch((e) => {
@@ -151,16 +157,49 @@ export default function App() {
   const selectedEdited =
     selection?.kind === "instance" ? selection.id in edits : false;
 
+  // Persist the current effective layout, then rebaseline so dirty clears.
+  async function save() {
+    if (!effectiveProject) return;
+    setSaving(true);
+    setSaveError(null);
+    const instances: InstanceFull[] = effectiveProject.module_instances.map((i) => ({
+      instance_id: i.instance_id,
+      module_id: i.module_id,
+      position_mm: { ...i.position_mm },
+      rotation_deg: i.rotation_deg,
+      zone: i.zone,
+      visible: i.visible,
+    }));
+    try {
+      await saveLayout(PROJECT_ID, instances);
+      const fresh = await fetchProject(PROJECT_ID);
+      setProject(fresh);
+      setEdits({}); // new baseline === saved; dirty clears
+    } catch (e) {
+      setSaveError(String(e)); // keep local edits visible
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <div className="flex h-full w-full bg-neutral-950 text-neutral-200">
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar project={project} status={status} />
-        {(error || editError) && (
+        <TopBar
+          project={project}
+          status={status}
+          dirty={dirty}
+          saving={saving}
+          onSave={save}
+        />
+        {(error || saveError || editError) && (
           <div className="bg-red-950/60 px-5 py-2 text-xs text-red-300">
             {error
               ? `API error: ${error} — is the backend running on the API origin?`
-              : `Validation failed: ${editError} — showing the last known layout.`}
+              : saveError
+                ? `Save failed: ${saveError} — your local edits are kept.`
+                : `Validation failed: ${editError} — showing the last known layout.`}
           </div>
         )}
         <div className="flex min-h-0 flex-1">

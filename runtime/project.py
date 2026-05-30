@@ -165,22 +165,14 @@ def _parse_instance(raw: Any, ordinal: int) -> ModuleInstance:
     )
 
 
-def load_project(project_path: Path, manifests_dir: Path = EXAMPLES_DIR) -> Project:
-    """Read a project JSON file into a typed ``Project``.
+def parse_project(raw: Any, manifests_dir: Path = EXAMPLES_DIR) -> Project:
+    """Validate an in-memory project dict into a typed ``Project``.
 
-    Raises ``ProjectError`` for malformed JSON/structure, non-integer
-    positions, duplicate instance ids, or a ``module_id`` that does not
-    resolve to a manifest in ``manifests_dir``.
+    Same checks as ``load_project`` but without disk I/O — used by the save
+    path to validate a candidate layout before it is written.
     """
-    if not project_path.exists():
-        raise ProjectError(f"project not found: {project_path}")
-    try:
-        with project_path.open("r", encoding="utf-8") as f:
-            raw = json.load(f)
-    except json.JSONDecodeError as e:
-        raise ProjectError(f"project {project_path} is not valid JSON: {e}") from e
     if not isinstance(raw, dict):
-        raise ProjectError(f"project {project_path} is not a JSON object")
+        raise ProjectError("project must be a JSON object")
 
     project_id = str(_require(raw, "id", "id"))
     name = str(_require(raw, "name", "name"))
@@ -206,6 +198,23 @@ def load_project(project_path: Path, manifests_dir: Path = EXAMPLES_DIR) -> Proj
         instances.append(inst)
 
     return Project(id=project_id, name=name, van=van, instances=tuple(instances))
+
+
+def load_project(project_path: Path, manifests_dir: Path = EXAMPLES_DIR) -> Project:
+    """Read a project JSON file into a typed ``Project``.
+
+    Raises ``ProjectError`` for malformed JSON/structure, non-integer
+    positions, duplicate instance ids, or a ``module_id`` that does not
+    resolve to a manifest in ``manifests_dir``.
+    """
+    if not project_path.exists():
+        raise ProjectError(f"project not found: {project_path}")
+    try:
+        with project_path.open("r", encoding="utf-8") as f:
+            raw = json.load(f)
+    except json.JSONDecodeError as e:
+        raise ProjectError(f"project {project_path} is not valid JSON: {e}") from e
+    return parse_project(raw, manifests_dir)
 
 
 def _footprint_bounds(

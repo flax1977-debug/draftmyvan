@@ -122,6 +122,9 @@ jobs:
       - name: Run API projects suite (project endpoints)
         run: python -m tests.test_api_projects
 
+      - name: Run API save-layout suite (validated persistence)
+        run: python -m tests.test_api_save_layout
+
       - name: Run handoff-ready CLI (static-only mode)
         run: python tools/handoff/check_handoff_ready.py
 

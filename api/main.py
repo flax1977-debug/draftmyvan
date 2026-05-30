@@ -42,6 +42,22 @@ class LayoutEditIn(BaseModel):
 
     instances: list[InstanceOverrideIn] = []
 
+
+class InstanceIn(BaseModel):
+    instance_id: str
+    module_id: str
+    position_mm: PositionIn
+    rotation_deg: float
+    zone: str
+    visible: bool
+
+
+class SaveLayoutIn(BaseModel):
+    """Full edited instance list to persist. allow_invalid defaults to false."""
+
+    instances: list[InstanceIn]
+    allow_invalid: bool = False
+
 API_VERSION = "0.1.0"
 
 # api/ lives at the repo root, alongside examples/.
@@ -141,6 +157,28 @@ def validate_project_layout(project_id: str, edit: LayoutEditIn) -> dict[str, ob
         status = projects.validate_layout_overrides(project_id, overrides)
     except projects.LayoutEditError as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
+    if status is None:
+        raise HTTPException(status_code=404, detail=f"project not found: {project_id}")
+    return status
+
+
+@app.post("/api/projects/{project_id}/save-layout")
+def save_project_layout(project_id: str, payload: SaveLayoutIn) -> dict[str, object]:
+    """Validate and persist edited module_instances to the project file.
+
+    404 unknown project; 422 invalid layout (unknown module id, bad values);
+    409 if the layout is not build-ready and allow_invalid is false.
+    Returns the saved build status with "saved": true.
+    """
+    instances = [i.model_dump() for i in payload.instances]
+    try:
+        status = projects.save_layout(
+            project_id, instances, allow_invalid=payload.allow_invalid
+        )
+    except projects.ProjectError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    except projects.InvalidLayoutError as e:
+        raise HTTPException(status_code=409, detail=e.status) from e
     if status is None:
         raise HTTPException(status_code=404, detail=f"project not found: {project_id}")
     return status

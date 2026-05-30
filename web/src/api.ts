@@ -186,3 +186,25 @@ export function validateLayout(
 ): Promise<ProjectBuildStatus> {
   return postJson(`/api/projects/${id}/validate-layout`, { instances });
 }
+
+// Full edited instance list to persist to the project file.
+export interface InstanceFull {
+  instance_id: string;
+  module_id: string;
+  position_mm: { x: number; y: number; z: number };
+  rotation_deg: number;
+  zone: string;
+  visible: boolean;
+}
+
+export type SavedBuildStatus = ProjectBuildStatus & { saved: boolean };
+
+// Persist the edited layout. Rejects (throws) on validation failure (422),
+// not-build-ready (409), or unknown project (404).
+export function saveLayout(
+  id: string,
+  instances: InstanceFull[],
+  allowInvalid = false,
+): Promise<SavedBuildStatus> {
+  return postJson(`/api/projects/${id}/save-layout`, { instances, allow_invalid: allowInvalid });
+}
