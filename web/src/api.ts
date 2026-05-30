@@ -172,22 +172,7 @@ export function fetchProjectBuildStatus(id: string): Promise<ProjectBuildStatus>
   return getJson(`/api/projects/${id}/build-status`);
 }
 
-// Unsaved local edits: position/rotation overrides keyed by instance_id.
-export interface InstanceEdit {
-  instance_id: string;
-  position_mm: { x: number; y: number; z: number };
-  rotation_deg: number;
-}
-
-// Validate the saved project with local edits applied (server does not write).
-export function validateLayout(
-  id: string,
-  instances: InstanceEdit[],
-): Promise<ProjectBuildStatus> {
-  return postJson(`/api/projects/${id}/validate-layout`, { instances });
-}
-
-// Full edited instance list to persist to the project file.
+// A full candidate instance (edited positions and/or newly added instances).
 export interface InstanceFull {
   instance_id: string;
   module_id: string;
@@ -195,6 +180,14 @@ export interface InstanceFull {
   rotation_deg: number;
   zone: string;
   visible: boolean;
+}
+
+// Validate a candidate full instance list (server does not write).
+export function validateLayout(
+  id: string,
+  instances: InstanceFull[],
+): Promise<ProjectBuildStatus> {
+  return postJson(`/api/projects/${id}/validate-layout`, { instances });
 }
 
 export type SavedBuildStatus = ProjectBuildStatus & { saved: boolean };

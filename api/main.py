@@ -31,18 +31,6 @@ class PositionIn(BaseModel):
     z: int
 
 
-class InstanceOverrideIn(BaseModel):
-    instance_id: str
-    position_mm: PositionIn
-    rotation_deg: float
-
-
-class LayoutEditIn(BaseModel):
-    """Unsaved local edits: position/rotation overrides keyed by instance_id."""
-
-    instances: list[InstanceOverrideIn] = []
-
-
 class InstanceIn(BaseModel):
     instance_id: str
     module_id: str
@@ -52,10 +40,15 @@ class InstanceIn(BaseModel):
     visible: bool
 
 
-class SaveLayoutIn(BaseModel):
-    """Full edited instance list to persist. allow_invalid defaults to false."""
+class LayoutIn(BaseModel):
+    """A full candidate instance list (edited positions and/or added instances)."""
 
-    instances: list[InstanceIn]
+    instances: list[InstanceIn] = []
+
+
+class SaveLayoutIn(LayoutIn):
+    """Same payload as validate, plus the build-ready override flag."""
+
     allow_invalid: bool = False
 
 API_VERSION = "0.1.0"
@@ -146,16 +139,17 @@ def get_project_build_status(project_id: str) -> dict[str, object]:
 
 
 @app.post("/api/projects/{project_id}/validate-layout")
-def validate_project_layout(project_id: str, edit: LayoutEditIn) -> dict[str, object]:
-    """Validate the saved project with unsaved local edits applied (no writes).
+def validate_project_layout(project_id: str, payload: LayoutIn) -> dict[str, object]:
+    """Validate a candidate full instance list (no writes).
 
-    Returns the same shape as build-status. 404 if the project is unknown,
-    422 if an override references an unknown instance_id.
+    Covers edited positions AND newly added instances. Returns the same shape
+    as build-status. 404 if the project is unknown; 422 for an invalid layout
+    (unknown module id, non-integer positions, duplicate/invalid instances).
     """
-    overrides = [o.model_dump() for o in edit.instances]
+    instances = [i.model_dump() for i in payload.instances]
     try:
-        status = projects.validate_layout_overrides(project_id, overrides)
-    except projects.LayoutEditError as e:
+        status = projects.validate_layout(project_id, instances)
+    except projects.ProjectError as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
     if status is None:
         raise HTTPException(status_code=404, detail=f"project not found: {project_id}")
