@@ -35,10 +35,15 @@ def test_list_projects_includes_example() -> None:
     assert p["van"]["dimensions_mm"] == {"length": 5932, "width": 2020, "height": 2760}, p
 
 
-def test_catalog_has_two_modules() -> None:
+def test_catalog_has_four_modules() -> None:
     client = TestClient(app)
     ids = {m["id"] for m in client.get("/api/modules").json()["modules"]}
-    assert {"galley_1000_sink_left_oak", "bench_900_storage"} <= ids, ids
+    assert ids == {
+        "galley_1000_sink_left_oak",
+        "bench_900_storage",
+        "wardrobe_600",
+        "overhead_locker_1200",
+    }, ids
 
 
 def test_project_has_two_instances() -> None:
@@ -185,7 +190,7 @@ def main() -> int:
 
     tests = [
         test_list_projects_includes_example,
-        test_catalog_has_two_modules,
+        test_catalog_has_four_modules,
         test_project_has_two_instances,
         test_project_detail_resolves_module,
         test_project_build_status,

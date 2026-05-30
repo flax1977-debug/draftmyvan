@@ -1,0 +1,33 @@
+{
+  "version": "0.1.0",
+  "id": "overhead_locker_1200",
+  "type": "cabinet",
+  "dimensions_mm": {
+    "width": 1200,
+    "depth": 300,
+    "height": 350
+  },
+  "anchor": "floor_back_left",
+  "placement": "floor",
+  "clearances": {
+    "front_mm": 0,
+    "sides_mm": 20,
+    "above_mm": 0
+  },
+  "visual": {
+    "glb_path": "assets/overhead_locker_1200.glb",
+    "collision_proxy": "UCX_overhead_locker_1200",
+    "material_slots": ["ply_body", "door_oak"]
+  },
+  "manufacturing": {
+    "fusion_template": "locker_v1",
+    "plywood_thickness_mm": 15,
+    "weight_kg": 14,
+    "hardware": ["hinges_2x"]
+  },
+  "rules": {
+    "cnc_eligible": true,
+    "build_difficulty": "easy",
+    "service_access": ["bottom_panel"]
+  }
+}

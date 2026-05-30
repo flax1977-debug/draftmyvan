@@ -1,0 +1,33 @@
+{
+  "version": "0.1.0",
+  "id": "wardrobe_600",
+  "type": "cabinet",
+  "dimensions_mm": {
+    "width": 600,
+    "depth": 600,
+    "height": 1800
+  },
+  "anchor": "floor_back_left",
+  "placement": "floor",
+  "clearances": {
+    "front_mm": 600,
+    "sides_mm": 20,
+    "above_mm": 50
+  },
+  "visual": {
+    "glb_path": "assets/wardrobe_600.glb",
+    "collision_proxy": "UCX_wardrobe_600",
+    "material_slots": ["ply_body", "door_oak"]
+  },
+  "manufacturing": {
+    "fusion_template": "wardrobe_v1",
+    "plywood_thickness_mm": 18,
+    "weight_kg": 38,
+    "hardware": ["hinges_2x", "handle_1x"]
+  },
+  "rules": {
+    "cnc_eligible": true,
+    "build_difficulty": "medium",
+    "service_access": ["back_panel"]
+  }
+}
