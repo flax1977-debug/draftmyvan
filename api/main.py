@@ -17,7 +17,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from . import catalog
+from . import build_status, catalog
 
 API_VERSION = "0.1.0"
 
@@ -74,6 +74,12 @@ def get_module(module_id: str) -> dict[str, object]:
     if module is None:
         raise HTTPException(status_code=404, detail=f"module not found: {module_id}")
     return module
+
+
+@app.get("/api/build-status")
+def get_build_status() -> dict[str, object]:
+    """Aggregate readiness for the Build-Ready badge and status bar."""
+    return build_status.compute()
 
 
 # Mounted last so it never shadows /api routes.
