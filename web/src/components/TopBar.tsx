@@ -42,12 +42,14 @@ export default function TopBar({
   dirty,
   saving,
   onSave,
+  onDiscard,
 }: {
   project: ProjectDetail | null;
   status: ProjectBuildStatus | null;
   dirty: boolean;
   saving: boolean;
   onSave: () => void;
+  onDiscard: () => void;
 }) {
   const vanLabel = project?.van.model ?? null;
   return (
@@ -68,6 +70,19 @@ export default function TopBar({
         <Action label="↷ Redo" />
         <Action label="Share" />
         <Action label="Export" />
+        <button
+          type="button"
+          onClick={onDiscard}
+          disabled={!dirty || saving}
+          className={
+            "ml-2 rounded-md px-3 py-1.5 text-sm " +
+            (!dirty || saving
+              ? "cursor-not-allowed text-neutral-600"
+              : "text-neutral-300 hover:bg-neutral-800")
+          }
+        >
+          Discard
+        </button>
         <button
           type="button"
           onClick={onSave}
