@@ -177,6 +177,65 @@ def test_host_app_reference_grep_flags_temp_offender() -> None:
         offender.unlink(missing_ok=True)
 
 
+def test_host_app_reference_grep_skips_ignored_dirs() -> None:
+    # A forbidden substring living inside a local / gitignored artifact dir
+    # (e.g. a `.venv` created by `pip install -e ".[dev]"`, or build/ , dist/,
+    # node_modules/, an .egg-info) must NOT trip the grep. CI is clean, but
+    # locally these dirs hold third-party source with forbidden substrings.
+    forbidden = h.FORBIDDEN_PY_SUBSTRINGS[0] + "something"
+    tmp = Path(tempfile.mkdtemp(prefix="dmv_handoff_ignored_"))
+    try:
+        # A clean first-party source file that must still be scanned.
+        (tmp / "pkg").mkdir()
+        (tmp / "pkg" / "mod.py").write_text('"""clean."""\nX = 1\n', encoding="utf-8")
+        # An offender buried in each kind of ignored directory. Paths are
+        # built from components (not literals) so this test file's own source
+        # never spells one of the FORBIDDEN_PY_SUBSTRINGS the checker greps for.
+        ignored_dirs = (
+            (".venv", "site-packages", "dep"),
+            ("venv", "sub"),
+            ("build",),
+            ("dist",),
+            ("node_modules", "dep"),
+            (".pytest_cache",),
+            ("draftmyvan.egg-info",),
+            ("pkg", "__pycache__"),
+        )
+        for parts in ignored_dirs:
+            d = tmp.joinpath(*parts)
+            d.mkdir(parents=True, exist_ok=True)
+            (d / "vendored.py").write_text(f'BAD = "{forbidden}"\n', encoding="utf-8")
+        ok, lines = h.check_no_host_app_references(tmp)
+        assert ok is True, (
+            "offenders inside ignored dirs must be skipped:\n" + "\n".join(lines)
+        )
+    finally:
+        shutil.rmtree(tmp)
+
+
+def test_host_app_reference_grep_still_flags_offender_outside_ignored_dirs() -> None:
+    # Guard against the skip being too broad: an offender in an ordinary
+    # first-party directory of the same temp tree must still be caught.
+    forbidden = h.FORBIDDEN_PY_SUBSTRINGS[0] + "something"
+    tmp = Path(tempfile.mkdtemp(prefix="dmv_handoff_notignored_"))
+    try:
+        (tmp / ".venv" / "sub").mkdir(parents=True, exist_ok=True)
+        (tmp / ".venv" / "sub" / "vendored.py").write_text(
+            f'BAD = "{forbidden}"\n', encoding="utf-8"
+        )
+        (tmp / "pkg").mkdir()
+        (tmp / "pkg" / "real_offender.py").write_text(
+            f'BAD = "{forbidden}"\n', encoding="utf-8"
+        )
+        ok, lines = h.check_no_host_app_references(tmp)
+        joined = "\n".join(lines)
+        assert ok is False, "a first-party offender must still be flagged"
+        assert "real_offender.py" in joined, joined
+        assert "vendored.py" not in joined, "the .venv offender must not be reported"
+    finally:
+        shutil.rmtree(tmp)
+
+
 def test_host_app_reference_grep_does_not_flag_itself() -> None:
     # check_handoff_ready.py literally contains the forbidden substrings
     # (it has to, in order to grep for them). The checker must ignore itself.
@@ -339,6 +398,8 @@ def main() -> int:
         test_required_file_fails_when_path_is_a_directory,
         test_no_host_app_references_in_current_draftmyvan,
         test_host_app_reference_grep_flags_temp_offender,
+        test_host_app_reference_grep_skips_ignored_dirs,
+        test_host_app_reference_grep_still_flags_offender_outside_ignored_dirs,
         test_host_app_reference_grep_does_not_flag_itself,
         test_cli_default_mode_returns_0_for_current_repo,
         test_cli_explicit_root_argument_works,
