@@ -6,6 +6,9 @@ Reuses runtime.project (typed load + containment) and the existing catalog
 
 from __future__ import annotations
 
+import json
+import os
+import tempfile
 from dataclasses import replace
 from pathlib import Path
 from typing import Any, Optional
@@ -21,6 +24,7 @@ from runtime.project import (
     containment_issues,
     index_modules,
     load_project,
+    parse_project,
 )
 
 from . import catalog
@@ -29,11 +33,27 @@ from . import catalog
 class LayoutEditError(ValueError):
     """A layout edit payload referenced an unknown instance or bad values."""
 
-PROJECTS_DIR = EXAMPLES_DIR / "projects"
+
+class InvalidLayoutError(ValueError):
+    """A save was rejected because the layout is not build-ready."""
+
+    def __init__(self, status: dict[str, Any]) -> None:
+        super().__init__("layout is not build-ready")
+        self.status = status
+
+
+def projects_dir() -> Path:
+    """Directory holding project files.
+
+    Overridable via DRAFTMYVAN_PROJECTS_DIR so tests can point at a temp copy
+    and never mutate the committed example project.
+    """
+    override = os.environ.get("DRAFTMYVAN_PROJECTS_DIR")
+    return Path(override) if override else EXAMPLES_DIR / "projects"
 
 
 def _project_files() -> list[Path]:
-    return sorted(p for p in PROJECTS_DIR.glob("*.json") if p.is_file())
+    return sorted(p for p in projects_dir().glob("*.json") if p.is_file())
 
 
 def _cards_by_id() -> dict[str, dict[str, Any]]:
@@ -127,6 +147,69 @@ def _find(project_id: str) -> Optional[Project]:
         if project.id == project_id:
             return project
     return None
+
+
+def _find_path(project_id: str) -> Optional[Path]:
+    """The on-disk file whose project id matches, or None."""
+    for path in _project_files():
+        try:
+            project = load_project(path)
+        except ProjectError:
+            continue
+        if project.id == project_id:
+            return path
+    return None
+
+
+def _atomic_write_json(path: Path, data: Any) -> None:
+    """Write JSON via a temp file in the same dir, then atomically replace."""
+    fd, tmp = tempfile.mkstemp(dir=str(path.parent), suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+            f.write("\n")
+        os.replace(tmp, path)  # atomic on the same filesystem
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
+def save_layout(
+    project_id: str,
+    instances: list[dict[str, Any]],
+    *,
+    allow_invalid: bool = False,
+) -> Optional[dict[str, Any]]:
+    """Validate and persist edited module_instances for a project.
+
+    Returns the saved build-status (with "saved": True); None if the project
+    is not found. Raises ProjectError for an invalid layout (unknown module
+    id, bad positions, duplicate instance ids), and InvalidLayoutError when
+    the layout is not build-ready and allow_invalid is False. Writes only the
+    one project file, atomically. Never creates a DB/auth/accounts.
+    """
+    path = _find_path(project_id)
+    if path is None:
+        return None
+
+    with path.open("r", encoding="utf-8") as f:
+        raw = json.load(f)
+
+    # Candidate = saved project with its instances replaced by the payload.
+    merged = {**raw, "module_instances": instances}
+
+    # Validate (raises ProjectError on unknown module id / bad positions / etc.)
+    project = parse_project(merged, EXAMPLES_DIR)
+    status = _build_status_dict(project)
+
+    if not allow_invalid and not status["build_ready"]:
+        raise InvalidLayoutError(status)
+
+    _atomic_write_json(path, merged)
+    return {**status, "saved": True}
 
 
 def get_project(project_id: str) -> Optional[dict[str, Any]]:
