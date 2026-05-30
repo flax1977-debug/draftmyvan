@@ -7,8 +7,8 @@
     "depth": 300,
     "height": 350
   },
-  "anchor": "floor_back_left",
-  "placement": "floor",
+  "anchor": "ceiling_left",
+  "placement": "ceiling",
   "clearances": {
     "front_mm": 0,
     "sides_mm": 20,

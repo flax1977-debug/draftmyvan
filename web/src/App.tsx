@@ -236,15 +236,20 @@ export default function App() {
     // Round UP to the 50 mm grid so the new instance clears the last one
     // (rounding down could land inside it and create a spurious collision).
     nextY = Math.ceil(nextY / 50) * 50;
+    // Ceiling-anchored modules measure z from the ceiling (top), so default
+    // their reference z to the van height; others sit on the floor (z = 0).
+    const ceiling = card.anchor === "ceiling_left" || card.anchor === "ceiling_right";
+    const z = ceiling ? project.van.dimensions_mm.height : 0;
     const inst: ProjectInstance = {
       instance_id: id,
       module_id: card.id,
-      position_mm: { x: 0, y: nextY, z: 0 },
+      position_mm: { x: 0, y: nextY, z },
       rotation_deg: 0,
       zone: zoneForType(card.type),
       visible: true,
       module: {
         type: card.type,
+        anchor: card.anchor,
         display_name: card.display_name,
         dimensions_mm: card.dimensions_mm,
         weight_kg: card.weight_kg,

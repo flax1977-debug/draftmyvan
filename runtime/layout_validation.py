@@ -19,11 +19,11 @@ Scope and honesty boundaries (deliberately conservative for a first version):
 from __future__ import annotations
 
 import json
-import math
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
+from . import anchors
 from .load_module import ConsumerError, load_module
 from .module import Module
 from .project import EXAMPLES_DIR, ModuleInstance, Project
@@ -116,40 +116,18 @@ def module_specs(manifests_dir: Path = EXAMPLES_DIR) -> dict[str, ModuleSpec]:
     return specs
 
 
-def _footprint_xy(module: Module, inst: ModuleInstance) -> tuple[float, float, float, float]:
-    """(x0, x1, y0, y1) of the footprint, rotated about the anchor corner.
-
-    Width maps to X, depth to Y. Multiples of 90 deg are computed with integer
-    corner rotation (exact); other angles use a float rotated-AABB.
-    """
-    w = module.dimensions.width_mm
-    d = module.dimensions.depth_mm
-    rot = inst.rotation_deg % 360
-    corners = ((0, 0), (w, 0), (0, d), (w, d))
-    if rot in (0, 90, 180, 270):
-        def rotate(cx: float, cy: float) -> tuple[float, float]:
-            if rot == 0:
-                return (cx, cy)
-            if rot == 90:
-                return (-cy, cx)
-            if rot == 180:
-                return (-cx, -cy)
-            return (cy, -cx)  # 270
-        pts = [rotate(cx, cy) for cx, cy in corners]
-    else:
-        theta = math.radians(rot)
-        cos_t, sin_t = math.cos(theta), math.sin(theta)
-        pts = [(cx * cos_t - cy * sin_t, cx * sin_t + cy * cos_t) for cx, cy in corners]
-    xs = [p[0] for p in pts]
-    ys = [p[1] for p in pts]
-    px, py = inst.position_mm.x, inst.position_mm.y
-    return (px + min(xs), px + max(xs), py + min(ys), py + max(ys))
-
-
 def instance_aabb(module: Module, inst: ModuleInstance) -> AABB:
-    x0, x1, y0, y1 = _footprint_xy(module, inst)
-    z0 = float(inst.position_mm.z)
-    z1 = z0 + module.dimensions.height_mm
+    """Van-space AABB for a placed instance, honouring its module's anchor."""
+    x0, x1, y0, y1, z0, z1 = anchors.aabb(
+        module.anchor,
+        inst.position_mm.x,
+        inst.position_mm.y,
+        inst.position_mm.z,
+        module.dimensions.width_mm,
+        module.dimensions.depth_mm,
+        module.dimensions.height_mm,
+        inst.rotation_deg,
+    )
     return AABB(x0, x1, y0, y1, z0, z1)
 
 

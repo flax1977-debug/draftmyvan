@@ -93,6 +93,7 @@ def _instance_dict(inst: Any, card: Optional[dict[str, Any]]) -> dict[str, Any]:
         if card is None
         else {
             "type": card["type"],
+            "anchor": card["anchor"],
             "display_name": card["display_name"],
             "dimensions_mm": card["dimensions_mm"],
             "weight_kg": card["weight_kg"],

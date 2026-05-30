@@ -53,6 +53,7 @@ def card(module: Module, raw: dict[str, Any]) -> dict[str, Any]:
     return {
         "id": module.id,
         "type": module.type,
+        "anchor": module.anchor,
         "display_name": ABSENT,  # no name field in the manifest
         "category": ABSENT,      # no category field in the manifest
         "dimensions_mm": {
