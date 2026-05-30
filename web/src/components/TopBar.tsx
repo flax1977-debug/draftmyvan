@@ -1,5 +1,6 @@
-// Top bar: project identity + global actions. The Build-Ready badge is a
-// static placeholder here; it is wired to GET /api/build-status in a later task.
+import type { BuildStatus } from "../api";
+
+// Top bar: project identity + global actions + a live Build-Ready badge.
 
 function Action({ label }: { label: string }) {
   return (
@@ -12,7 +13,29 @@ function Action({ label }: { label: string }) {
   );
 }
 
-export default function TopBar() {
+function BuildBadge({ status }: { status: BuildStatus | null }) {
+  if (status === null) {
+    return (
+      <span className="ml-2 rounded-md bg-neutral-700 px-3 py-1.5 text-sm font-medium text-neutral-300">
+        Checking…
+      </span>
+    );
+  }
+  if (status.build_ready) {
+    return (
+      <span className="ml-2 rounded-md bg-emerald-500 px-3 py-1.5 text-sm font-medium text-emerald-950">
+        ✓ Build Ready
+      </span>
+    );
+  }
+  return (
+    <span className="ml-2 rounded-md bg-amber-500 px-3 py-1.5 text-sm font-medium text-amber-950">
+      ⚠ Not Ready
+    </span>
+  );
+}
+
+export default function TopBar({ status }: { status: BuildStatus | null }) {
   return (
     <header className="flex items-center justify-between border-b border-neutral-800 bg-neutral-900 px-5 py-3">
       <div className="flex items-center gap-3">
@@ -27,10 +50,7 @@ export default function TopBar() {
         <Action label="↷ Redo" />
         <Action label="Share" />
         <Action label="Export" />
-        {/* Placeholder: replaced by a live build-status badge in a later task. */}
-        <span className="ml-2 rounded-md bg-emerald-500 px-3 py-1.5 text-sm font-medium text-emerald-950">
-          ✓ Build Ready
-        </span>
+        <BuildBadge status={status} />
       </div>
     </header>
   );

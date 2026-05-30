@@ -1,6 +1,9 @@
-// Center column: 2D/3D toggle, the viewport (a placeholder in this task; the
-// react-three-fiber canvas loading the GLB arrives in a later task), and the
-// selected-module inspector tabs.
+import { assetUrl, type ModuleDetail } from "../api";
+import ModelViewer from "./ModelViewer";
+
+// Center column: 2D/3D toggle, the GLB viewport, and the selected-module
+// inspector. The "Selected Module" tab is wired to GET /api/modules/{id};
+// the other tabs remain placeholders for later tasks.
 
 const INSPECTOR_TABS = [
   "Selected Module",
@@ -10,7 +13,47 @@ const INSPECTOR_TABS = [
   "CNC Output",
 ] as const;
 
-export default function ViewportPanel() {
+function Spec({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between gap-4 text-sm">
+      <span className="text-neutral-500">{label}</span>
+      <span className="text-right text-neutral-200">{value}</span>
+    </div>
+  );
+}
+
+function Inspector({ detail }: { detail: ModuleDetail | null }) {
+  if (detail === null) {
+    return <div className="px-4 py-6 text-sm text-neutral-600">Select a module to see its details.</div>;
+  }
+  const d = detail.dimensions_mm;
+  return (
+    <div className="grid grid-cols-2 gap-x-8 gap-y-2 px-4 py-4">
+      <Spec label="Name" value={detail.display_name ?? detail.id} />
+      <Spec label="Type" value={detail.type} />
+      <Spec label="Dimensions" value={`${d.width} × ${d.depth} × ${d.height} mm`} />
+      <Spec label="Weight" value={detail.weight_kg !== null ? `${detail.weight_kg} kg` : "—"} />
+      <Spec label="Anchor" value={detail.anchor} />
+      <Spec label="Placement" value={detail.placement} />
+      <Spec
+        label="Material"
+        value={detail.material_slots?.join(", ") ?? "—"}
+      />
+      <Spec label="Finish" value={detail.finish ?? "—"} />
+      <Spec
+        label="Plywood"
+        value={detail.plywood_thickness_mm !== null ? `${detail.plywood_thickness_mm} mm` : "—"}
+      />
+      <Spec label="Cost" value={detail.cost_gbp !== null ? `£${detail.cost_gbp}` : "—"} />
+      <Spec label="Hardware items" value={detail.hardware_line_items?.toString() ?? "—"} />
+      <Spec label="Fusion template" value={detail.fusion_template ?? "—"} />
+    </div>
+  );
+}
+
+export default function ViewportPanel({ detail }: { detail: ModuleDetail | null }) {
+  const glbUrl = detail && detail.asset_present ? assetUrl(detail.glb_url) : null;
+
   return (
     <main className="flex flex-1 flex-col bg-neutral-950">
       <div className="flex items-center justify-between px-4 py-3">
@@ -30,8 +73,14 @@ export default function ViewportPanel() {
         </button>
       </div>
 
-      <div className="mx-4 flex flex-1 items-center justify-center rounded-lg border border-dashed border-neutral-700 bg-neutral-900/40 text-neutral-600">
-        3D preview — viewport renders here
+      <div className="mx-4 flex-1 overflow-hidden rounded-lg border border-neutral-800 bg-neutral-900/40">
+        {glbUrl ? (
+          <ModelViewer url={glbUrl} />
+        ) : (
+          <div className="flex h-full items-center justify-center text-neutral-600">
+            {detail === null ? "Select a module to preview it in 3D." : "No asset available for this module."}
+          </div>
+        )}
       </div>
 
       <div className="mx-4 mt-4 mb-4 rounded-lg border border-neutral-800 bg-neutral-900">
@@ -51,9 +100,7 @@ export default function ViewportPanel() {
             </button>
           ))}
         </div>
-        <div className="px-4 py-6 text-sm text-neutral-600">
-          Select a module to see its details.
-        </div>
+        <Inspector detail={detail} />
       </div>
     </main>
   );

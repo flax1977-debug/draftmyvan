@@ -1,9 +1,11 @@
-// Left panel: van overview, layout summary, and zones. All values are static
-// placeholders in this task; van/project data wiring comes later.
+// Left panel: van overview, layout summary, and zones.
+//   - Van Overview is still static "—": there is no van/project model yet.
+//   - Layout Summary's module count and total weight come from build status.
 
 import type { ReactNode } from "react";
+import type { BuildStatus } from "../api";
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex justify-between text-sm">
       <span className="text-neutral-500">{label}</span>
@@ -31,7 +33,10 @@ const ZONES = [
   { name: "Utilities", color: "bg-sky-400" },
 ] as const;
 
-export default function VanOverviewPanel() {
+export default function VanOverviewPanel({ status }: { status: BuildStatus | null }) {
+  const modules = status ? String(status.module_count) : "—";
+  const weight = status ? `${status.total_weight_kg} kg` : "—";
+
   return (
     <aside className="w-64 shrink-0 overflow-y-auto border-r border-neutral-800 bg-neutral-900">
       <Section title="Van Overview">
@@ -43,8 +48,8 @@ export default function VanOverviewPanel() {
       </Section>
 
       <Section title="Layout Summary">
-        <Row label="Total Modules" value="—" />
-        <Row label="Total Weight" value="— kg" />
+        <Row label="Total Modules" value={modules} />
+        <Row label="Total Weight" value={weight} />
         <Row label="Build Cost" value="—" />
         <Row label="Est. Build Time" value="—" />
       </Section>
