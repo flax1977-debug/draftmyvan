@@ -9,18 +9,15 @@ from __future__ import annotations
 import json
 import os
 import tempfile
-from dataclasses import replace
 from pathlib import Path
 from typing import Any, Optional
 
 from runtime import layout_validation
 from runtime.project import (
     EXAMPLES_DIR,
-    ModuleInstance,
     Project,
     ProjectError,
     Van,
-    Vec3,
     containment_issues,
     index_modules,
     load_project,
@@ -28,10 +25,6 @@ from runtime.project import (
 )
 
 from . import catalog
-
-
-class LayoutEditError(ValueError):
-    """A layout edit payload referenced an unknown instance or bad values."""
 
 
 class InvalidLayoutError(ValueError):
@@ -191,19 +184,10 @@ def save_layout(
     the layout is not build-ready and allow_invalid is False. Writes only the
     one project file, atomically. Never creates a DB/auth/accounts.
     """
-    path = _find_path(project_id)
-    if path is None:
+    candidate = _candidate(project_id, instances)
+    if candidate is None:
         return None
-
-    with path.open("r", encoding="utf-8") as f:
-        raw = json.load(f)
-
-    # Candidate = saved project with its instances replaced by the payload.
-    merged = {**raw, "module_instances": instances}
-
-    # Validate (raises ProjectError on unknown module id / bad positions / etc.)
-    project = parse_project(merged, EXAMPLES_DIR)
-    status = _build_status_dict(project)
+    path, merged, status = candidate
 
     if not allow_invalid and not status["build_ready"]:
         raise InvalidLayoutError(status)
@@ -285,37 +269,32 @@ def project_build_status(project_id: str) -> Optional[dict[str, Any]]:
     return _build_status_dict(project)
 
 
-def _apply_overrides(project: Project, overrides: list[dict[str, Any]]) -> Project:
-    """Return a new Project with position/rotation replaced for matching ids.
+def _candidate(
+    project_id: str, instances: list[dict[str, Any]]
+) -> Optional[tuple[Path, dict[str, Any], dict[str, Any]]]:
+    """Build + validate a candidate project from a full instance list.
 
-    In-memory only — never writes to disk. Raises LayoutEditError for an
-    unknown instance_id.
+    The candidate is the saved project (van/name/id preserved) with its
+    module_instances REPLACED by the payload — so it covers edited positions
+    AND newly added instances. In-memory only; never writes. Returns
+    (path, merged_dict, build_status) or None if the project is not found.
+    Raises ProjectError for an invalid layout (unknown module id, non-integer
+    positions, duplicate/invalid instances).
     """
-    by_id = {inst.instance_id: inst for inst in project.instances}
-    edited: dict[str, ModuleInstance] = {}
-    for ov in overrides:
-        iid = ov.get("instance_id")
-        if iid not in by_id:
-            raise LayoutEditError(f"unknown instance_id: {iid!r}")
-        pos = ov["position_mm"]
-        edited[iid] = replace(
-            by_id[iid],
-            position_mm=Vec3(x=int(pos["x"]), y=int(pos["y"]), z=int(pos["z"])),
-            rotation_deg=float(ov["rotation_deg"]),
-        )
-    new_instances = tuple(edited.get(inst.instance_id, inst) for inst in project.instances)
-    return replace(project, instances=new_instances)
-
-
-def validate_layout_overrides(
-    project_id: str, overrides: list[dict[str, Any]]
-) -> Optional[dict[str, Any]]:
-    """Validate the saved project with in-memory instance overrides applied.
-
-    Returns the same shape as ``project_build_status``; None if the project
-    is not found. Raises LayoutEditError for an unknown instance_id.
-    """
-    project = _find(project_id)
-    if project is None:
+    path = _find_path(project_id)
+    if path is None:
         return None
-    return _build_status_dict(_apply_overrides(project, overrides))
+    with path.open("r", encoding="utf-8") as f:
+        raw = json.load(f)
+    merged = {**raw, "module_instances": instances}
+    project = parse_project(merged, EXAMPLES_DIR)
+    status = _build_status_dict(project)
+    return path, merged, status
+
+
+def validate_layout(
+    project_id: str, instances: list[dict[str, Any]]
+) -> Optional[dict[str, Any]]:
+    """Validate a candidate full instance list without writing. None if unknown."""
+    candidate = _candidate(project_id, instances)
+    return candidate[2] if candidate is not None else None

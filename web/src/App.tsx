@@ -11,7 +11,6 @@ import {
   fetchProject,
   saveLayout,
   validateLayout,
-  type InstanceEdit,
   type InstanceFull,
   type ModuleCard,
   type ModuleDetail,
@@ -37,7 +36,9 @@ export default function App() {
   const [saving, setSaving] = useState(false);
   // Local, unsaved position/rotation overrides keyed by instance_id.
   const [edits, setEdits] = useState<Record<string, Edit>>({});
-  const dirty = Object.keys(edits).length > 0;
+  // Local, unsaved instances added from the catalog (not yet in the project).
+  const [added, setAdded] = useState<ProjectInstance[]>([]);
+  const dirty = Object.keys(edits).length > 0 || added.length > 0;
 
   useEffect(() => {
     fetchModules()
@@ -53,14 +54,15 @@ export default function App() {
       .catch((e) => setError(String(e)));
   }, []);
 
-  // Apply local edits over the saved instances for rendering + inspection.
+  // Apply local edits over the saved instances + locally-added instances.
   const effectiveInstances = useMemo<ProjectInstance[]>(() => {
     if (!project) return [];
-    return project.module_instances.map((inst) => {
+    const apply = (inst: ProjectInstance) => {
       const e = edits[inst.instance_id];
       return e ? { ...inst, position_mm: { ...e.position_mm }, rotation_deg: e.rotation_deg } : inst;
-    });
-  }, [project, edits]);
+    };
+    return [...project.module_instances.map(apply), ...added.map(apply)];
+  }, [project, edits, added]);
 
   const effectiveProject = useMemo<ProjectDetail | null>(
     () => (project ? { ...project, module_instances: effectiveInstances } : null),
@@ -94,13 +96,16 @@ export default function App() {
   const seq = useRef(0);
   useEffect(() => {
     if (!project) return;
-    const overrides: InstanceEdit[] = Object.entries(edits).map(([instance_id, e]) => ({
-      instance_id,
-      position_mm: e.position_mm,
-      rotation_deg: e.rotation_deg,
+    const instances: InstanceFull[] = effectiveInstances.map((i) => ({
+      instance_id: i.instance_id,
+      module_id: i.module_id,
+      position_mm: i.position_mm,
+      rotation_deg: i.rotation_deg,
+      zone: i.zone,
+      visible: i.visible,
     }));
     const mine = ++seq.current;
-    validateLayout(PROJECT_ID, overrides)
+    validateLayout(PROJECT_ID, instances)
       .then((s) => {
         if (mine === seq.current) {
           setStatus(s);
@@ -111,15 +116,18 @@ export default function App() {
       .catch((e) => {
         if (mine === seq.current) setEditError(String(e));
       });
-  }, [project, edits]);
+  }, [project, effectiveInstances]);
 
   // --- local movement handlers (operate on the selected instance) ---------
 
-  // Base edit for an instance: its current override, or its saved values.
+  // Base edit for an instance: its current values from the saved project or
+  // the locally-added list.
   function baseEdit(instanceId: string): Edit | null {
-    const saved = project?.module_instances.find((i) => i.instance_id === instanceId);
-    if (!saved) return null;
-    return { position_mm: { ...saved.position_mm }, rotation_deg: saved.rotation_deg };
+    const inst =
+      project?.module_instances.find((i) => i.instance_id === instanceId) ??
+      added.find((i) => i.instance_id === instanceId);
+    if (!inst) return null;
+    return { position_mm: { ...inst.position_mm }, rotation_deg: inst.rotation_deg };
   }
 
   function nudge(axis: "x" | "y", delta: number) {
@@ -145,13 +153,74 @@ export default function App() {
     });
   }
 
+  // Reset the selected instance: a locally-added (unsaved) instance is
+  // removed entirely; a saved instance reverts to its saved position.
   function resetInstance() {
     if (selection?.kind !== "instance") return;
+    const id = selection.id;
+    const isAdded = added.some((i) => i.instance_id === id);
     setEdits((prev) => {
       const next = { ...prev };
-      delete next[selection.id];
+      delete next[id];
       return next;
     });
+    if (isAdded) {
+      setAdded((prev) => prev.filter((i) => i.instance_id !== id));
+      setSelection(null);
+    }
+  }
+
+  function zoneForType(type: string): string {
+    switch (type) {
+      case "seating":
+        return "seating";
+      case "bed":
+        return "bed";
+      case "appliance":
+      case "tank":
+      case "panel":
+        return "utilities";
+      default:
+        return "storage"; // cabinet, accessory, or unknown
+    }
+  }
+
+  // Add a catalog module as a new local placed instance (unsaved).
+  function addInstance(card: ModuleCard) {
+    if (!project) return;
+    const taken = new Set([...project.module_instances, ...added].map((i) => i.instance_id));
+    let n = 2;
+    let id = `${card.id}_${n}`;
+    while (taken.has(id)) {
+      n += 1;
+      id = `${card.id}_${n}`;
+    }
+    // Default position: just behind the last instance in +Y (snapped, non-overlapping).
+    let nextY = 0;
+    for (const i of effectiveInstances) {
+      const depth = i.module?.dimensions_mm.depth ?? 0;
+      nextY = Math.max(nextY, i.position_mm.y + depth);
+    }
+    // Round UP to the 50 mm grid so the new instance clears the last one
+    // (rounding down could land inside it and create a spurious collision).
+    nextY = Math.ceil(nextY / 50) * 50;
+    const inst: ProjectInstance = {
+      instance_id: id,
+      module_id: card.id,
+      position_mm: { x: 0, y: nextY, z: 0 },
+      rotation_deg: 0,
+      zone: zoneForType(card.type),
+      visible: true,
+      module: {
+        type: card.type,
+        display_name: card.display_name,
+        dimensions_mm: card.dimensions_mm,
+        weight_kg: card.weight_kg,
+        glb_url: card.glb_url,
+      },
+    };
+    setAdded((prev) => [...prev, inst]);
+    setSelection({ kind: "instance", id });
   }
 
   // Pointer drag in the 3D viewport feeds the SAME local edit state as the
@@ -188,6 +257,7 @@ export default function App() {
       const fresh = await fetchProject(PROJECT_ID);
       setProject(fresh);
       setEdits({}); // new baseline === saved; dirty clears
+      setAdded([]); // added instances are now part of the saved project
     } catch (e) {
       setSaveError(String(e)); // keep local edits visible
     } finally {
@@ -236,6 +306,7 @@ export default function App() {
             modules={modules}
             selectedId={selection?.kind === "module" ? selection.id : null}
             onSelect={(id) => setSelection({ kind: "module", id })}
+            onAdd={addInstance}
           />
         </div>
         <StatusBar status={status} />
