@@ -1,0 +1,26 @@
+{
+  "version": "0.1.0",
+  "id": "weekend_explorer",
+  "name": "Weekend Explorer",
+  "van": {
+    "make": "Mercedes-Benz",
+    "model": "Sprinter L2H2",
+    "wheelbase_mm": 3665,
+    "dimensions_mm": {
+      "length": 5932,
+      "width": 2020,
+      "height": 2760
+    },
+    "max_payload_kg": 1200
+  },
+  "module_instances": [
+    {
+      "instance_id": "galley_back_left",
+      "module_id": "galley_1000_sink_left_oak",
+      "position_mm": { "x": 0, "y": 0, "z": 0 },
+      "rotation_deg": 0,
+      "zone": "kitchen",
+      "visible": true
+    }
+  ]
+}

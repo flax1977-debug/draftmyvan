@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://draftmyvan.dev/schemas/project.schema.json",
+  "title": "DraftMyVan Project",
+  "description": "A saved configurator project: a van plus placed module instances. Each instance references a module manifest by id. Millimetres are canonical and integer, consistent with manifest.schema.json.",
+  "type": "object",
+  "required": ["version", "id", "name", "van", "module_instances"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "description": "Project schema version this file conforms to.",
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "id": {
+      "description": "Stable, lowercase, underscore-separated project identifier.",
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_]*$",
+      "minLength": 3,
+      "maxLength": 64
+    },
+    "name": {
+      "description": "Human-readable project name.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "van": {
+      "description": "The base vehicle. Dimensions are the overall bounding box used for containment checks (interior offsets are not modelled yet).",
+      "type": "object",
+      "required": ["dimensions_mm", "max_payload_kg"],
+      "additionalProperties": false,
+      "properties": {
+        "make": { "type": "string", "maxLength": 80 },
+        "model": { "type": "string", "maxLength": 80 },
+        "wheelbase_mm": { "type": "integer", "minimum": 1, "maximum": 10000 },
+        "dimensions_mm": {
+          "description": "Overall van bounding box: length (front-back), width (side-side), height (floor-roof).",
+          "type": "object",
+          "required": ["length", "width", "height"],
+          "additionalProperties": false,
+          "properties": {
+            "length": { "type": "integer", "minimum": 1, "maximum": 12000 },
+            "width": { "type": "integer", "minimum": 1, "maximum": 4000 },
+            "height": { "type": "integer", "minimum": 1, "maximum": 4000 }
+          }
+        },
+        "max_payload_kg": {
+          "description": "Maximum cargo/build payload the chassis can carry.",
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 5000
+        }
+      }
+    },
+    "module_instances": {
+      "description": "Placed modules. Each references a module manifest by module_id.",
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "type": "object",
+        "required": ["instance_id", "module_id", "position_mm", "rotation_deg", "zone", "visible"],
+        "additionalProperties": false,
+        "properties": {
+          "instance_id": {
+            "description": "Stable id for this placement, unique within the project.",
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_]*$",
+            "minLength": 3,
+            "maxLength": 64
+          },
+          "module_id": {
+            "description": "Id of an existing module manifest (manifest.id).",
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_]*$",
+            "minLength": 3,
+            "maxLength": 64
+          },
+          "position_mm": {
+            "description": "Anchor-corner position in van space (x=width, y=length, z=height), integer mm.",
+            "type": "object",
+            "required": ["x", "y", "z"],
+            "additionalProperties": false,
+            "properties": {
+              "x": { "type": "integer", "minimum": -20000, "maximum": 20000 },
+              "y": { "type": "integer", "minimum": -20000, "maximum": 20000 },
+              "z": { "type": "integer", "minimum": -20000, "maximum": 20000 }
+            }
+          },
+          "rotation_deg": {
+            "description": "Rotation about the vertical Z axis, in degrees.",
+            "type": "number",
+            "minimum": -360,
+            "maximum": 360
+          },
+          "zone": {
+            "type": "string",
+            "enum": ["kitchen", "seating", "storage", "bed", "utilities"]
+          },
+          "visible": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}
