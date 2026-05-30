@@ -118,6 +118,7 @@ export default function ViewportPanel({
   onNudge,
   onRotate,
   onReset,
+  onDrag,
 }: {
   project: ProjectDetail | null;
   detail: ModuleDetail | null;
@@ -126,6 +127,7 @@ export default function ViewportPanel({
   onNudge: (axis: "x" | "y", delta: number) => void;
   onRotate: (delta: number) => void;
   onReset: () => void;
+  onDrag: (instanceId: string, posMm: { x: number; y: number; z: number }) => void;
 }) {
   return (
     <main className="flex flex-1 flex-col bg-neutral-950">
@@ -138,17 +140,24 @@ export default function ViewportPanel({
             3D
           </button>
         </div>
-        <button
-          type="button"
-          className="rounded-md border border-neutral-700 px-3 py-1 text-sm text-neutral-300 hover:bg-neutral-800"
-        >
-          ◳ Walkthrough
-        </button>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-neutral-500">Drag module on floor · 50 mm snap</span>
+          <button
+            type="button"
+            className="rounded-md border border-neutral-700 px-3 py-1 text-sm text-neutral-300 hover:bg-neutral-800"
+          >
+            ◳ Walkthrough
+          </button>
+        </div>
       </div>
 
       <div className="mx-4 flex-1 overflow-hidden rounded-lg border border-neutral-800 bg-neutral-900/40">
         {project ? (
-          <LayoutViewer van={project.van.dimensions_mm} instances={project.module_instances} />
+          <LayoutViewer
+            van={project.van.dimensions_mm}
+            instances={project.module_instances}
+            onDrag={onDrag}
+          />
         ) : (
           <div className="flex h-full items-center justify-center text-neutral-600">
             Loading project layout…
