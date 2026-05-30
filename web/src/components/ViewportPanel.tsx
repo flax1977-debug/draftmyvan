@@ -1,9 +1,9 @@
-import { assetUrl, type ModuleDetail } from "../api";
-import ModelViewer from "./ModelViewer";
+import type { ModuleDetail, ProjectDetail, ProjectInstance } from "../api";
+import LayoutViewer from "./LayoutViewer";
 
-// Center column: 2D/3D toggle, the GLB viewport, and the selected-module
-// inspector. The "Selected Module" tab is wired to GET /api/modules/{id};
-// the other tabs remain placeholders for later tasks.
+// Center column: 2D/3D toggle, the project layout viewport, and the inspector.
+// The inspector shows placed-instance detail when an instance is selected,
+// otherwise the catalog detail for a selected module.
 
 const INSPECTOR_TABS = [
   "Selected Module",
@@ -22,10 +22,35 @@ function Spec({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Inspector({ detail }: { detail: ModuleDetail | null }) {
-  if (detail === null) {
-    return <div className="px-4 py-6 text-sm text-neutral-600">Select a module to see its details.</div>;
-  }
+function InstanceInspector({ inst, detail }: { inst: ProjectInstance; detail: ModuleDetail | null }) {
+  const d = detail?.dimensions_mm ?? inst.module?.dimensions_mm;
+  const p = inst.position_mm;
+  return (
+    <div className="grid grid-cols-2 gap-x-8 gap-y-2 px-4 py-4">
+      <Spec label="Instance" value={inst.instance_id} />
+      <Spec label="Module" value={inst.module_id} />
+      <Spec label="Zone" value={inst.zone} />
+      <Spec label="Visible" value={inst.visible ? "yes" : "no"} />
+      <Spec label="Position (mm)" value={`x ${p.x}, y ${p.y}, z ${p.z}`} />
+      <Spec label="Rotation" value={`${inst.rotation_deg}°`} />
+      <Spec label="Dimensions" value={d ? `${d.width} × ${d.depth} × ${d.height} mm` : "—"} />
+      <Spec
+        label="Weight"
+        value={
+          inst.module?.weight_kg != null
+            ? `${inst.module.weight_kg} kg`
+            : detail?.weight_kg != null
+              ? `${detail.weight_kg} kg`
+              : "—"
+        }
+      />
+      <Spec label="Anchor" value={detail?.anchor ?? "—"} />
+      <Spec label="Material" value={detail?.material_slots?.join(", ") ?? "—"} />
+    </div>
+  );
+}
+
+function ModuleInspector({ detail }: { detail: ModuleDetail }) {
   const d = detail.dimensions_mm;
   return (
     <div className="grid grid-cols-2 gap-x-8 gap-y-2 px-4 py-4">
@@ -35,25 +60,26 @@ function Inspector({ detail }: { detail: ModuleDetail | null }) {
       <Spec label="Weight" value={detail.weight_kg !== null ? `${detail.weight_kg} kg` : "—"} />
       <Spec label="Anchor" value={detail.anchor} />
       <Spec label="Placement" value={detail.placement} />
-      <Spec
-        label="Material"
-        value={detail.material_slots?.join(", ") ?? "—"}
-      />
+      <Spec label="Material" value={detail.material_slots?.join(", ") ?? "—"} />
       <Spec label="Finish" value={detail.finish ?? "—"} />
       <Spec
         label="Plywood"
         value={detail.plywood_thickness_mm !== null ? `${detail.plywood_thickness_mm} mm` : "—"}
       />
       <Spec label="Cost" value={detail.cost_gbp !== null ? `£${detail.cost_gbp}` : "—"} />
-      <Spec label="Hardware items" value={detail.hardware_line_items?.toString() ?? "—"} />
-      <Spec label="Fusion template" value={detail.fusion_template ?? "—"} />
     </div>
   );
 }
 
-export default function ViewportPanel({ detail }: { detail: ModuleDetail | null }) {
-  const glbUrl = detail && detail.asset_present ? assetUrl(detail.glb_url) : null;
-
+export default function ViewportPanel({
+  project,
+  detail,
+  instance,
+}: {
+  project: ProjectDetail | null;
+  detail: ModuleDetail | null;
+  instance: ProjectInstance | null;
+}) {
   return (
     <main className="flex flex-1 flex-col bg-neutral-950">
       <div className="flex items-center justify-between px-4 py-3">
@@ -74,11 +100,11 @@ export default function ViewportPanel({ detail }: { detail: ModuleDetail | null 
       </div>
 
       <div className="mx-4 flex-1 overflow-hidden rounded-lg border border-neutral-800 bg-neutral-900/40">
-        {glbUrl ? (
-          <ModelViewer url={glbUrl} />
+        {project ? (
+          <LayoutViewer van={project.van.dimensions_mm} instances={project.module_instances} />
         ) : (
           <div className="flex h-full items-center justify-center text-neutral-600">
-            {detail === null ? "Select a module to preview it in 3D." : "No asset available for this module."}
+            Loading project layout…
           </div>
         )}
       </div>
@@ -100,7 +126,13 @@ export default function ViewportPanel({ detail }: { detail: ModuleDetail | null 
             </button>
           ))}
         </div>
-        <Inspector detail={detail} />
+        {instance ? (
+          <InstanceInspector inst={instance} detail={detail} />
+        ) : detail ? (
+          <ModuleInspector detail={detail} />
+        ) : (
+          <div className="px-4 py-6 text-sm text-neutral-600">Select a module to see its details.</div>
+        )}
       </div>
     </main>
   );
